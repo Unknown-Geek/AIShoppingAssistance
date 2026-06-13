@@ -198,7 +198,7 @@ class ChromaDbClient {
               id: DateTime.now().millisecondsSinceEpoch.toString(),
               name: officialName,
               details: "SKU: $sku • ₹${priceRupees.toStringAsFixed(2)}",
-              imageUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=200&auto=format&fit=crop",
+              imageUrl: productData['image_url'] as String? ?? "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=200&auto=format&fit=crop",
               price: priceRupees,
               quantity: 1,
             );

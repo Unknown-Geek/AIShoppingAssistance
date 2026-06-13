@@ -27,7 +27,7 @@ class InventoryService {
     try {
       final response = await _supabase
           .from('inventory')
-          .select('sku, slug, name, price_rupees, staging_dirs')
+          .select('sku, slug, name, price_rupees, staging_dirs, image_url')
           .eq('slug', slug)
           .maybeSingle();
       

@@ -1,8 +1,14 @@
 import json
+import os
 
 def generate_sql():
-    # Load JSON data
-    with open('/home/gowtham-r-nair/AIShoppingAssistance/inventory.json', 'r') as f:
+    # Load JSON data from relative path
+    json_path = 'inventory.json'
+    if not os.path.exists(json_path):
+        # Fallback if run from scripts/ directory
+        json_path = '../inventory.json'
+        
+    with open(json_path, 'r') as f:
         data = json.load(f)
         
     items = data.get('items', [])
@@ -15,6 +21,7 @@ def generate_sql():
     sql_lines.append("  name TEXT NOT NULL,")
     sql_lines.append("  price_rupees NUMERIC NOT NULL,")
     sql_lines.append("  staging_dirs TEXT[] NOT NULL,")
+    sql_lines.append("  image_url TEXT,")
     sql_lines.append("  created_at TIMESTAMPTZ DEFAULT NOW()")
     sql_lines.append(");\n")
     
@@ -23,7 +30,7 @@ def generate_sql():
     sql_lines.append("CREATE POLICY \"Allow public read access\" ON public.inventory FOR SELECT USING (true);\n")
     
     sql_lines.append("-- 2. Insert items")
-    sql_lines.append("INSERT INTO public.inventory (sku, slug, name, price_rupees, staging_dirs)")
+    sql_lines.append("INSERT INTO public.inventory (sku, slug, name, price_rupees, staging_dirs, image_url)")
     sql_lines.append("VALUES")
     
     value_clauses = []
@@ -32,6 +39,7 @@ def generate_sql():
         slug = item['slug'].replace("'", "''")
         name = item['name'].replace("'", "''")
         price = item['price_rupees']
+        img_url = item.get('image_url', '').replace("'", "''")
         
         # Build array literal string
         dirs = []
@@ -41,14 +49,17 @@ def generate_sql():
         dirs_formatted = ", ".join(dirs)
         dirs_array = f"ARRAY[{dirs_formatted}]"
         
-        value_clauses.append(f"  ('{sku}', '{slug}', '{name}', {price}, {dirs_array})")
+        value_clauses.append(f"  ('{sku}', '{slug}', '{name}', {price}, {dirs_array}, '{img_url}')")
         
     sql_lines.append(",\n".join(value_clauses) + ";")
     
     # Write to target seed file
-    import os
-    os.makedirs('/home/gowtham-r-nair/AIShoppingAssistance/artifacts', exist_ok=True)
-    output_path = '/home/gowtham-r-nair/AIShoppingAssistance/artifacts/supabase_seed.sql'
+    artifacts_dir = 'artifacts'
+    if not os.path.exists('pubspec.yaml') and os.path.exists('../pubspec.yaml'):
+        artifacts_dir = '../artifacts'
+        
+    os.makedirs(artifacts_dir, exist_ok=True)
+    output_path = os.path.join(artifacts_dir, 'supabase_seed.sql')
     with open(output_path, 'w') as out_f:
         out_f.write("\n".join(sql_lines))
     print(f"SQL seed script successfully written to {output_path}")
