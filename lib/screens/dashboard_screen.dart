@@ -47,16 +47,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   final CartService _cartService = CartService();
   bool _isCheckingOut = false;
   bool _isCheckoutHovered = false;
-  
-  // Hover states for premium micro-animations
-  bool _isProfileHovered = false;
-  bool _isDbStatusHovered = false;
-  bool _isNotificationHovered = false;
-  bool _isChatHovered = false;
-  bool _isVoiceHovered = false;
-  bool _isShutterHovered = false;
-
-  late AnimationController _shutterPulseController;
 
   // DB connectivity state — drives the status pill in the app bar
   _DbStatus _dbStatus = _DbStatus.unknown;
@@ -67,11 +57,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     _cursorController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-    )..repeat(reverse: true);
-
-    _shutterPulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
     _initializeCamera();
@@ -153,7 +138,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     _cartService.removeListener(_onCartChanged);
     _cameraController?.dispose();
     _cursorController.dispose();
-    _shutterPulseController.dispose();
     _ragController.dispose();
     super.dispose();
   }
@@ -930,60 +914,27 @@ class _DashboardScreenState extends State<DashboardScreen>
             children: [
               GestureDetector(
                 onTap: _showProfileSheet,
-                child: MouseRegion(
-                  onEnter: (_) => setState(() => _isProfileHovered = true),
-                  onExit: (_) => setState(() => _isProfileHovered = false),
-                  child: AnimatedScale(
-                    scale: _isProfileHovered ? 1.06 : 1.0,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOutBack,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFFFFFFFF),
-                        border: Border.all(
-                          color: _isProfileHovered
-                              ? const Color(0xFFB3EFB2)
-                              : const Color(0xFFD2E4E6),
-                          width: _isProfileHovered ? 1.8 : 1.0,
-                        ),
-                        boxShadow: _isProfileHovered
-                            ? [
-                                BoxShadow(
-                                  color: const Color(0xFFB3EFB2).withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Center(
-                        child: Text(
-                          (() {
-                            final email =
-                                Supabase
-                                    .instance
-                                    .client
-                                    .auth
-                                    .currentUser
-                                    ?.email ??
-                                'U';
-                            return email.isNotEmpty
-                                ? email[0].toUpperCase()
-                                : 'U';
-                          })(),
-                          style: const TextStyle(
-                            fontFamily: 'ClashDisplay',
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF001A23),
-                          ),
-                        ),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFFFFFFF),
+                    border: Border.all(color: const Color(0xFFD2E4E6)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      (() {
+                        final email =
+                            Supabase.instance.client.auth.currentUser?.email ??
+                            'U';
+                        return email.isNotEmpty ? email[0].toUpperCase() : 'U';
+                      })(),
+                      style: const TextStyle(
+                        fontFamily: 'ClashDisplay',
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF001A23),
                       ),
                     ),
                   ),
@@ -991,135 +942,78 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
               GestureDetector(
                 onTap: _checkDbStatus,
-                child: MouseRegion(
-                  onEnter: (_) => setState(() => _isDbStatusHovered = true),
-                  onExit: (_) => setState(() => _isDbStatusHovered = false),
-                  child: AnimatedScale(
-                    scale: _isDbStatusHovered ? 1.04 : 1.0,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOutBack,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'DB Status',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF001A23),
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color:
-                            _isDbStatusHovered
-                                ? const Color(0xFF001A23).withValues(alpha: 0.03)
-                                : Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
+                      const SizedBox(width: 6),
+                      Container(
+                        width: 1,
+                        height: 12,
+                        color: const Color(0xFF001A23).withValues(alpha: 0.12),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            'DB Status',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF001A23),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            width: 1,
-                            height: 12,
-                            color: const Color(0xFF001A23).withValues(
-                              alpha: 0.12,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            switch (_dbStatus) {
-                              _DbStatus.ok => 'Live',
-                              _DbStatus.error => 'Error',
-                              _DbStatus.unknown => 'Checking…',
-                            },
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: switch (_dbStatus) {
-                                _DbStatus.ok => const Color(0xFFB3EFB2),
-                                _DbStatus.error => const Color(0xFFEF4444),
-                                _DbStatus.unknown => const Color(0xFF4A5568),
-                              },
-                            ),
-                          ),
-                        ],
+                      const SizedBox(width: 6),
+                      Text(
+                        switch (_dbStatus) {
+                          _DbStatus.ok => 'Live',
+                          _DbStatus.error => 'Error',
+                          _DbStatus.unknown => 'Checking…',
+                        },
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: switch (_dbStatus) {
+                            _DbStatus.ok => const Color(0xFFB3EFB2),
+                            _DbStatus.error => const Color(0xFFEF4444),
+                            _DbStatus.unknown => const Color(0xFF4A5568),
+                          },
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
-              MouseRegion(
-                onEnter: (_) => setState(() => _isNotificationHovered = true),
-                onExit: (_) => setState(() => _isNotificationHovered = false),
-                child: AnimatedScale(
-                  scale: _isNotificationHovered ? 1.06 : 1.0,
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOutBack,
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween<double>(
-                      begin: 0,
-                      end: _isNotificationHovered ? -0.15 : 0,
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFFFFFFF),
+                  border: Border.all(color: const Color(0xFFD2E4E6)),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const Icon(
+                      Icons.notifications_none_outlined,
+                      color: Color(0xFF001A23),
+                      size: 22,
                     ),
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.elasticOut,
-                    builder: (context, value, child) {
-                      return Transform.rotate(angle: value, child: child);
-                    },
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFFFFFFFF),
-                        border: Border.all(
-                          color:
-                              _isNotificationHovered
-                                  ? const Color(0xFFB3EFB2)
-                                  : const Color(0xFFD2E4E6),
-                          width: _isNotificationHovered ? 1.8 : 1.0,
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFB3EFB2),
                         ),
-                        boxShadow:
-                            _isNotificationHovered
-                                ? [
-                                  BoxShadow(
-                                    color: const Color(0xFFB3EFB2).withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                                : null,
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          const Icon(
-                            Icons.notifications_none_outlined,
-                            color: Color(0xFF001A23),
-                            size: 22,
-                          ),
-                          Positioned(
-                            top: 12,
-                            right: 12,
-                            child: Container(
-                              width: 7,
-                              height: 7,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xFFB3EFB2),
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -1197,21 +1091,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         arcLength: 20,
                       ),
                       child: _isSearchingImage
-                          ? Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    const Color(
-                                      0xFFB3EFB2,
-                                    ).withValues(alpha: 0.3),
-                                    Colors.transparent,
-                                  ],
-                                ),
-                              ),
-                            )
+                          ? const ScanningOverlay()
                           : null,
                     ),
                   ),
@@ -1478,12 +1358,9 @@ class _DashboardScreenState extends State<DashboardScreen>
             child: Column(
               children: [
                 Expanded(
-                  child: AnimatedSize(
-                    duration: const Duration(milliseconds: 350),
-                    curve: Curves.easeInOut,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Column(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (_cartService.isEmpty) ...[
@@ -1570,7 +1447,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ],
                     ),
                   ),
-                ),
                 ),
                 // ── Checkout Bar ──────────────────────────────────────
                 if (!_cartService.isEmpty)
@@ -1708,30 +1584,24 @@ class _DashboardScreenState extends State<DashboardScreen>
                   Expanded(
                     child: InkWell(
                       onTap: _showRagSheet,
-                      onHover: (hovered) => setState(() => _isChatHovered = hovered),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutCubic,
-                        transform: Matrix4.translationValues(0, _isChatHovered ? -3 : 0, 0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.chat_bubble_outline,
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.chat_bubble_outline,
+                            color: Color(0xFF001A23),
+                            size: 22,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Chat',
+                            style: TextStyle(
+                              fontSize: 11,
                               color: Color(0xFF001A23),
-                              size: 22,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Chat',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF001A23),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1739,36 +1609,24 @@ class _DashboardScreenState extends State<DashboardScreen>
                   Expanded(
                     child: InkWell(
                       onTap: () {},
-                      onHover: (hovered) => setState(() => _isVoiceHovered = hovered),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutCubic,
-                        transform: Matrix4.translationValues(0, _isVoiceHovered ? -3 : 0, 0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.mic_none,
-                              color: _isVoiceHovered
-                                  ? const Color(0xFF001A23)
-                                  : const Color(0xFF4A5568),
-                              size: 22,
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.mic_none,
+                            color: Color(0xFF4A5568),
+                            size: 22,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Voice',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF4A5568),
+                              fontWeight: FontWeight.w500,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Voice',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: _isVoiceHovered
-                                    ? const Color(0xFF001A23)
-                                    : const Color(0xFF4A5568),
-                                fontWeight: _isVoiceHovered
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1800,53 +1658,39 @@ class _DashboardScreenState extends State<DashboardScreen>
           _shutterScale = 1.0;
         });
       },
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isShutterHovered = true),
-        onExit: (_) => setState(() => _isShutterHovered = false),
-        child: AnimatedScale(
-          scale: (_isShutterHovered ? 1.06 : 1.0) * _shutterScale,
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOutBack,
-          child: AnimatedBuilder(
-            animation: _shutterPulseController,
-            builder: (context, child) {
-              final pulse = _shutterPulseController.value;
-              return Container(
-                width: 74,
-                height: 74,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFB3EFB2),
-                  border: Border.all(color: Colors.white, width: 4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFB3EFB2).withValues(
-                        alpha: _isShutterHovered ? 0.45 : 0.3 + 0.1 * pulse,
-                      ),
-                      blurRadius: _isShutterHovered ? 20 : 14 + 6 * pulse,
-                      offset: Offset(0, 4 + 2 * pulse),
-                    ),
-                  ],
-                ),
-                child: child,
-              );
-            },
-            child: Center(
-              child: _isSearchingImage
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Color(0xFF001A23),
-                      ),
-                    )
-                  : const Icon(
-                      Icons.camera_alt_outlined,
+      child: AnimatedScale(
+        scale: _shutterScale,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          width: 74,
+          height: 74,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFFB3EFB2),
+            border: Border.all(color: Colors.white, width: 4),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFB3EFB2).withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Center(
+            child: _isSearchingImage
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
                       color: Color(0xFF001A23),
-                      size: 28,
                     ),
-            ),
+                  )
+                : const Icon(
+                    Icons.camera_alt_outlined,
+                    color: Color(0xFF001A23),
+                    size: 28,
+                  ),
           ),
         ),
       ),
@@ -1911,4 +1755,90 @@ class ReticlePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class ScanningOverlay extends StatefulWidget {
+  const ScanningOverlay({super.key});
+
+  @override
+  State<ScanningOverlay> createState() => _ScanningOverlayState();
+}
+
+class _ScanningOverlayState extends State<ScanningOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final value = _controller.value;
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // Subtle background green tint
+              Container(
+                color: const Color(0xFFB3EFB2).withValues(alpha: 0.04),
+              ),
+              // Translucent green gradient trail/glow behind the sweeping laser line
+              Positioned(
+                top: (value * 180.0) - 60.0,
+                left: 0,
+                right: 0,
+                height: 60.0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        const Color(0xFFB3EFB2).withValues(alpha: 0.18),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Sweeping laser line
+              Positioned(
+                top: value * 180.0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 2.5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFB3EFB2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFB3EFB2).withValues(alpha: 0.8),
+                        blurRadius: 8,
+                        spreadRadius: 1.5,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
