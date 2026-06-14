@@ -63,9 +63,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     _cartExpandController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
-    )..addListener(() {
-        setState(() {});
-      });
+    );
 
     _initializeCamera();
     // Listen to cart changes so the widget rebuilds reactively.
@@ -768,23 +766,36 @@ class _DashboardScreenState extends State<DashboardScreen>
               child: Container(color: Colors.transparent),
             ),
           ),
-          Column(
-            children: [
-              _buildCameraViewport(),
-              Expanded(child: _buildShoppingZone()),
-            ],
-          ),
-          Positioned(
-            bottom: 20 - (120 * _cartExpandController.value),
-            left: MediaQuery.of(context).size.width * 0.05,
-            right: MediaQuery.of(context).size.width * 0.05,
-            child: Opacity(
-              opacity: (1.0 - _cartExpandController.value).clamp(0.0, 1.0),
-              child: IgnorePointer(
-                ignoring: _cartExpandController.value > 0.5,
-                child: _buildBottomNavBar(),
-              ),
+          // AnimatedBuilder isolates redraws to only the camera+cart layout
+          // on each animation frame instead of rebuilding the entire screen.
+          AnimatedBuilder(
+            animation: _cartExpandController,
+            builder: (context, _) => Column(
+              children: [
+                _buildCameraViewport(),
+                Expanded(child: _buildShoppingZone()),
+              ],
             ),
+          ),
+          // Bottom nav bar: pass as static child so it is NOT rebuilt on each frame.
+          AnimatedBuilder(
+            animation: _cartExpandController,
+            builder: (context, child) {
+              final progress = _cartExpandController.value;
+              return Positioned(
+                bottom: 20 - (120 * progress),
+                left: MediaQuery.of(context).size.width * 0.05,
+                right: MediaQuery.of(context).size.width * 0.05,
+                child: Opacity(
+                  opacity: (1.0 - progress).clamp(0.0, 1.0),
+                  child: IgnorePointer(
+                    ignoring: progress > 0.5,
+                    child: child!,
+                  ),
+                ),
+              );
+            },
+            child: _buildBottomNavBar(),
           ),
         ],
       ),
@@ -1070,19 +1081,21 @@ class _DashboardScreenState extends State<DashboardScreen>
                 // FIXED: Correct portrait aspect ratio cropping using FittedBox + AspectRatio
                 if (_isCameraInitialized && _cameraController != null)
                   Positioned.fill(
-                    child: AnimatedScale(
-                      scale: _zoomLevel,
-                      duration: const Duration(milliseconds: 120),
-                      curve: Curves.easeOut,
-                      child: FittedBox(
-                        fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: MediaQuery.of(context).size.width,
-                          child: AspectRatio(
-                            // Invert landscape aspect ratio constraints for seamless portrait preview paths
-                            aspectRatio:
-                                1 / _cameraController!.value.aspectRatio,
-                            child: CameraPreview(_cameraController!),
+                    child: RepaintBoundary(
+                      child: AnimatedScale(
+                        scale: _zoomLevel,
+                        duration: const Duration(milliseconds: 120),
+                        curve: Curves.easeOut,
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width,
+                            child: AspectRatio(
+                              // Invert landscape aspect ratio constraints for seamless portrait preview paths
+                              aspectRatio:
+                                  1 / _cameraController!.value.aspectRatio,
+                              child: CameraPreview(_cameraController!),
+                            ),
                           ),
                         ),
                       ),
@@ -1497,42 +1510,44 @@ class _DashboardScreenState extends State<DashboardScreen>
                             ),
                             const SizedBox(height: 40),
                           ] else ...[
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: _cartService.items.length,
-                              itemBuilder: (context, index) {
-                                final item = _cartService.items[index];
-                                return Dismissible(
-                                  key: Key(item.id),
-                                  direction: DismissDirection.endToStart,
-                                  background: Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    alignment: Alignment.centerRight,
-                                    padding: const EdgeInsets.only(right: 20),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEF4444),
-                                      borderRadius: BorderRadius.circular(18),
+                            RepaintBoundary(
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: _cartService.items.length,
+                                itemBuilder: (context, index) {
+                                  final item = _cartService.items[index];
+                                  return Dismissible(
+                                    key: Key(item.id),
+                                    direction: DismissDirection.endToStart,
+                                    background: Container(
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      alignment: Alignment.centerRight,
+                                      padding: const EdgeInsets.only(right: 20),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEF4444),
+                                        borderRadius: BorderRadius.circular(18),
+                                      ),
+                                      child: const Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
                                     ),
-                                    child: const Icon(
-                                      Icons.delete_outline,
-                                      color: Colors.white,
-                                      size: 24,
+                                    onDismissed: (_) => _removeItem(index),
+                                    child: CartItem(
+                                      imageUrl: item.imageUrl,
+                                      name: item.name,
+                                      details:
+                                          "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
+                                      quantity: item.quantity,
+                                      onIncrement: () => _incrementQuantity(index),
+                                      onDecrement: () => _decrementQuantity(index),
+                                      onRemove: () => _removeItem(index),
                                     ),
-                                  ),
-                                  onDismissed: (_) => _removeItem(index),
-                                  child: CartItem(
-                                    imageUrl: item.imageUrl,
-                                    name: item.name,
-                                    details:
-                                        "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
-                                    quantity: item.quantity,
-                                    onIncrement: () => _incrementQuantity(index),
-                                    onDecrement: () => _decrementQuantity(index),
-                                    onRemove: () => _removeItem(index),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                              ),
                             ),
                           ],
                         ],
@@ -1541,12 +1556,18 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                   // ── Checkout Bar ──────────────────────────────────────
                   if (!_cartService.isEmpty)
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        0,
-                        8,
-                        0,
-                        120 - (100 * _cartExpandController.value),
+                    // AnimatedBuilder isolates checkout bar padding redraws
+                    // from the cart list above it.
+                    AnimatedBuilder(
+                      animation: _cartExpandController,
+                      builder: (context, child) => Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          0,
+                          8,
+                          0,
+                          120 - (100 * _cartExpandController.value),
+                        ),
+                        child: child!,
                       ),
                       child: _buildCheckoutBar(),
                     ),
