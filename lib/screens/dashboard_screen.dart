@@ -27,7 +27,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   final ProductDetectionService _detectionService = HuggingFaceProxyDetectionService();
   final TextEditingController _ragController = TextEditingController();
   late AnimationController _cursorController;
-  late AnimationController _pulseController;
 
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
@@ -56,11 +55,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     _cursorController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-    )..repeat(reverse: true);
-
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
     _initializeCamera();
@@ -142,7 +136,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     _cartService.removeListener(_onCartChanged);
     _cameraController?.dispose();
     _cursorController.dispose();
-    _pulseController.dispose();
     _ragController.dispose();
     super.dispose();
   }
@@ -946,29 +939,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      AnimatedBuilder(
-                        animation: _pulseController,
-                        builder: (context, child) {
-                          final dotColor = switch (_dbStatus) {
-                            _DbStatus.ok => const Color(0xFFB3EFB2),
-                            _DbStatus.error => const Color(0xFFEF4444),
-                            _DbStatus.unknown => const Color(0xFF4A5568),
-                          };
-                          return Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: dotColor.withValues(
-                                alpha: _dbStatus == _DbStatus.unknown
-                                    ? 0.6
-                                    : 0.3 + 0.7 * _pulseController.value,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 6),
                       const Text(
                         'DB Status',
                         style: TextStyle(
