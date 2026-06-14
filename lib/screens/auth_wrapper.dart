@@ -43,10 +43,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: Color(0xFFFAFAFA),
+        backgroundColor: Color(0xFFE8F1F2),
         body: Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF433075)),
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF001A23)),
           ),
         ),
       );
