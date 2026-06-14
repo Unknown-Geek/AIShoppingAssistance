@@ -705,7 +705,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(),
       body: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -766,15 +765,22 @@ class _DashboardScreenState extends State<DashboardScreen>
               child: Container(color: Colors.transparent),
             ),
           ),
-          // AnimatedBuilder isolates redraws to only the camera+cart layout
-          // on each animation frame instead of rebuilding the entire screen.
-          AnimatedBuilder(
-            animation: _cartExpandController,
-            builder: (context, _) => Column(
-              children: [
-                _buildCameraViewport(),
-                Expanded(child: _buildShoppingZone()),
-              ],
+          // ClipRect prevents the camera's OverflowBox from escaping above
+          // screen top. The AppBar Positioned (last in Stack) renders on top,
+          // masking the camera as it slides upward — achieving the "behind pill"
+          // effect without any visible straight clip line.
+          ClipRect(
+            child: AnimatedBuilder(
+              animation: _cartExpandController,
+              builder: (context, _) => Column(
+                children: [
+                  // Reserve the space the AppBar Positioned widget visually occupies
+                  // (SafeArea top + 8px top margin + 72px pill height = padding.top + 80).
+                  SizedBox(height: MediaQuery.of(context).padding.top + 80),
+                  _buildCameraViewport(),
+                  Expanded(child: _buildShoppingZone()),
+                ],
+              ),
             ),
           ),
           // Bottom nav bar: pass as static child so it is NOT rebuilt on each frame.
@@ -796,6 +802,14 @@ class _DashboardScreenState extends State<DashboardScreen>
               );
             },
             child: _buildBottomNavBar(),
+          ),
+          // AppBar LAST → highest z-order, renders on top of camera overflow,
+          // masking it as the camera slides upward behind the pill.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _buildAppBar(),
           ),
         ],
       ),
@@ -915,10 +929,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(72),
-      child: SafeArea(
+  Widget _buildAppBar() {
+    return SafeArea(
         child: Container(
           height: 72,
           margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -1045,7 +1057,6 @@ class _DashboardScreenState extends State<DashboardScreen>
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -1060,17 +1071,15 @@ class _DashboardScreenState extends State<DashboardScreen>
     final double naturalHeight =
         (MediaQuery.of(context).size.height * 0.33) + 16.0;
 
-    // ClipRect clips the OverflowBox overflow at this widget's own bounds
-    // (= body top = AppBar bottom / pill's lower edge). The AppBar's opaque
-    // background visually masks the clip point so the card appears to slide
-    // cleanly behind the pill rather than getting cut in open space.
-    return ClipRect(
-      child: SizedBox(
-        height: naturalHeight * (1.0 - progress),
-        child: OverflowBox(
-          alignment: Alignment.bottomCenter,
-          maxHeight: naturalHeight,
-          child: Padding(
+    // The Column's ClipRect (in build()) clips the overflow at the screen top.
+    // The AppBar Positioned widget (last in Stack) renders on top, masking the
+    // camera as it slides upward — no straight cut visible to the user.
+    return SizedBox(
+      height: naturalHeight * (1.0 - progress),
+      child: OverflowBox(
+        alignment: Alignment.bottomCenter,
+        maxHeight: naturalHeight,
+        child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Container(
               decoration: BoxDecoration(
@@ -1329,7 +1338,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     ),
   ),
-),
 );
   }
 
