@@ -615,8 +615,13 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   /// Silent background check — updates the indicator, no snackbar.
   Future<void> _refreshDbStatus() async {
-    final chromaStatus = await _chromaClient.checkConnectivity();
-    final supabaseStatus = await InventoryService().checkConnectivity();
+    final results = await Future.wait([
+      _chromaClient.checkConnectivity(),
+      InventoryService().checkConnectivity(),
+    ]);
+    final chromaStatus = results[0];
+    final supabaseStatus = results[1];
+
     if (!mounted) return;
     final allOk =
         chromaStatus.startsWith('Connected') &&
@@ -638,8 +643,12 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     );
 
-    final chromaStatus = await _chromaClient.checkConnectivity();
-    final supabaseStatus = await InventoryService().checkConnectivity();
+    final results = await Future.wait([
+      _chromaClient.checkConnectivity(),
+      InventoryService().checkConnectivity(),
+    ]);
+    final chromaStatus = results[0];
+    final supabaseStatus = results[1];
 
     if (mounted) {
       final isChromaOk = chromaStatus.startsWith("Connected");
