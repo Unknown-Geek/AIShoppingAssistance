@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,6 +32,14 @@ class CartService extends ChangeNotifier {
 
   final List<CartItemModel> _items = [];
   bool _isLoaded = false;
+  Timer? _syncTimer;
+
+  void _scheduleSync() {
+    _syncTimer?.cancel();
+    _syncTimer = Timer(const Duration(milliseconds: 500), () {
+      _syncActiveCart();
+    });
+  }
 
   /// Read-only view of the cart contents.
   List<CartItemModel> get items => List.unmodifiable(_items);
@@ -161,7 +170,7 @@ class CartService extends ChangeNotifier {
       _items.add(item);
     }
     _persist();
-    _syncActiveCart();
+    _scheduleSync();
     notifyListeners();
   }
 
@@ -169,7 +178,7 @@ class CartService extends ChangeNotifier {
     if (index < 0 || index >= _items.length) return;
     _items[index].quantity++;
     _persist();
-    _syncActiveCart();
+    _scheduleSync();
     notifyListeners();
   }
 
@@ -178,7 +187,7 @@ class CartService extends ChangeNotifier {
     if (_items[index].quantity > 1) {
       _items[index].quantity--;
       _persist();
-      _syncActiveCart();
+      _scheduleSync();
     } else {
       removeItem(index);
     }
@@ -192,6 +201,7 @@ class CartService extends ChangeNotifier {
     // If the cart becomes empty, delete the active cart from Supabase
     final user = _supabase.auth.currentUser;
     if (user != null && _items.isEmpty) {
+      _syncTimer?.cancel(); // Cancel any pending sync if we are deleting the cart
       _supabase
           .from('user_carts')
           .delete()
@@ -199,7 +209,7 @@ class CartService extends ChangeNotifier {
           .eq('status', 'active')
           .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
     } else {
-      _syncActiveCart();
+      _scheduleSync();
     }
     notifyListeners();
   }
