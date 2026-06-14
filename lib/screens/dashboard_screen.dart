@@ -767,7 +767,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           Column(
             children: [
               _buildCameraViewport(),
-              Expanded(child: _buildShoppingZone()),
+              Expanded(child: _buildShoppingZone(currentTotalPrice, goingUp)),
             ],
           ),
           Positioned(
@@ -1287,7 +1287,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildShoppingZone() {
+  Widget _buildShoppingZone(double currentTotalPrice, bool goingUp) {
     return Container(
       margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(
@@ -1480,7 +1480,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 if (!_cartService.isEmpty)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(0, 8, 0, 120),
-                    child: _buildCheckoutBar(),
+                    child: _buildCheckoutBar(currentTotalPrice, goingUp),
                   ),
               ],
             ),
@@ -1490,7 +1490,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildCheckoutBar() {
+  Widget _buildCheckoutBar(double currentTotalPrice, bool goingUp) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF001A23),
