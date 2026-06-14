@@ -2,10 +2,6 @@
   <img src="assets/Qless-Banner.svg" alt="Qless Banner" width="100%" />
 </p>
 
-<h1 align="center">Qless</h1>
-<p align="center"><strong>AI-assisted Scan-and-Go retail checkout for frictionless supermarket shopping</strong></p>
-
----
 
 Qless is a modern mobile and backend prototype designed to enable seamless, AI-assisted self-checkout in retail environments. By leveraging computer vision and vector similarity search, Qless allows shoppers to scan products using their mobile device's camera, matches the visual identity against a vector catalog, and resolves it locally to cart-ready retail metadata in milliseconds.
 
