@@ -1,8 +1,10 @@
+from __future__ import annotations
 import os
 import io
 import time
 import datetime
-from fastapi import FastAPI, File, UploadFile
+import httpx
+from fastapi import FastAPI, File, UploadFile, BackgroundTasks, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from transformers import CLIPProcessor
@@ -26,8 +28,8 @@ app.add_middleware(
 model_id = "Xenova/clip-vit-base-patch32"
 device = "cpu"
 
-print(f"Loading CLIP processor '{model_id}'...")
-processor = CLIPProcessor.from_pretrained(model_id)
+print("Loading CLIP processor 'openai/clip-vit-base-patch32'...")
+processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
 print(f"Downloading ONNX model '{model_id}'...")
 model_file = hf_hub_download(repo_id=model_id, filename="onnx/vision_model.onnx")
@@ -40,41 +42,201 @@ print("Model loaded successfully!")
 IMAGES_DIR = "captured_images"
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
-@app.post("/embed")
-async def get_embedding(file: UploadFile = File(...)):
+def save_image_task(contents: bytes, filepath: str):
     try:
-        # Read image bytes
-        contents = await file.read()
+        with open(filepath, "wb") as f:
+            f.write(contents)
+        print(f"Saved scanned image in background to {filepath}")
+    except Exception as save_err:
+        print(f"Error saving image in background: {save_err}")
+
+class ChromaSearcher:
+    def __init__(self, token: str = None):
+        self.api_key = token or os.environ.get("CHROMA_API_KEY", "")
+        self.tenant = "99526d4b-48cf-4b20-896b-0947aa36d4ab"
+        self.database = "QLESS"
+        self.collection_id = "c1102322-920e-4775-96c1-e324bdadaa1d"
+        self.url = f"https://api.trychroma.com/api/v2/tenants/{self.tenant}/databases/{self.database}/collections/{self.collection_id}/query"
+
+    async def search(self, embedding: list[float]) -> tuple[str, float] | None:
+        if not self.api_key:
+            print("[ChromaSearcher] Warning: No Chroma API key found.")
+            return None
+
+        headers = {
+            "x-chroma-token": self.api_key,
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "query_embeddings": [embedding],
+            "n_results": 1
+        }
+
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(self.url, headers=headers, json=payload, timeout=5.0)
+                if response.status_code == 200:
+                    data = response.json()
+                    metadatas = data.get("metadatas", [])
+                    distances = data.get("distances", [])
+
+                    if metadatas and metadatas[0] and metadatas[0][0]:
+                        item_meta = metadatas[0][0]
+                        raw_name = item_meta.get("product_name", "Unknown Item")
+                        slug = self._normalize_slug(str(raw_name))
+                        distance = distances[0][0] if (distances and distances[0]) else 2.0
+                        return slug, float(distance)
+                else:
+                    status = response.status_code
+                    print(f"[ChromaSearcher] Query failed: {status} - {response.text}")
+            except Exception as e:
+                print(f"[ChromaSearcher] Error querying ChromaDB: {e}")
+        return None
+
+    def _normalize_slug(self, slug: str) -> str:
+        import re
+        clean_slug = re.sub(r'-\d+$', '', slug)
+        mapping = {
+            'roasted-almond-chocolate-bar-cadbury': 'dairy-milk-roast-almond-cadbury',
+            'cadbury-dairy-milk-crispello': 'dairy-milk-crispello-cadbury',
+            'fruit-and-nut-milk-chocolate-bar-cadbury': 'dairy-milk-chocolate-cadbury',
+        }
+        return mapping.get(clean_slug, clean_slug)
+
+class SupabaseQuerier:
+    def __init__(self, url: str = None, key: str = None):
+        self.url = url or os.environ.get("SUPABASE_URL", "")
+        self.key = key or os.environ.get("SUPABASE_ANON_KEY", "")
+
+    async def get_product_by_slug(self, slug: str) -> dict | None:
+        if not self.url or not self.key:
+            print("[SupabaseQuerier] Warning: Supabase credentials missing.")
+            return None
+
+        base_url = self.url.rstrip("/")
+        query_url = f"{base_url}/rest/v1/inventory?slug=eq.{slug}&select=sku,slug,name,price_rupees,staging_dirs"
         
-        # Save image locally inside container for viewing/debugging
+        headers = {
+            "apikey": self.key,
+            "Authorization": f"Bearer {self.key}"
+        }
+
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(query_url, headers=headers, timeout=5.0)
+                if response.status_code == 200:
+                    data = response.json()
+                    if isinstance(data, list) and len(data) > 0:
+                        return data[0]
+                else:
+                    print(f"[SupabaseQuerier] Query failed: {response.status_code} - {response.text}")
+            except Exception as e:
+                print(f"[SupabaseQuerier] Error querying Supabase: {e}")
+        return None
+
+@app.post("/embed")
+async def get_embedding(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    try:
+        contents = await file.read()
         filename = f"capture_{int(time.time() * 1000)}.jpg"
         filepath = os.path.join(IMAGES_DIR, filename)
-        try:
-            with open(filepath, "wb") as f:
-                f.write(contents)
-            print(f"Saved scanned image to {filepath}")
-        except Exception as save_err:
-            print(f"Error saving image: {save_err}")
+        background_tasks.add_task(save_image_task, contents, filepath)
 
-        # Open and process the image
         image = Image.open(io.BytesIO(contents)).convert("RGB")
-        
-        # Process and run inference
         inputs = processor(images=image, return_tensors="np")
         pixel_values = inputs["pixel_values"]
         
-        # Run inference using ONNX Runtime
         outputs = session.run(["image_embeds"], {"pixel_values": pixel_values})
         image_embeds = outputs[0]
         
-        # L2 normalize the embedding
         norm = np.linalg.norm(image_embeds, axis=-1, keepdims=True)
         normalized_image_embeds = image_embeds / (norm + 1e-12)
         
-        # Convert embedding numpy array to list
         embedding = normalized_image_embeds[0].tolist()
         return {"status": "success", "embedding": embedding}
     except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/detect")
+async def detect_item(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    x_chroma_token: str = Header(default=None),
+    x_supabase_url: str = Header(default=None),
+    x_supabase_key: str = Header(default=None)
+):
+    start_total = time.time()
+    try:
+        t0 = time.time()
+        contents = await file.read()
+        t_read = time.time() - t0
+
+        filename = f"capture_{int(time.time() * 1000)}.jpg"
+        filepath = os.path.join(IMAGES_DIR, filename)
+        background_tasks.add_task(save_image_task, contents, filepath)
+
+        t0 = time.time()
+        image = Image.open(io.BytesIO(contents)).convert("RGB")
+        inputs = processor(images=image, return_tensors="np")
+        pixel_values = inputs["pixel_values"]
+        t_preprocess = time.time() - t0
+        
+        t0 = time.time()
+        outputs = session.run(["image_embeds"], {"pixel_values": pixel_values})
+        image_embeds = outputs[0]
+        t_onnx = time.time() - t0
+        
+        norm = np.linalg.norm(image_embeds, axis=-1, keepdims=True)
+        normalized_image_embeds = image_embeds / (norm + 1e-12)
+        embedding = normalized_image_embeds[0].tolist()
+
+        t0 = time.time()
+        searcher = ChromaSearcher(token=x_chroma_token)
+        search_result = await searcher.search(embedding)
+        t_chroma = time.time() - t0
+
+        if search_result is None:
+            print(f"[detect] Finished (No ChromaDB Response) in {time.time() - start_total:.4f}s")
+            return {"status": "success", "match_found": False, "reason": "No ChromaDB response"}
+
+        slug, distance = search_result
+        threshold = 0.65
+        if distance > threshold:
+            print(f"[detect] Distance {distance} exceeds threshold {threshold} for {slug} (Finished in {time.time() - start_total:.4f}s)")
+            return {"status": "success", "match_found": False, "reason": f"Distance {distance} exceeds threshold {threshold}"}
+
+        t0 = time.time()
+        querier = SupabaseQuerier(url=x_supabase_url, key=x_supabase_key)
+        product_data = await querier.get_product_by_slug(slug)
+        t_supabase = time.time() - t0
+
+        print(f"[detect] Profiling: Read={t_read:.4f}s, Preprocess={t_preprocess:.4f}s, ONNX={t_onnx:.4f}s, Chroma={t_chroma:.4f}s, Supabase={t_supabase:.4f}s. Total={time.time() - start_total:.4f}s")
+
+        if product_data:
+            return {
+                "status": "success",
+                "match_found": True,
+                "item": {
+                    "sku": product_data.get("sku"),
+                    "slug": product_data.get("slug"),
+                    "name": product_data.get("name"),
+                    "price_rupees": float(product_data.get("price_rupees", 0.0))
+                }
+            }
+        else:
+            name_fallback = slug.replace('-', ' ').upper()
+            return {
+                "status": "success",
+                "match_found": True,
+                "item": {
+                    "sku": "UNLISTED",
+                    "slug": slug,
+                    "name": name_fallback,
+                    "price_rupees": 0.0
+                }
+            }
+    except Exception as e:
+        print(f"[detect] Exception: {e}")
         return {"status": "error", "message": str(e)}
 
 @app.get("/captured_images/{filename}")
