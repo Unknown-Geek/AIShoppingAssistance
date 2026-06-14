@@ -16,7 +16,10 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
   late final String _chromaApiKey;
 
   HuggingFaceProxyDetectionService({String? baseUrl})
-      : _baseUrl = baseUrl ?? (dotenv.env['HF_SPACE_URL'] ?? '').replaceAll('/embed', '') {
+      : _baseUrl = (baseUrl ?? dotenv.env['HF_SPACE_URL'] ?? '')
+            .replaceAll('/embed', '')
+            .replaceAll('/health', '')
+            .replaceAll(RegExp(r'/$'), '') {
     _chromaApiKey = dotenv.env['CHROMA_API_KEY'] ?? '';
     
     if (_baseUrl.isEmpty) {
