@@ -53,15 +53,15 @@ class MainApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'ClashGrotesk',
-        scaffoldBackgroundColor: const Color(0xFFF4F7F8),
+        scaffoldBackgroundColor: const Color(0xFFE8F1F2),
         colorScheme: const ColorScheme.light(
-          primary: Color(0xFF23C8D9),
-          secondary: Color(0xFF0EAFC4),
+          primary: Color(0xFF001A23),
+          secondary: Color(0xFFB3EFB2),
           surface: Color(0xFFFFFFFF),
-          surfaceContainer: Color(0xFFF9FAFB),
-          surfaceContainerHigh: Color(0xFFFAFAFA),
-          onSurface: Color(0xFF111827),
-          onSurfaceVariant: Color(0xFF6B7280),
+          surfaceContainer: Color(0xFFE8F1F2),
+          surfaceContainerHigh: Color(0xFFE8F1F2),
+          onSurface: Color(0xFF001A23),
+          onSurfaceVariant: Color(0xFF4A5568),
           error: Color(0xFFEF4444),
         ),
         textTheme: ThemeData.light().textTheme.copyWith(
@@ -81,8 +81,8 @@ class MainApp extends StatelessWidget {
           labelMedium: const TextStyle(fontFamily: 'ClashGrotesk'),
           labelSmall: const TextStyle(fontFamily: 'ClashGrotesk'),
         ).apply(
-          bodyColor: const Color(0xFF111827),
-          displayColor: const Color(0xFF111827),
+          bodyColor: const Color(0xFF001A23),
+          displayColor: const Color(0xFF001A23),
         ),
       ),
       home: AuthWrapper(cameras: cameras),
