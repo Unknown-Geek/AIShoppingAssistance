@@ -1102,7 +1102,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     height: 180.0,
                     child: CustomPaint(
                       painter: ReticlePainter(
-                        color: const Color(0xFFA58CF4),
+                        color: const Color(0xFFE5E7EB),
                         strokeWidth: 2.0,
                         borderRadius: 16,
                         arcLength: 20,
