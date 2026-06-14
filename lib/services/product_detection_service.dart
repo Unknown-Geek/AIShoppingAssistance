@@ -38,13 +38,11 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
 
     final overallStopwatch = Stopwatch()..start();
     try {
-      final bytes = await photo.readAsBytes();
-      
       final request = http.MultipartRequest('POST', url);
       request.files.add(
-        http.MultipartFile.fromBytes(
+        await http.MultipartFile.fromPath(
           'file',
-          bytes,
+          photo.path,
           filename: 'image.jpg',
         ),
       );
@@ -79,7 +77,8 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
             final String slug = itemData['slug'] ?? '';
             
             // Resolve product metadata locally in 0ms to bypass Supabase network query
-            final localProduct = InventoryService().getProductFromLocal(slug);
+            final inventoryService = InventoryService();
+            final localProduct = inventoryService.getProductFromLocal(slug);
             
             final String sku = localProduct != null ? (localProduct['sku'] ?? 'UNLISTED') : (itemData['sku'] ?? 'UNLISTED');
             final String name = localProduct != null ? (localProduct['name'] ?? 'Unknown Product') : (itemData['name'] ?? 'Unknown Product');
@@ -93,13 +92,13 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
 
             // Fetch thumbnail_url from Supabase and cache it (non-blocking is
             // fine here — we await it so the image is ready for the confirm sheet)
-            await InventoryService().getProductBySlug(slug);
+            await inventoryService.getProductBySlug(slug);
 
             return CartItemModel(
               id: DateTime.now().millisecondsSinceEpoch.toString(),
               name: name,
               details: "SKU: $sku • ₹${priceRupees.toStringAsFixed(2)}",
-              imageUrl: InventoryService().getImageUrl(slug),
+              imageUrl: inventoryService.getImageUrl(slug),
               price: priceRupees,
               quantity: 1,
             );
