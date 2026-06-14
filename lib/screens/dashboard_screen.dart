@@ -47,7 +47,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   final CartService _cartService = CartService();
   bool _isCheckingOut = false;
   bool _isCheckoutHovered = false;
-  double _previousTotalPrice = 0.0;
 
   // DB connectivity state — drives the status pill in the app bar
   _DbStatus _dbStatus = _DbStatus.unknown;
@@ -698,10 +697,6 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    final double currentTotalPrice = _cartService.totalPrice;
-    final bool goingUp = currentTotalPrice > _previousTotalPrice;
-    _previousTotalPrice = currentTotalPrice;
-
     return Scaffold(
       appBar: _buildAppBar(),
       body: Stack(
@@ -767,7 +762,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           Column(
             children: [
               _buildCameraViewport(),
-              Expanded(child: _buildShoppingZone(currentTotalPrice, goingUp)),
+              Expanded(child: _buildShoppingZone()),
             ],
           ),
           Positioned(
@@ -1287,7 +1282,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildShoppingZone(double currentTotalPrice, bool goingUp) {
+  Widget _buildShoppingZone() {
     return Container(
       margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(
@@ -1326,35 +1321,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (!_cartService.isEmpty) ...[
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      switchInCurve: Curves.easeOutBack,
-                      switchOutCurve: Curves.easeIn,
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        final childKey = child.key as ValueKey<double>;
-                        final isCurrent = childKey.value == currentTotalPrice;
-                        final offset = goingUp ? 1.0 : -1.0;
-
-                        return ClipRect(
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: isCurrent
-                                  ? Offset(0.0, offset)
-                                  : Offset(0.0, -offset),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: Text(
-                        '₹${currentTotalPrice.toStringAsFixed(2)}',
-                        key: ValueKey<double>(currentTotalPrice),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF001A23),
-                        ),
+                    RollingPriceText(
+                      value: _cartService.totalPrice,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF001A23),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -1480,7 +1452,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 if (!_cartService.isEmpty)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(0, 8, 0, 120),
-                    child: _buildCheckoutBar(currentTotalPrice, goingUp),
+                    child: _buildCheckoutBar(),
                   ),
               ],
             ),
@@ -1490,7 +1462,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildCheckoutBar(double currentTotalPrice, bool goingUp) {
+  Widget _buildCheckoutBar() {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF001A23),
@@ -1531,35 +1503,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                     ),
                     const SizedBox(height: 2),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      switchInCurve: Curves.easeOutBack,
-                      switchOutCurve: Curves.easeIn,
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        final childKey = child.key as ValueKey<double>;
-                        final isCurrent = childKey.value == currentTotalPrice;
-                        final offset = goingUp ? 1.0 : -1.0;
-
-                        return ClipRect(
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: isCurrent
-                                  ? Offset(0.0, offset)
-                                  : Offset(0.0, -offset),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: Text(
-                        '₹${currentTotalPrice.toStringAsFixed(2)}',
-                        key: ValueKey<double>(currentTotalPrice),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                    RollingPriceText(
+                      value: _cartService.totalPrice,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -1806,6 +1755,111 @@ class ReticlePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class RollingPriceText extends StatefulWidget {
+  final double value;
+  final TextStyle style;
+
+  const RollingPriceText({
+    super.key,
+    required this.value,
+    required this.style,
+  });
+
+  @override
+  State<RollingPriceText> createState() => _RollingPriceTextState();
+}
+
+class _RollingPriceTextState extends State<RollingPriceText> {
+  double _oldValue = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _oldValue = widget.value;
+  }
+
+  @override
+  void didUpdateWidget(RollingPriceText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _oldValue = oldWidget.value;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double currentVal = widget.value;
+    final bool goingUp = currentVal > _oldValue;
+
+    final String oldText = '₹${_oldValue.toStringAsFixed(2)}';
+    final String newText = '₹${currentVal.toStringAsFixed(2)}';
+
+    final List<String> oldChars = oldText.split('').reversed.toList();
+    final List<String> newChars = newText.split('').reversed.toList();
+
+    final List<Widget> charWidgets = [];
+
+    // tabulate figures to prevent horizontal jitter
+    final TextStyle displayStyle = widget.style.copyWith(
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+    for (int i = 0; i < newChars.length; i++) {
+      final String newChar = newChars[i];
+      final String oldChar = i < oldChars.length ? oldChars[i] : '';
+
+      if (newChar == oldChar) {
+        charWidgets.add(
+          Text(
+            newChar,
+            key: ValueKey<String>('static-$i-$newChar'),
+            style: displayStyle,
+          ),
+        );
+      } else {
+        charWidgets.add(
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            switchInCurve: Curves.easeOutBack,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              final childKey = child.key as ValueKey<String>;
+              final isCurrent = childKey.value == 'active-$i-$newChar';
+              final offset = goingUp ? 1.0 : -1.0;
+
+              return ClipRect(
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: isCurrent
+                        ? Offset(0.0, offset)
+                        : Offset(0.0, -offset),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              newChar,
+              key: ValueKey<String>('active-$i-$newChar'),
+              style: displayStyle,
+            ),
+          ),
+        );
+      }
+    }
+
+    final widgets = charWidgets.reversed.toList();
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: widgets,
+    );
+  }
 }
 
 class ScanningOverlay extends StatefulWidget {
