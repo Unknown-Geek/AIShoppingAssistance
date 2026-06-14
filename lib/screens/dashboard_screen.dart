@@ -167,11 +167,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                 height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF433075).withValues(alpha: 0.1),
+                  color: const Color(0xFF001A23).withValues(alpha: 0.1),
                 ),
                 child: const Icon(
                   Icons.shopping_bag_outlined,
-                  color: Color(0xFF433075),
+                  color: Color(0xFF001A23),
                   size: 30,
                 ),
               ),
@@ -181,14 +181,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF111827),
+                  color: Color(0xFF001A23),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'You are about to checkout ${_cartService.itemCount} item${_cartService.itemCount == 1 ? '' : 's'} for a total of',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF001A23)),
               ),
               const SizedBox(height: 8),
               Text(
@@ -196,7 +196,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF433075),
+                  color: Color(0xFF001A23),
                 ),
               ),
               const SizedBox(height: 24),
@@ -210,12 +210,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
-                        side: const BorderSide(color: Color(0xFFE5E7EB)),
+                        side: const BorderSide(color: Color(0xFFD2E4E6)),
                       ),
                       child: const Text(
                         'Cancel',
                         style: TextStyle(
-                          color: Color(0xFF6B7280),
+                          color: Color(0xFF4A5568),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -226,7 +226,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     child: ElevatedButton(
                       onPressed: () => Navigator.of(ctx).pop(true),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF111111),
+                        backgroundColor: const Color(0xFF001A23),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -264,11 +264,12 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        behavior: SnackBarBehavior.fixed,
         content: Row(
           children: [
             const Icon(
               Icons.check_circle_outline,
-              color: Colors.white,
+              color: Color(0xFFB3EFB2),
               size: 20,
             ),
             const SizedBox(width: 10),
@@ -281,7 +282,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF22C55E),
+        backgroundColor: const Color(0xFF001A23),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -299,8 +300,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
+            behavior: SnackBarBehavior.fixed,
             content: Text('Camera unavailable. Triggering search anyway!'),
-            backgroundColor: Color(0xFF111827),
+            backgroundColor: Color(0xFF001A23),
             duration: Duration(seconds: 1),
           ),
         );
@@ -318,8 +320,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           _cartService.addItem(item);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
+              behavior: SnackBarBehavior.fixed,
               content: Text('${item.name} added to cart!'),
-              backgroundColor: const Color(0xFF111827),
+              backgroundColor: const Color(0xFF001A23),
               duration: const Duration(seconds: 1),
             ),
           );
@@ -328,11 +331,12 @@ class _DashboardScreenState extends State<DashboardScreen>
         // Distance exceeded threshold — no confident match found
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
+            behavior: SnackBarBehavior.fixed,
             content: Text(
               'Item not recognized. Try a closer scan.',
               style: TextStyle(color: Colors.white),
             ),
-            backgroundColor: Color(0xFF111827),
+            backgroundColor: Color(0xFF001A23),
             duration: Duration(seconds: 2),
           ),
         );
@@ -342,6 +346,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
+            behavior: SnackBarBehavior.fixed,
             content: Text(
               'Error searching item',
               style: TextStyle(color: Colors.white),
@@ -405,7 +410,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           'Item detected',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF6B7280),
+                            color: Color(0xFF4A5568),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -415,7 +420,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF111827),
+                            color: Color(0xFF001A23),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -424,7 +429,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF433075),
+                            color: Color(0xFF001A23),
                           ),
                         ),
                       ],
@@ -438,7 +443,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(ctx, true),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF111111),
+                    backgroundColor: const Color(0xFF001A23),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -466,7 +471,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     'Not this item',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF6B7280),
+                      color: Color(0xFF4A5568),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -516,7 +521,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF111827),
+                    color: Color(0xFF001A23),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -525,29 +530,26 @@ class _DashboardScreenState extends State<DashboardScreen>
                   autofocus: true,
                   decoration: InputDecoration(
                     hintText: 'Ask anything about the products...',
-                    hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                    hintStyle: const TextStyle(color: Color(0xFF4A5568)),
                     filled: true,
-                    fillColor: const Color(0xFFFAFAFA),
+                    fillColor: const Color(0xFFFFFFFF),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: const BorderSide(
-                        color: Color(0xFFE2DEEF),
+                        color: Color(0xFFD2E4E6),
                         width: 1,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: const BorderSide(
-                        color: Color(0xFFE2DEEF),
+                        color: Color(0xFFD2E4E6),
                         width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF433075),
-                        width: 1.5,
-                      ),
+                      borderSide: const BorderSide(color: Color(0xFFB3EFB2), width: 1.5),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -568,7 +570,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       _askChefRag();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF111111),
+                      backgroundColor: const Color(0xFF001A23),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -603,8 +605,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.fixed,
           content: Text(response, style: const TextStyle(color: Colors.white)),
-          backgroundColor: const Color(0xFF111827),
+          backgroundColor: const Color(0xFF001A23),
         ),
       );
     }
@@ -625,11 +628,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Show a loading snackbar while checking
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
+        behavior: SnackBarBehavior.fixed,
         content: Text(
           'Checking database connections...',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Colors.blueGrey,
+        backgroundColor: Color(0xFF001A23),
         duration: Duration(milliseconds: 800),
       ),
     );
@@ -644,6 +648,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.fixed,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,7 +671,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ],
           ),
           backgroundColor: (isChromaOk && isSupabaseOk)
-              ? const Color(0xFF22C55E)
+              ? const Color(0xFF001A23)
               : const Color(0xFFEF4444),
           duration: const Duration(seconds: 4),
         ),
@@ -699,9 +704,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Color(0xFFF3F1FA),
-                    Color(0xFFE9E5FF),
-                    Color(0xFFF7F5FF),
+                    Color(0xFFE8F1F2),
+                    Color(0xFFF1F8F8),
+                    Color(0xFFE8F1F2),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -720,8 +725,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF433075).withValues(alpha: 0.18),
-                    const Color(0xFF433075).withValues(alpha: 0.0),
+                    const Color(0xFF001A23).withValues(alpha: 0.18),
+                    const Color(0xFF001A23).withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -737,8 +742,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFFFFA8A8).withValues(alpha: 0.2),
-                    const Color(0xFFFFD3B6).withValues(alpha: 0.0),
+                    const Color(0xFFB3EFB2).withValues(alpha: 0.2),
+                    const Color(0xFFB3EFB2).withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -790,20 +795,20 @@ class _DashboardScreenState extends State<DashboardScreen>
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A).withValues(alpha: 0.12),
+                  color: const Color(0xFF001A23).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               CircleAvatar(
                 radius: 36,
-                backgroundColor: const Color(0xFF433075).withValues(alpha: 0.1),
+                backgroundColor: const Color(0xFF001A23).withValues(alpha: 0.1),
                 child: Text(
                   initial,
                   style: const TextStyle(
                     fontFamily: 'ClashDisplay',
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF433075),
+                    color: Color(0xFF001A23),
                   ),
                 ),
               ),
@@ -812,7 +817,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 'Signed in as',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Color(0xFF6B7280),
+                  color: Color(0xFF4A5568),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -822,7 +827,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF111827),
+                  color: Color(0xFF001A23),
                 ),
               ),
               const SizedBox(height: 32),
@@ -867,7 +872,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   child: const Text(
                     'Cancel',
                     style: TextStyle(
-                      color: Color(0xFF6B7280),
+                      color: Color(0xFF4A5568),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -889,16 +894,16 @@ class _DashboardScreenState extends State<DashboardScreen>
           margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFFFAFAFA),
+            color: const Color(0xFFFFFFFF),
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF433075).withValues(alpha: 0.04),
+                color: const Color(0xFF001A23).withValues(alpha: 0.04),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
             ],
-            border: Border.all(color: const Color(0xFFE2DEEF)),
+            border: Border.all(color: const Color(0xFFD2E4E6)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -910,8 +915,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                   height: 44,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFFFAFAFA),
-                    border: Border.all(color: const Color(0xFFE2DEEF)),
+                    color: const Color(0xFFFFFFFF),
+                    border: Border.all(color: const Color(0xFFD2E4E6)),
                   ),
                   child: Center(
                     child: Text(
@@ -925,7 +930,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         fontFamily: 'ClashDisplay',
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF433075),
+                        color: Color(0xFF001A23),
                       ),
                     ),
                   ),
@@ -947,7 +952,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           final dotColor = switch (_dbStatus) {
                             _DbStatus.ok => const Color(0xFF22C55E),
                             _DbStatus.error => const Color(0xFFEF4444),
-                            _DbStatus.unknown => const Color(0xFF9CA3AF),
+                            _DbStatus.unknown => const Color(0xFF4A5568),
                           };
                           return Container(
                             width: 8,
@@ -969,15 +974,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF111827),
+                          color: Color(0xFF001A23),
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Container(
-                        width: 1,
-                        height: 12,
-                        color: const Color(0xFF433075).withValues(alpha: 0.12),
-                      ),
+                      Container(width: 1, height: 12, color: const Color(0xFF001A23).withValues(alpha: 0.12)),
                       const SizedBox(width: 6),
                       Text(
                         switch (_dbStatus) {
@@ -991,7 +992,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           color: switch (_dbStatus) {
                             _DbStatus.ok => const Color(0xFF22C55E),
                             _DbStatus.error => const Color(0xFFEF4444),
-                            _DbStatus.unknown => const Color(0xFF9CA3AF),
+                            _DbStatus.unknown => const Color(0xFF4A5568),
                           },
                         ),
                       ),
@@ -1004,15 +1005,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                 height: 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFFAFAFA),
-                  border: Border.all(color: const Color(0xFFE2DEEF)),
+                  color: const Color(0xFFFFFFFF),
+                  border: Border.all(color: const Color(0xFFD2E4E6)),
                 ),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
                     const Icon(
                       Icons.notifications_none_outlined,
-                      color: Color(0xFF111827),
+                      color: Color(0xFF001A23),
                       size: 22,
                     ),
                     Positioned(
@@ -1023,7 +1024,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         height: 7,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xFF433075),
+                          color: Color(0xFFB3EFB2),
                         ),
                       ),
                     ),
@@ -1043,10 +1044,10 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: const Color(0xFFE2DEEF), width: 1.5),
+          border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF433075).withValues(alpha: 0.06),
+              color: const Color(0xFF001A23).withValues(alpha: 0.06),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -1086,7 +1087,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       color: const Color(0xFF1A1A1A),
                       child: const Center(
                         child: CircularProgressIndicator(
-                          color: Color(0xFF7C3AED),
+                          color: Color(0xFF001A23),
                         ),
                       ),
                     ),
@@ -1099,7 +1100,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     height: 180.0,
                     child: CustomPaint(
                       painter: ReticlePainter(
-                        color: const Color(0xFFE5E7EB),
+                        color: const Color(0xFFB3EFB2),
                         strokeWidth: 2.0,
                         borderRadius: 16,
                         arcLength: 20,
@@ -1113,7 +1114,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   colors: [
                                     Colors.transparent,
                                     const Color(
-                                      0xFFA58CF4,
+                                      0xFFB3EFB2,
                                     ).withValues(alpha: 0.3),
                                     Colors.transparent,
                                   ],
@@ -1195,7 +1196,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                               width: 140,
                               child: SliderTheme(
                                 data: SliderTheme.of(context).copyWith(
-                                  activeTrackColor: const Color(0xFF433075),
+                                  activeTrackColor: const Color(0xFFB3EFB2),
                                   inactiveTrackColor: Colors.white24,
                                   thumbColor: Colors.white,
                                   trackHeight: 2,
@@ -1272,26 +1273,22 @@ class _DashboardScreenState extends State<DashboardScreen>
                             height: 32,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _showZoomSlider
-                                  ? const Color(0xFF433075)
-                                  : const Color(
-                                      0xFF1A1A1A,
-                                    ).withValues(alpha: 0.6),
-                              boxShadow: _showZoomSlider
+                              color: _showZoomSlider 
+                                  ? const Color(0xFFB3EFB2) 
+                                  : const Color(0xFF1A1A1A).withValues(alpha: 0.6),
+                              boxShadow: _showZoomSlider 
                                   ? [
                                       BoxShadow(
-                                        color: const Color(
-                                          0xFF433075,
-                                        ).withValues(alpha: 0.4),
+                                        color: const Color(0xFFB3EFB2).withValues(alpha: 0.4),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
-                                      ),
+                                      )
                                     ]
                                   : null,
                             ),
                             child: Icon(
                               _showZoomSlider ? Icons.zoom_out : Icons.zoom_in,
-                              color: Colors.white,
+                              color: _showZoomSlider ? const Color(0xFF001A23) : Colors.white,
                               size: 18,
                             ),
                           ),
@@ -1312,17 +1309,17 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Container(
       margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFA),
+        color: const Color(0xFFFFFFFF),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(32),
           topRight: Radius.circular(32),
         ),
         border: Border(
-          top: BorderSide(color: const Color(0xFFE2DEEF), width: 1.5),
+          top: BorderSide(color: const Color(0xFFD2E4E6), width: 1.5),
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF433075).withValues(alpha: 0.04),
+            color: const Color(0xFF001A23).withValues(alpha: 0.04),
             blurRadius: 24,
             offset: const Offset(0, -8),
           ),
@@ -1340,7 +1337,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF111827),
+                  color: Color(0xFF001A23),
                 ),
               ),
               Row(
@@ -1352,7 +1349,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF433075),
+                        color: Color(0xFF001A23),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -1363,7 +1360,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF433075).withValues(alpha: 0.08),
+                      color: const Color(0xFFB3EFB2).withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -1371,7 +1368,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF433075),
+                        color: Color(0xFF001A23),
                       ),
                     ),
                   ),
@@ -1401,12 +1398,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: const Color(
-                                      0xFF433075,
+                                      0xFF001A23,
                                     ).withValues(alpha: 0.05),
                                   ),
                                   child: const Icon(
                                     Icons.shopping_cart_outlined,
-                                    color: Color(0xFF433075),
+                                    color: Color(0xFF001A23),
                                     size: 32,
                                   ),
                                 ),
@@ -1416,7 +1413,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xFF111827),
+                                    color: Color(0xFF001A23),
                                   ),
                                 ),
                                 const SizedBox(height: 6),
@@ -1424,7 +1421,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   'Scan an item to add it to your cart',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Color(0xFF6B7280),
+                                    color: Color(0xFF4A5568),
                                   ),
                                 ),
                               ],
@@ -1491,11 +1488,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget _buildCheckoutBar() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF433075),
+        color: const Color(0xFF001A23),
         borderRadius: BorderRadius.circular(40),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF433075).withValues(alpha: 0.3),
+            color: const Color(0xFF001A23).withValues(alpha: 0.3),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -1581,12 +1578,12 @@ class _DashboardScreenState extends State<DashboardScreen>
             child: Container(
               height: 82,
               decoration: BoxDecoration(
-                color: const Color(0xFFFAFAFA),
+                color: const Color(0xFFFFFFFF),
                 borderRadius: BorderRadius.circular(40),
-                border: Border.all(color: const Color(0xFFE2DEEF)),
+                border: Border.all(color: const Color(0xFFD2E4E6)),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF433075).withValues(alpha: 0.06),
+                    color: const Color(0xFF001A23).withValues(alpha: 0.06),
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
@@ -1602,17 +1599,13 @@ class _DashboardScreenState extends State<DashboardScreen>
                       child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.chat_bubble_outline,
-                            color: Color(0xFF433075),
-                            size: 22,
-                          ),
+                          Icon(Icons.chat_bubble_outline, color: Color(0xFF001A23), size: 22),
                           SizedBox(height: 4),
                           Text(
                             'Chat',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF433075),
+                              color: Color(0xFF001A23),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1629,7 +1622,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         children: [
                           Icon(
                             Icons.mic_none,
-                            color: Color(0xFF9CA3AF),
+                            color: Color(0xFF4A5568),
                             size: 22,
                           ),
                           SizedBox(height: 4),
@@ -1637,7 +1630,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             'Voice',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF9CA3AF),
+                              color: Color(0xFF4A5568),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -1681,11 +1674,11 @@ class _DashboardScreenState extends State<DashboardScreen>
           height: 74,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF433075),
+            color: const Color(0xFFB3EFB2),
             border: Border.all(color: Colors.white, width: 4),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF433075).withValues(alpha: 0.3),
+                color: const Color(0xFFB3EFB2).withValues(alpha: 0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -1698,12 +1691,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: Color(0xFF001A23),
                     ),
                   )
                 : const Icon(
                     Icons.camera_alt_outlined,
-                    color: Colors.white,
+                    color: Color(0xFF001A23),
                     size: 28,
                   ),
           ),
