@@ -1320,17 +1320,6 @@ class _DashboardScreenState extends State<DashboardScreen>
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (!_cartService.isEmpty) ...[
-                    RollingPriceText(
-                      value: _cartService.totalPrice,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF001A23),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
