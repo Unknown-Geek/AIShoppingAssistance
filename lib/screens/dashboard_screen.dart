@@ -282,9 +282,6 @@ class _DashboardScreenState extends State<DashboardScreen>
           ],
         ),
         backgroundColor: const Color(0xFF22C55E),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         duration: const Duration(seconds: 3),
       ),
     );
