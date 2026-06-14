@@ -491,7 +491,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFF433075), width: 1.5),
+                      borderSide: const BorderSide(color: Color(0xFFA58CF4), width: 1.5),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
@@ -994,7 +994,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     height: 180.0,
                     child: CustomPaint(
                       painter: ReticlePainter(
-                        color: const Color(0xFFE5E7EB),
+                        color: const Color(0xFFA58CF4),
                         strokeWidth: 3.5,
                         borderRadius: 16,
                         arcLength: 20,
@@ -1007,7 +1007,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                                   end: Alignment.bottomCenter,
                                   colors: [
                                     Colors.transparent,
-                                    const Color(0xFFE5E7EB).withValues(alpha: 0.3),
+                                    const Color(0xFFA58CF4).withValues(alpha: 0.3),
                                     Colors.transparent,
                                   ],
                                 ),
@@ -1079,7 +1079,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                               width: 140,
                               child: SliderTheme(
                                 data: SliderTheme.of(context).copyWith(
-                                  activeTrackColor: const Color(0xFF433075),
+                                  activeTrackColor: const Color(0xFFA58CF4),
                                   inactiveTrackColor: Colors.white24,
                                   thumbColor: Colors.white,
                                   trackHeight: 2,
@@ -1151,12 +1151,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: _showZoomSlider 
-                                  ? const Color(0xFF433075) 
+                                  ? const Color(0xFFA58CF4) 
                                   : const Color(0xFF1A1A1A).withValues(alpha: 0.6),
                               boxShadow: _showZoomSlider 
                                   ? [
                                       BoxShadow(
-                                        color: const Color(0xFF433075).withValues(alpha: 0.4),
+                                        color: const Color(0xFFA58CF4).withValues(alpha: 0.4),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
                                       )
@@ -1470,13 +1470,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.chat_bubble_outline, color: Color(0xFF433075), size: 22),
+                          Icon(Icons.chat_bubble_outline, color: Color(0xFFA58CF4), size: 22),
                           SizedBox(height: 4),
                           Text(
                             'Chat',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF433075),
+                              color: Color(0xFFA58CF4),
                               fontWeight: FontWeight.bold,
                             ),
                           ),

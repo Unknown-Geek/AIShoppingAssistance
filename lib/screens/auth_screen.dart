@@ -669,7 +669,7 @@ class _AuthScreenState extends State<AuthScreen> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(
-          color: Color(0xFF433075),
+          color: Color(0xFFA58CF4),
           width: 1.5,
         ),
       ),
