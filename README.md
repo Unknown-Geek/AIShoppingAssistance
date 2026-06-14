@@ -135,7 +135,7 @@ python scripts/generate_seed.py
 ```
 
 ### Uploading Thumbnails
-Upload product assets from `Images (2)` to the Supabase storage bucket (`product-images`) and update metadata URLs:
+Upload product assets from `assets/Images` to the Supabase storage bucket (`product-images`) and update metadata URLs:
 ```bash
 # Requires SUPABASE_SERVICE_ROLE_KEY to be set in your environment or .env
 python scripts/upload_thumbnails.py
@@ -168,7 +168,7 @@ Copy your ngrok forwarding URL and update `HF_SPACE_URL` in your `.env` file.
 curl -X POST "https://<your-ngrok-host>.ngrok-free.app/detect" \
   -H "ngrok-skip-browser-warning: true" \
   -H "X-Chroma-Token: <your-chroma-key>" \
-  -F "file=@Images (2)/Quaker Oats.webp"
+  -F "file=@assets/Images/Quaker Oats.webp"
 ```
 
 ### 4. Run the Mobile App

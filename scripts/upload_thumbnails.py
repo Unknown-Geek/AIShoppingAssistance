@@ -1,7 +1,7 @@
 """
 upload_thumbnails.py
 --------------------
-Uploads all .webp images from the 'Images (2)' folder to Supabase Storage
+Uploads all .webp images from the 'assets/Images' folder to Supabase Storage
 (bucket: product-images) and updates the `thumbnail_url` column in the
 `products` table for each matching product.
 
@@ -25,7 +25,7 @@ SUPABASE_URL  = os.getenv("SUPABASE_URL")
 # Use the service role key — it bypasses RLS, safe for server-side scripts only
 SUPABASE_KEY  = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 BUCKET_NAME   = "product-images"
-IMAGES_DIR    = Path(__file__).parent.parent / "Images (2)"
+IMAGES_DIR    = Path(__file__).parent.parent / "assets" / "Images"
 TABLE_NAME    = "inventory"
 NAME_COLUMN   = "name"       # The column in `products` that holds product names
 URL_COLUMN    = "thumbnail_url"

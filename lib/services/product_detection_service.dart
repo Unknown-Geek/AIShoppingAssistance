@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../models/cart_item_model.dart';
 import 'inventory_service.dart';
 
@@ -39,11 +40,13 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
     final overallStopwatch = Stopwatch()..start();
     try {
       final request = http.MultipartRequest('POST', url);
+      final bytes = await photo.readAsBytes();
       request.files.add(
-        await http.MultipartFile.fromPath(
+        http.MultipartFile.fromBytes(
           'file',
-          photo.path,
+          bytes,
           filename: 'image.jpg',
+          contentType: MediaType('image', 'jpeg'),
         ),
       );
 
