@@ -12,6 +12,7 @@ class InventoryService {
   final _supabase = Supabase.instance.client;
 
   final Map<String, String> _imageUrls = {};
+  final Map<String, Map<String, dynamic>> _localProducts = {};
 
   Future<void> initLocalCatalog() async {
     try {
@@ -20,15 +21,20 @@ class InventoryService {
       final items = data['items'] as List;
       for (var item in items) {
         final slug = item['slug'] as String;
+        _localProducts[slug] = Map<String, dynamic>.from(item);
         final imageUrl = item['image_url'] as String?;
         if (imageUrl != null) {
           _imageUrls[slug] = imageUrl;
         }
       }
-      debugPrint('[InventoryService] Loaded ${_imageUrls.length} image URLs from inventory.json');
+      debugPrint('[InventoryService] Loaded ${_localProducts.length} products from inventory.json');
     } catch (e) {
       debugPrint('[InventoryService] Error loading inventory.json: $e');
     }
+  }
+
+  Map<String, dynamic>? getProductFromLocal(String slug) {
+    return _localProducts[slug];
   }
 
   String getImageUrl(String slug) {
