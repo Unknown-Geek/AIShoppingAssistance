@@ -1875,12 +1875,8 @@ class _RollingPriceTextState extends State<RollingPriceText> {
     final double currentVal = widget.value;
     final bool goingUp = currentVal > _oldValue;
 
-    final String oldText = '₹${_oldValue.toStringAsFixed(2)}';
     final String newText = '₹${currentVal.toStringAsFixed(2)}';
-
-    final List<String> oldChars = oldText.split('').reversed.toList();
     final List<String> newChars = newText.split('').reversed.toList();
-
     final List<Widget> charWidgets = [];
 
     // tabulate figures to prevent horizontal jitter
@@ -1890,47 +1886,36 @@ class _RollingPriceTextState extends State<RollingPriceText> {
 
     for (int i = 0; i < newChars.length; i++) {
       final String newChar = newChars[i];
-      final String oldChar = i < oldChars.length ? oldChars[i] : '';
 
-      if (newChar == oldChar) {
-        charWidgets.add(
-          Text(
+      charWidgets.add(
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          switchInCurve: Curves.easeOutBack,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            final childKey = child.key as ValueKey<String>;
+            final isCurrent = childKey.value == 'char-$i-$newChar';
+            final offset = goingUp ? 1.0 : -1.0;
+
+            return ClipRect(
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: isCurrent
+                      ? Offset(0.0, offset)
+                      : Offset(0.0, -offset),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: Text(
             newChar,
-            key: ValueKey<String>('static-$i-$newChar'),
+            key: ValueKey<String>('char-$i-$newChar'),
             style: displayStyle,
           ),
-        );
-      } else {
-        charWidgets.add(
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            switchInCurve: Curves.easeOutBack,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              final childKey = child.key as ValueKey<String>;
-              final isCurrent = childKey.value == 'active-$i-$newChar';
-              final offset = goingUp ? 1.0 : -1.0;
-
-              return ClipRect(
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: isCurrent
-                        ? Offset(0.0, offset)
-                        : Offset(0.0, -offset),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              );
-            },
-            child: Text(
-              newChar,
-              key: ValueKey<String>('active-$i-$newChar'),
-              style: displayStyle,
-            ),
-          ),
-        );
-      }
+        ),
+      );
     }
 
     final widgets = charWidgets.reversed.toList();
