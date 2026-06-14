@@ -269,7 +269,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           children: [
             const Icon(
               Icons.check_circle_outline,
-              color: Color(0xFFB3EFB2),
+              color: Color(0xFF40916C),
               size: 20,
             ),
             const SizedBox(width: 10),
@@ -549,7 +549,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFB3EFB2), width: 1.5),
+                      borderSide: const BorderSide(color: Color(0xFF40916C), width: 1.5),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -742,8 +742,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFFB3EFB2).withValues(alpha: 0.2),
-                    const Color(0xFFB3EFB2).withValues(alpha: 0.0),
+                    const Color(0xFF40916C).withValues(alpha: 0.2),
+                    const Color(0xFF40916C).withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -950,7 +950,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         animation: _pulseController,
                         builder: (context, child) {
                           final dotColor = switch (_dbStatus) {
-                            _DbStatus.ok => const Color(0xFF22C55E),
+                            _DbStatus.ok => const Color(0xFF40916C),
                             _DbStatus.error => const Color(0xFFEF4444),
                             _DbStatus.unknown => const Color(0xFF4A5568),
                           };
@@ -990,7 +990,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: switch (_dbStatus) {
-                            _DbStatus.ok => const Color(0xFF22C55E),
+                            _DbStatus.ok => const Color(0xFF40916C),
                             _DbStatus.error => const Color(0xFFEF4444),
                             _DbStatus.unknown => const Color(0xFF4A5568),
                           },
@@ -1024,7 +1024,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         height: 7,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xFFB3EFB2),
+                          color: Color(0xFF40916C),
                         ),
                       ),
                     ),
@@ -1100,7 +1100,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     height: 180.0,
                     child: CustomPaint(
                       painter: ReticlePainter(
-                        color: const Color(0xFFB3EFB2),
+                        color: const Color(0xFF40916C),
                         strokeWidth: 2.0,
                         borderRadius: 16,
                         arcLength: 20,
@@ -1114,7 +1114,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   colors: [
                                     Colors.transparent,
                                     const Color(
-                                      0xFFB3EFB2,
+                                      0xFF40916C,
                                     ).withValues(alpha: 0.3),
                                     Colors.transparent,
                                   ],
@@ -1196,7 +1196,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                               width: 140,
                               child: SliderTheme(
                                 data: SliderTheme.of(context).copyWith(
-                                  activeTrackColor: const Color(0xFFB3EFB2),
+                                  activeTrackColor: const Color(0xFF40916C),
                                   inactiveTrackColor: Colors.white24,
                                   thumbColor: Colors.white,
                                   trackHeight: 2,
@@ -1274,12 +1274,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: _showZoomSlider 
-                                  ? const Color(0xFFB3EFB2) 
+                                  ? const Color(0xFF40916C) 
                                   : const Color(0xFF1A1A1A).withValues(alpha: 0.6),
                               boxShadow: _showZoomSlider 
                                   ? [
                                       BoxShadow(
-                                        color: const Color(0xFFB3EFB2).withValues(alpha: 0.4),
+                                        color: const Color(0xFF40916C).withValues(alpha: 0.4),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
                                       )
@@ -1288,7 +1288,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             ),
                             child: Icon(
                               _showZoomSlider ? Icons.zoom_out : Icons.zoom_in,
-                              color: _showZoomSlider ? const Color(0xFF001A23) : Colors.white,
+                              color: Colors.white,
                               size: 18,
                             ),
                           ),
@@ -1360,7 +1360,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFB3EFB2).withValues(alpha: 0.3),
+                      color: const Color(0xFF40916C).withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -1674,11 +1674,11 @@ class _DashboardScreenState extends State<DashboardScreen>
           height: 74,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFFB3EFB2),
+            color: const Color(0xFF40916C),
             border: Border.all(color: Colors.white, width: 4),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFB3EFB2).withValues(alpha: 0.3),
+                color: const Color(0xFF40916C).withValues(alpha: 0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -1691,12 +1691,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Color(0xFF001A23),
+                      color: Colors.white,
                     ),
                   )
                 : const Icon(
                     Icons.camera_alt_outlined,
-                    color: Color(0xFF001A23),
+                    color: Colors.white,
                     size: 28,
                   ),
           ),
