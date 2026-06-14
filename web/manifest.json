@@ -1,11 +1,11 @@
 {
-    "name": "qless_app",
-    "short_name": "qless_app",
+    "name": "Qless",
+    "short_name": "Qless",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#001A23",
+    "theme_color": "#001A23",
+    "description": "AI-Powered Smart Shopping Assistant",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
