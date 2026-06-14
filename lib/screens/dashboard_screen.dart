@@ -1774,7 +1774,7 @@ class _ScanningOverlayState extends State<ScanningOverlay>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
-    )..repeat();
+    )..forward();
   }
 
   @override
