@@ -46,6 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   // Cart database service (session-scoped, resets on checkout)
   final CartService _cartService = CartService();
   bool _isCheckingOut = false;
+  bool _isCheckoutHovered = false;
 
   // DB connectivity state — drives the status pill in the app bar
   _DbStatus _dbStatus = _DbStatus.unknown;
@@ -1493,6 +1494,11 @@ class _DashboardScreenState extends State<DashboardScreen>
         child: InkWell(
           onTap: _isCheckingOut ? null : _checkoutCart,
           borderRadius: BorderRadius.circular(40),
+          onHover: (hovered) {
+            setState(() {
+              _isCheckoutHovered = hovered;
+            });
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
             child: Row(
@@ -1530,9 +1536,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                           color: Colors.white,
                         ),
                       )
-                    : const Row(
+                    : Row(
                         children: [
-                          Text(
+                          const Text(
                             'Checkout',
                             style: TextStyle(
                               fontSize: 16,
@@ -1540,11 +1546,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                               color: Colors.white,
                             ),
                           ),
-                          SizedBox(width: 6),
-                          Icon(
-                            Icons.arrow_forward,
-                            color: Colors.white,
-                            size: 14,
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            curve: Curves.easeOutCubic,
+                            padding: EdgeInsets.only(
+                              left: _isCheckoutHovered ? 10.0 : 6.0,
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white,
+                              size: 14,
+                            ),
                           ),
                         ],
                       ),
