@@ -187,7 +187,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w400,
                   color: Color(0xFF001A23),
                 ),
               ),
