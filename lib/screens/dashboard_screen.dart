@@ -1314,8 +1314,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           topLeft: Radius.circular(32),
           topRight: Radius.circular(32),
         ),
-        border: Border(
-          top: BorderSide(color: const Color(0xFFD2E4E6), width: 1.5),
+        border: const Border(
+          top: BorderSide(color: Color(0xFFD2E4E6), width: 1.5),
         ),
         boxShadow: [
           BoxShadow(
