@@ -47,6 +47,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   final CartService _cartService = CartService();
   bool _isCheckingOut = false;
   bool _isCheckoutHovered = false;
+  double _previousTotalPrice = 0.0;
 
   // DB connectivity state — drives the status pill in the app bar
   _DbStatus _dbStatus = _DbStatus.unknown;
@@ -697,6 +698,10 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final double currentTotalPrice = _cartService.totalPrice;
+    final bool goingUp = currentTotalPrice > _previousTotalPrice;
+    _previousTotalPrice = currentTotalPrice;
+
     return Scaffold(
       appBar: _buildAppBar(),
       body: Stack(
@@ -1321,23 +1326,36 @@ class _DashboardScreenState extends State<DashboardScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (!_cartService.isEmpty) ...[
-                    TweenAnimationBuilder<double>(
-                      tween: Tween<double>(
-                        begin: 0.0,
-                        end: _cartService.totalPrice,
-                      ),
-                      duration: const Duration(milliseconds: 350),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, value, child) {
-                        return Text(
-                          '₹${value.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF001A23),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOutBack,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (Widget child, Animation<double> animation) {
+                        final childKey = child.key as ValueKey<double>;
+                        final isCurrent = childKey.value == currentTotalPrice;
+                        final offset = goingUp ? 1.0 : -1.0;
+
+                        return ClipRect(
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: isCurrent
+                                  ? Offset(0.0, offset)
+                                  : Offset(0.0, -offset),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: child,
                           ),
                         );
                       },
+                      child: Text(
+                        '₹${currentTotalPrice.toStringAsFixed(2)}',
+                        key: ValueKey<double>(currentTotalPrice),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF001A23),
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -1513,23 +1531,36 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                     ),
                     const SizedBox(height: 2),
-                    TweenAnimationBuilder<double>(
-                      tween: Tween<double>(
-                        begin: 0.0,
-                        end: _cartService.totalPrice,
-                      ),
-                      duration: const Duration(milliseconds: 350),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, value, child) {
-                        return Text(
-                          '₹${value.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOutBack,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (Widget child, Animation<double> animation) {
+                        final childKey = child.key as ValueKey<double>;
+                        final isCurrent = childKey.value == currentTotalPrice;
+                        final offset = goingUp ? 1.0 : -1.0;
+
+                        return ClipRect(
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: isCurrent
+                                  ? Offset(0.0, offset)
+                                  : Offset(0.0, -offset),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: child,
                           ),
                         );
                       },
+                      child: Text(
+                        '₹${currentTotalPrice.toStringAsFixed(2)}',
+                        key: ValueKey<double>(currentTotalPrice),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ],
                 ),
