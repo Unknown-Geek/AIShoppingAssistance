@@ -1,4 +1,3 @@
-
 import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -21,12 +20,13 @@ class DashboardScreen extends StatefulWidget {
 
 enum _DbStatus { unknown, ok, error }
 
-class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
+class _DashboardScreenState extends State<DashboardScreen>
+    with TickerProviderStateMixin {
   final ChromaDbClient _chromaClient = ChromaDbClient();
   final TextEditingController _ragController = TextEditingController();
   late AnimationController _cursorController;
   late AnimationController _pulseController;
-  
+
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
   bool _isSearchingImage = false;
@@ -74,7 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Future<void> _initializeCamera() async {
     if (widget.cameras.isEmpty) return;
-    
+
     // Use low resolution on mobile: CLIP only needs 224x224px, and high-res
     // captures cause a multi-megabyte JPEG write to disk, adding 2-3s of latency.
     // Web uses in-memory Blobs so resolution has no disk-write overhead there.
@@ -85,7 +85,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       enableAudio: false,
       imageFormatGroup: kIsWeb ? null : ImageFormatGroup.jpeg,
     );
-    
+
     try {
       await _cameraController!.initialize();
       if (mounted) {
@@ -118,10 +118,16 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   }
 
   Future<void> _updateHardwareZoom(double level) async {
-    if (_isHardwareZoomSupported && _cameraController != null && _cameraController!.value.isInitialized) {
+    if (_isHardwareZoomSupported &&
+        _cameraController != null &&
+        _cameraController!.value.isInitialized) {
       try {
-        final targetZoom = _minHardwareZoom + (level - 1.0) * ((_maxHardwareZoom - _minHardwareZoom) / 2.0);
-        await _cameraController!.setZoomLevel(targetZoom.clamp(_minHardwareZoom, _maxHardwareZoom));
+        final targetZoom =
+            _minHardwareZoom +
+            (level - 1.0) * ((_maxHardwareZoom - _minHardwareZoom) / 2.0);
+        await _cameraController!.setZoomLevel(
+          targetZoom.clamp(_minHardwareZoom, _maxHardwareZoom),
+        );
       } catch (e) {
         _isHardwareZoomSupported = false;
         debugPrint("Hardware zoom failed, disabling: $e");
@@ -182,10 +188,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               Text(
                 'You are about to checkout ${_cartService.itemCount} item${_cartService.itemCount == 1 ? '' : 's'} for a total of',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF6B7280),
-                ),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
               ),
               const SizedBox(height: 8),
               Text(
@@ -263,11 +266,18 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+            const Icon(
+              Icons.check_circle_outline,
+              color: Colors.white,
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Text(
               'Order placed! ₹${total.toStringAsFixed(2)} charged.',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -299,7 +309,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         );
       }
 
-      final CartItemModel? item = await _chromaClient.searchItemByPhoto(capturedPhoto);
+      final CartItemModel? item = await _chromaClient.searchItemByPhoto(
+        capturedPhoto,
+      );
 
       if (item != null && mounted) {
         // Show confirmation sheet — CLIP can confuse similar-looking products
@@ -333,7 +345,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Error searching item', style: TextStyle(color: Colors.white)),
+            content: Text(
+              'Error searching item',
+              style: TextStyle(color: Colors.white),
+            ),
             backgroundColor: Color(0xFFEF4444),
           ),
         );
@@ -361,7 +376,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             children: [
               // Drag handle
               Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A1A).withValues(alpha: 0.12),
@@ -371,13 +387,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               Row(
                 children: [
                   Container(
-                    width: 64, height: 64,
+                    width: 64,
+                    height: 64,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
                       color: const Color(0xFFF3F4F6),
                     ),
                     clipBehavior: Clip.antiAlias,
-                    child: CachedNetworkImage(imageUrl: item.imageUrl, fit: BoxFit.cover),
+                    child: CachedNetworkImage(
+                      imageUrl: item.imageUrl,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -386,17 +406,29 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       children: [
                         const Text(
                           'Item detected',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           item.name,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF111827),
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '₹${item.price.toStringAsFixed(2)}',
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF433075)),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF433075),
+                          ),
                         ),
                       ],
                     ),
@@ -412,9 +444,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     backgroundColor: const Color(0xFF111111),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(26),
+                    ),
                   ),
-                  child: const Text('Add to Cart', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  child: const Text(
+                    'Add to Cart',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
@@ -424,11 +461,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   onPressed: () => Navigator.pop(ctx, false),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(26),
+                    ),
                   ),
                   child: const Text(
                     'Not this item',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF6B7280),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
@@ -447,7 +490,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
             decoration: const BoxDecoration(
@@ -460,7 +505,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               children: [
                 Center(
                   child: Container(
-                    width: 40, height: 4,
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
                       color: const Color(0xFF1A1A1A).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(2),
@@ -470,7 +516,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 const SizedBox(height: 16),
                 const Text(
                   'Ask Chef RAG',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF111827),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -483,17 +533,29 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     fillColor: const Color(0xFFFAFAFA),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE2DEEF), width: 1),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFE2DEEF),
+                        width: 1,
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE2DEEF), width: 1),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFE2DEEF),
+                        width: 1,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFA58CF4), width: 1.5),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF433075),
+                        width: 1.5,
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
                   onSubmitted: (_) {
                     Navigator.pop(ctx);
@@ -512,9 +574,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       backgroundColor: const Color(0xFF111111),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(26),
+                      ),
                     ),
-                    child: const Text('Ask', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                    child: const Text(
+                      'Ask',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -527,12 +597,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Future<void> _askChefRag() async {
     if (_ragController.text.trim().isEmpty) return;
-    
+
     final prompt = _ragController.text;
     _ragController.clear();
-    
+
     final response = await _chromaClient.askChefRag(prompt);
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -548,7 +618,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     final chromaStatus = await _chromaClient.checkConnectivity();
     final supabaseStatus = await InventoryService().checkConnectivity();
     if (!mounted) return;
-    final allOk = chromaStatus.startsWith('Connected') && supabaseStatus.startsWith('Connected');
+    final allOk =
+        chromaStatus.startsWith('Connected') &&
+        supabaseStatus.startsWith('Connected');
     setState(() => _dbStatus = allOk ? _DbStatus.ok : _DbStatus.error);
   }
 
@@ -556,7 +628,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     // Show a loading snackbar while checking
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Checking database connections...', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Checking database connections...',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.blueGrey,
         duration: Duration(milliseconds: 800),
       ),
@@ -576,9 +651,21 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('ChromaDB: $chromaStatus', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Text(
+                'ChromaDB: $chromaStatus',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text('Supabase: $supabaseStatus', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Text(
+                'Supabase: $supabaseStatus',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           backgroundColor: (isChromaOk && isSupabaseOk)
@@ -588,7 +675,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         ),
       );
       // Also update the indicator
-      setState(() => _dbStatus = (isChromaOk && isSupabaseOk) ? _DbStatus.ok : _DbStatus.error);
+      setState(
+        () => _dbStatus = (isChromaOk && isSupabaseOk)
+            ? _DbStatus.ok
+            : _DbStatus.error,
+      );
     }
   }
 
@@ -665,9 +756,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           Column(
             children: [
               _buildCameraViewport(),
-              Expanded(
-                child: _buildShoppingZone(),
-              ),
+              Expanded(child: _buildShoppingZone()),
             ],
           ),
           Positioned(
@@ -747,8 +836,15 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     Navigator.pop(ctx);
                     await Supabase.instance.client.auth.signOut();
                   },
-                  icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
-                  label: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
+                  icon: const Icon(
+                    Icons.logout_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  label: const Text(
+                    'Sign Out',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFEF4444),
                     foregroundColor: Colors.white,
@@ -823,7 +919,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   child: Center(
                     child: Text(
                       (() {
-                        final email = Supabase.instance.client.auth.currentUser?.email ?? 'U';
+                        final email =
+                            Supabase.instance.client.auth.currentUser?.email ??
+                            'U';
                         return email.isNotEmpty ? email[0].toUpperCase() : 'U';
                       })(),
                       style: const TextStyle(
@@ -839,7 +937,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               GestureDetector(
                 onTap: _checkDbStatus,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -847,8 +948,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         animation: _pulseController,
                         builder: (context, child) {
                           final dotColor = switch (_dbStatus) {
-                            _DbStatus.ok      => const Color(0xFF22C55E),
-                            _DbStatus.error   => const Color(0xFFEF4444),
+                            _DbStatus.ok => const Color(0xFF22C55E),
+                            _DbStatus.error => const Color(0xFFEF4444),
                             _DbStatus.unknown => const Color(0xFF9CA3AF),
                           };
                           return Container(
@@ -875,20 +976,24 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Container(width: 1, height: 12, color: const Color(0xFF433075).withValues(alpha: 0.12)),
+                      Container(
+                        width: 1,
+                        height: 12,
+                        color: const Color(0xFF433075).withValues(alpha: 0.12),
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         switch (_dbStatus) {
-                          _DbStatus.ok      => 'Live',
-                          _DbStatus.error   => 'Error',
+                          _DbStatus.ok => 'Live',
+                          _DbStatus.error => 'Error',
                           _DbStatus.unknown => 'Checking…',
                         },
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: switch (_dbStatus) {
-                            _DbStatus.ok      => const Color(0xFF22C55E),
-                            _DbStatus.error   => const Color(0xFFEF4444),
+                            _DbStatus.ok => const Color(0xFF22C55E),
+                            _DbStatus.error => const Color(0xFFEF4444),
                             _DbStatus.unknown => const Color(0xFF9CA3AF),
                           },
                         ),
@@ -970,7 +1075,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           width: MediaQuery.of(context).size.width,
                           child: AspectRatio(
                             // Invert landscape aspect ratio constraints for seamless portrait preview paths
-                            aspectRatio: 1 / _cameraController!.value.aspectRatio,
+                            aspectRatio:
+                                1 / _cameraController!.value.aspectRatio,
                             child: CameraPreview(_cameraController!),
                           ),
                         ),
@@ -982,11 +1088,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     child: Container(
                       color: const Color(0xFF1A1A1A),
                       child: const Center(
-                        child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF7C3AED),
+                        ),
                       ),
                     ),
                   ),
-                
+
                 // Scanning Reticle Overlay
                 Center(
                   child: SizedBox(
@@ -995,7 +1103,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     child: CustomPaint(
                       painter: ReticlePainter(
                         color: const Color(0xFFA58CF4),
-                        strokeWidth: 3.5,
+                        strokeWidth: 2.0,
                         borderRadius: 16,
                         arcLength: 20,
                       ),
@@ -1007,17 +1115,19 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                                   end: Alignment.bottomCenter,
                                   colors: [
                                     Colors.transparent,
-                                    const Color(0xFFA58CF4).withValues(alpha: 0.3),
+                                    const Color(
+                                      0xFFA58CF4,
+                                    ).withValues(alpha: 0.3),
                                     Colors.transparent,
                                   ],
                                 ),
                               ),
                             )
                           : null,
-                      ),
                     ),
                   ),
-                
+                ),
+
                 // Zoom Level HUD Overlay
                 Center(
                   child: IgnorePointer(
@@ -1026,9 +1136,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       opacity: _showZoomSlider ? 1.0 : 0.0,
                       curve: Curves.easeInOut,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A1A1A).withValues(alpha: 0.55),
+                          color: const Color(
+                            0xFF1A1A1A,
+                          ).withValues(alpha: 0.55),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: Colors.white.withValues(alpha: 0.2),
@@ -1048,7 +1163,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     ),
                   ),
                 ),
-                
+
                 // Zoom Button & Slider
                 Positioned(
                   bottom: 12,
@@ -1065,9 +1180,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           curve: Curves.easeInOut,
                           width: _showZoomSlider ? 140 : 0,
                           height: 32,
-                          margin: EdgeInsets.only(right: _showZoomSlider ? 8 : 0),
+                          margin: EdgeInsets.only(
+                            right: _showZoomSlider ? 8 : 0,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1A1A1A).withValues(alpha: 0.6),
+                            color: const Color(
+                              0xFF1A1A1A,
+                            ).withValues(alpha: 0.6),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           clipBehavior: Clip.antiAlias,
@@ -1079,12 +1198,16 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                               width: 140,
                               child: SliderTheme(
                                 data: SliderTheme.of(context).copyWith(
-                                  activeTrackColor: const Color(0xFFA58CF4),
+                                  activeTrackColor: const Color(0xFF433075),
                                   inactiveTrackColor: Colors.white24,
                                   thumbColor: Colors.white,
                                   trackHeight: 2,
-                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                                  thumbShape: const RoundSliderThumbShape(
+                                    enabledThumbRadius: 6,
+                                  ),
+                                  overlayShape: const RoundSliderOverlayShape(
+                                    overlayRadius: 12,
+                                  ),
                                 ),
                                 child: Slider(
                                   value: _zoomLevel,
@@ -1126,8 +1249,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           });
                         },
                         onLongPressMoveUpdate: (details) {
-                          final double dx = details.globalPosition.dx - _dragStartPos.dx;
-                          final double newZoom = (_zoomLevelAtStart - (dx / 70.0)).clamp(1.0, 3.0);
+                          final double dx =
+                              details.globalPosition.dx - _dragStartPos.dx;
+                          final double newZoom =
+                              (_zoomLevelAtStart - (dx / 70.0)).clamp(1.0, 3.0);
                           setState(() {
                             _zoomLevel = newZoom;
                           });
@@ -1150,16 +1275,20 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                             height: 32,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _showZoomSlider 
-                                  ? const Color(0xFFA58CF4) 
-                                  : const Color(0xFF1A1A1A).withValues(alpha: 0.6),
-                              boxShadow: _showZoomSlider 
+                              color: _showZoomSlider
+                                  ? const Color(0xFF433075)
+                                  : const Color(
+                                      0xFF1A1A1A,
+                                    ).withValues(alpha: 0.6),
+                              boxShadow: _showZoomSlider
                                   ? [
                                       BoxShadow(
-                                        color: const Color(0xFFA58CF4).withValues(alpha: 0.4),
+                                        color: const Color(
+                                          0xFF433075,
+                                        ).withValues(alpha: 0.4),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
-                                      )
+                                      ),
                                     ]
                                   : null,
                             ),
@@ -1232,7 +1361,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     const SizedBox(width: 8),
                   ],
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF433075).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
@@ -1271,7 +1403,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                                   height: 72,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: const Color(0xFF433075).withValues(alpha: 0.05),
+                                    color: const Color(
+                                      0xFF433075,
+                                    ).withValues(alpha: 0.05),
                                   ),
                                   child: const Icon(
                                     Icons.shopping_cart_outlined,
@@ -1328,7 +1462,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                                 child: CartItem(
                                   imageUrl: item.imageUrl,
                                   name: item.name,
-                                  details: "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
+                                  details:
+                                      "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
                                   quantity: item.quantity,
                                   onIncrement: () => _incrementQuantity(index),
                                   onDecrement: () => _decrementQuantity(index),
@@ -1470,13 +1605,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.chat_bubble_outline, color: Color(0xFFA58CF4), size: 22),
+                          Icon(
+                            Icons.chat_bubble_outline,
+                            color: Color(0xFF433075),
+                            size: 22,
+                          ),
                           SizedBox(height: 4),
                           Text(
                             'Chat',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFFA58CF4),
+                              color: Color(0xFF433075),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1491,7 +1630,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.mic_none, color: Color(0xFF9CA3AF), size: 22),
+                          Icon(
+                            Icons.mic_none,
+                            color: Color(0xFF9CA3AF),
+                            size: 22,
+                          ),
                           SizedBox(height: 4),
                           Text(
                             'Voice',
