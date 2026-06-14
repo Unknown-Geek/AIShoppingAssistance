@@ -63,9 +63,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     _cartExpandController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
-    )..addListener(() {
-        setState(() {});
-      });
+    );
 
     _initializeCamera();
     // Silently check DB status on startup so indicator reflects real state.
@@ -770,23 +768,33 @@ class _DashboardScreenState extends State<DashboardScreen>
               child: Container(color: Colors.transparent),
             ),
           ),
-          Column(
-            children: [
-              _buildCameraViewport(),
-              Expanded(child: _buildShoppingZone()),
-            ],
-          ),
-          Positioned(
-            bottom: 20 - (120 * _cartExpandController.value),
-            left: MediaQuery.of(context).size.width * 0.05,
-            right: MediaQuery.of(context).size.width * 0.05,
-            child: Opacity(
-              opacity: (1.0 - _cartExpandController.value).clamp(0.0, 1.0),
-              child: IgnorePointer(
-                ignoring: _cartExpandController.value > 0.5,
-                child: _buildBottomNavBar(),
-              ),
+          // AnimatedBuilder isolates redraws to only the camera+cart layout
+          // on each animation frame instead of rebuilding the entire screen.
+          AnimatedBuilder(
+            animation: _cartExpandController,
+            builder: (context, _) => Column(
+              children: [
+                _buildCameraViewport(),
+                Expanded(child: _buildShoppingZone()),
+              ],
             ),
+          ),
+          // Bottom nav bar: pass as static child so it is NOT rebuilt on each frame.
+          AnimatedBuilder(
+            animation: _cartExpandController,
+            builder: (context, child) {
+              final progress = _cartExpandController.value;
+              return Positioned(
+                bottom: 20 - (120 * progress),
+                left: MediaQuery.of(context).size.width * 0.05,
+                right: MediaQuery.of(context).size.width * 0.05,
+                child: Opacity(
+                  opacity: (1.0 - progress).clamp(0.0, 1.0),
+                  child: IgnorePointer(ignoring: progress > 0.5, child: child!),
+                ),
+              );
+            },
+            child: _buildBottomNavBar(),
           ),
         ],
       ),
@@ -1042,270 +1050,286 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildCameraViewport() {
     final progress = _cartExpandController.value;
-    if (progress >= 1.0) return const SizedBox.shrink();
+    // IMPORTANT: Do NOT return SizedBox.shrink() when fully expanded.
+    // Removing CameraPreview from the tree destroys its underlying web video
+    // element and causes a WebGL context loss on Flutter web — which turns the
+    // feed black when the cart collapses back. Keeping it in the tree with
+    // heightFactor: 0 collapses the visual space to zero while the camera
+    // stream stays alive and ready.
 
     return ClipRect(
       child: Align(
         alignment: Alignment.bottomCenter,
-        heightFactor: 1.0 - progress,
+        heightFactor: (1.0 - progress).clamp(0.0, 1.0),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF001A23).withValues(alpha: 0.06),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(26),
-                child: Container(
-                  height: MediaQuery.of(context).size.height * 0.33,
-                  color: const Color(0xFF1A1A1A),
-            child: Stack(
-              children: [
-                // FIXED: Correct portrait aspect ratio cropping using FittedBox + AspectRatio
-                if (_isCameraInitialized && _cameraController != null)
-                  Positioned.fill(
-                    child: AnimatedScale(
-                      scale: _zoomLevel,
-                      duration: const Duration(milliseconds: 120),
-                      curve: Curves.easeOut,
-                      child: FittedBox(
-                        fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: MediaQuery.of(context).size.width,
-                          child: AspectRatio(
-                            // Invert landscape aspect ratio constraints for seamless portrait preview paths
-                            aspectRatio:
-                                1 / _cameraController!.value.aspectRatio,
-                            child: CameraPreview(_cameraController!),
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  Positioned.fill(
-                    child: Container(
-                      color: const Color(0xFF1A1A1A),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF001A23),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Scanning Reticle Overlay
-                Center(
-                  child: SizedBox(
-                    width: 180.0,
-                    height: 180.0,
-                    child: CustomPaint(
-                      painter: ReticlePainter(
-                        color: const Color(0xFFB3EFB2),
-                        strokeWidth: 2.0,
-                        borderRadius: 16,
-                        arcLength: 20,
-                      ),
-                      child: _isSearchingImage
-                          ? const ScanningOverlay()
-                          : null,
-                    ),
-                  ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF001A23).withValues(alpha: 0.06),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
-
-                // Zoom Level HUD Overlay
-                Center(
-                  child: IgnorePointer(
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: _showZoomSlider ? 1.0 : 0.0,
-                      curve: Curves.easeInOut,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF1A1A1A,
-                          ).withValues(alpha: 0.55),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          '${_zoomLevel.toStringAsFixed(1)}x',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Zoom Button & Slider
-                Positioned(
-                  bottom: 12,
-                  right: 12,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnimatedOpacity(
-                        duration: const Duration(milliseconds: 200),
-                        opacity: _showZoomSlider ? 1.0 : 0.0,
-                        curve: Curves.easeInOut,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                          width: _showZoomSlider ? 140 : 0,
-                          height: 32,
-                          margin: EdgeInsets.only(
-                            right: _showZoomSlider ? 8 : 0,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(
-                              0xFF1A1A1A,
-                            ).withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: OverflowBox(
-                            minWidth: 0,
-                            maxWidth: 140,
-                            alignment: Alignment.centerLeft,
-                            child: SizedBox(
-                              width: 140,
-                              child: SliderTheme(
-                                data: SliderTheme.of(context).copyWith(
-                                  activeTrackColor: const Color(0xFFB3EFB2),
-                                  inactiveTrackColor: Colors.white24,
-                                  thumbColor: Colors.white,
-                                  trackHeight: 2,
-                                  thumbShape: const RoundSliderThumbShape(
-                                    enabledThumbRadius: 6,
-                                  ),
-                                  overlayShape: const RoundSliderOverlayShape(
-                                    overlayRadius: 12,
-                                  ),
-                                ),
-                                child: Slider(
-                                  value: _zoomLevel,
-                                  min: 1.0,
-                                  max: 3.0,
-                                  onChanged: (val) {
-                                    setState(() {
-                                      _zoomLevel = val;
-                                    });
-                                    _updateHardwareZoom(val);
-                                  },
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(26),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.33,
+                color: const Color(0xFF1A1A1A),
+                child: Stack(
+                  children: [
+                    // FIXED: Correct portrait aspect ratio cropping using FittedBox + AspectRatio
+                    if (_isCameraInitialized && _cameraController != null)
+                      Positioned.fill(
+                        child: RepaintBoundary(
+                          child: AnimatedScale(
+                            scale: _zoomLevel,
+                            duration: const Duration(milliseconds: 120),
+                            curve: Curves.easeOut,
+                            child: FittedBox(
+                              fit: BoxFit.cover,
+                              child: SizedBox(
+                                width: MediaQuery.of(context).size.width,
+                                child: AspectRatio(
+                                  // Invert landscape aspect ratio constraints for seamless portrait preview paths
+                                  aspectRatio:
+                                      1 / _cameraController!.value.aspectRatio,
+                                  child: CameraPreview(_cameraController!),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isSliderPersistent = !_isSliderPersistent;
-                            _showZoomSlider = _isSliderPersistent;
-                            _zoomButtonScale = 1.15;
-                          });
-                          Future.delayed(const Duration(milliseconds: 150), () {
-                            if (mounted) {
-                              setState(() {
-                                _zoomButtonScale = 1.0;
-                              });
-                            }
-                          });
-                        },
-                        onLongPressStart: (details) {
-                          setState(() {
-                            _showZoomSlider = true;
-                            _zoomButtonScale = 1.25;
-                            _dragStartPos = details.globalPosition;
-                            _zoomLevelAtStart = _zoomLevel;
-                          });
-                        },
-                        onLongPressMoveUpdate: (details) {
-                          final double dx =
-                              details.globalPosition.dx - _dragStartPos.dx;
-                          final double newZoom =
-                              (_zoomLevelAtStart - (dx / 70.0)).clamp(1.0, 3.0);
-                          setState(() {
-                            _zoomLevel = newZoom;
-                          });
-                          _updateHardwareZoom(newZoom);
-                        },
-                        onLongPressEnd: (details) {
-                          setState(() {
-                            _zoomButtonScale = 1.0;
-                            if (!_isSliderPersistent) {
-                              _showZoomSlider = false;
-                            }
-                          });
-                        },
-                        child: AnimatedScale(
-                          scale: _zoomButtonScale,
-                          duration: const Duration(milliseconds: 150),
-                          curve: Curves.easeOutBack,
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _showZoomSlider
-                                  ? const Color(0xFFB3EFB2)
-                                  : const Color(
-                                      0xFF1A1A1A,
-                                    ).withValues(alpha: 0.6),
-                              boxShadow: _showZoomSlider
-                                  ? [
-                                      BoxShadow(
-                                        color: const Color(
-                                          0xFFB3EFB2,
-                                        ).withValues(alpha: 0.4),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Icon(
-                              _showZoomSlider ? Icons.zoom_out : Icons.zoom_in,
-                              color: _showZoomSlider
-                                  ? const Color(0xFF001A23)
-                                  : Colors.white,
-                              size: 18,
+                      )
+                    else
+                      Positioned.fill(
+                        child: Container(
+                          color: const Color(0xFF1A1A1A),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF001A23),
                             ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+
+                    // Scanning Reticle Overlay
+                    Center(
+                      child: SizedBox(
+                        width: 180.0,
+                        height: 180.0,
+                        child: CustomPaint(
+                          painter: ReticlePainter(
+                            color: const Color(0xFFB3EFB2),
+                            strokeWidth: 2.0,
+                            borderRadius: 16,
+                            arcLength: 20,
+                          ),
+                          child: _isSearchingImage
+                              ? const ScanningOverlay()
+                              : null,
+                        ),
+                      ),
+                    ),
+
+                    // Zoom Level HUD Overlay
+                    Center(
+                      child: IgnorePointer(
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 200),
+                          opacity: _showZoomSlider ? 1.0 : 0.0,
+                          curve: Curves.easeInOut,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFF1A1A1A,
+                              ).withValues(alpha: 0.55),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              '${_zoomLevel.toStringAsFixed(1)}x',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Zoom Button & Slider
+                    Positioned(
+                      bottom: 12,
+                      right: 12,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedOpacity(
+                            duration: const Duration(milliseconds: 200),
+                            opacity: _showZoomSlider ? 1.0 : 0.0,
+                            curve: Curves.easeInOut,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              width: _showZoomSlider ? 140 : 0,
+                              height: 32,
+                              margin: EdgeInsets.only(
+                                right: _showZoomSlider ? 8 : 0,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0xFF1A1A1A,
+                                ).withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: OverflowBox(
+                                minWidth: 0,
+                                maxWidth: 140,
+                                alignment: Alignment.centerLeft,
+                                child: SizedBox(
+                                  width: 140,
+                                  child: SliderTheme(
+                                    data: SliderTheme.of(context).copyWith(
+                                      activeTrackColor: const Color(0xFFB3EFB2),
+                                      inactiveTrackColor: Colors.white24,
+                                      thumbColor: Colors.white,
+                                      trackHeight: 2,
+                                      thumbShape: const RoundSliderThumbShape(
+                                        enabledThumbRadius: 6,
+                                      ),
+                                      overlayShape:
+                                          const RoundSliderOverlayShape(
+                                            overlayRadius: 12,
+                                          ),
+                                    ),
+                                    child: Slider(
+                                      value: _zoomLevel,
+                                      min: 1.0,
+                                      max: 3.0,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          _zoomLevel = val;
+                                        });
+                                        _updateHardwareZoom(val);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isSliderPersistent = !_isSliderPersistent;
+                                _showZoomSlider = _isSliderPersistent;
+                                _zoomButtonScale = 1.15;
+                              });
+                              Future.delayed(
+                                const Duration(milliseconds: 150),
+                                () {
+                                  if (mounted) {
+                                    setState(() {
+                                      _zoomButtonScale = 1.0;
+                                    });
+                                  }
+                                },
+                              );
+                            },
+                            onLongPressStart: (details) {
+                              setState(() {
+                                _showZoomSlider = true;
+                                _zoomButtonScale = 1.25;
+                                _dragStartPos = details.globalPosition;
+                                _zoomLevelAtStart = _zoomLevel;
+                              });
+                            },
+                            onLongPressMoveUpdate: (details) {
+                              final double dx =
+                                  details.globalPosition.dx - _dragStartPos.dx;
+                              final double newZoom =
+                                  (_zoomLevelAtStart - (dx / 70.0)).clamp(
+                                    1.0,
+                                    3.0,
+                                  );
+                              setState(() {
+                                _zoomLevel = newZoom;
+                              });
+                              _updateHardwareZoom(newZoom);
+                            },
+                            onLongPressEnd: (details) {
+                              setState(() {
+                                _zoomButtonScale = 1.0;
+                                if (!_isSliderPersistent) {
+                                  _showZoomSlider = false;
+                                }
+                              });
+                            },
+                            child: AnimatedScale(
+                              scale: _zoomButtonScale,
+                              duration: const Duration(milliseconds: 150),
+                              curve: Curves.easeOutBack,
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _showZoomSlider
+                                      ? const Color(0xFFB3EFB2)
+                                      : const Color(
+                                          0xFF1A1A1A,
+                                        ).withValues(alpha: 0.6),
+                                  boxShadow: _showZoomSlider
+                                      ? [
+                                          BoxShadow(
+                                            color: const Color(
+                                              0xFFB3EFB2,
+                                            ).withValues(alpha: 0.4),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Icon(
+                                  _showZoomSlider
+                                      ? Icons.zoom_out
+                                      : Icons.zoom_in,
+                                  color: _showZoomSlider
+                                      ? const Color(0xFF001A23)
+                                      : Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 
   Widget _buildShoppingZone() {
@@ -1502,42 +1526,44 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 ),
                                 const SizedBox(height: 40),
                               ] else ...[
-                                ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: _cartService.items.length,
-                                  itemBuilder: (context, index) {
-                                    final item = _cartService.items[index];
-                                    return Dismissible(
-                                      key: Key(item.id),
-                                      direction: DismissDirection.endToStart,
-                                      background: Container(
-                                        margin: const EdgeInsets.only(bottom: 12),
-                                        alignment: Alignment.centerRight,
-                                        padding: const EdgeInsets.only(right: 20),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFEF4444),
-                                          borderRadius: BorderRadius.circular(18),
+                                RepaintBoundary(
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: _cartService.items.length,
+                                    itemBuilder: (context, index) {
+                                      final item = _cartService.items[index];
+                                      return Dismissible(
+                                        key: Key(item.id),
+                                        direction: DismissDirection.endToStart,
+                                        background: Container(
+                                          margin: const EdgeInsets.only(bottom: 12),
+                                          alignment: Alignment.centerRight,
+                                          padding: const EdgeInsets.only(right: 20),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEF4444),
+                                            borderRadius: BorderRadius.circular(18),
+                                          ),
+                                          child: const Icon(
+                                            Icons.delete_outline,
+                                            color: Colors.white,
+                                            size: 24,
+                                          ),
                                         ),
-                                        child: const Icon(
-                                          Icons.delete_outline,
-                                          color: Colors.white,
-                                          size: 24,
+                                        onDismissed: (_) => _removeItem(index),
+                                        child: CartItem(
+                                          imageUrl: item.imageUrl,
+                                          name: item.name,
+                                          details:
+                                              "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
+                                          quantity: item.quantity,
+                                          onIncrement: () => _incrementQuantity(index),
+                                          onDecrement: () => _decrementQuantity(index),
+                                          onRemove: () => _removeItem(index),
                                         ),
-                                      ),
-                                      onDismissed: (_) => _removeItem(index),
-                                      child: CartItem(
-                                        imageUrl: item.imageUrl,
-                                        name: item.name,
-                                        details:
-                                            "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
-                                        quantity: item.quantity,
-                                        onIncrement: () => _incrementQuantity(index),
-                                        onDecrement: () => _decrementQuantity(index),
-                                        onRemove: () => _removeItem(index),
-                                      ),
-                                    );
-                                  },
+                                      );
+                                    },
+                                  ),
                                 ),
                               ],
                             ],
@@ -1546,15 +1572,19 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                       // ── Checkout Bar ──────────────────────────────────────
                       if (!_cartService.isEmpty)
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            0,
-                            8,
-                            0,
-                            120 - (100 * _cartExpandController.value),
+                          AnimatedBuilder(
+                            animation: _cartExpandController,
+                            builder: (context, child) => Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                0,
+                                8,
+                                0,
+                                120 - (100 * _cartExpandController.value),
+                              ),
+                              child: child!,
+                            ),
+                            child: _buildCheckoutBar(),
                           ),
-                          child: _buildCheckoutBar(),
-                        ),
                     ],
                   ),
                 ),
@@ -1850,11 +1880,7 @@ class RollingPriceText extends StatefulWidget {
   final double value;
   final TextStyle style;
 
-  const RollingPriceText({
-    super.key,
-    required this.value,
-    required this.style,
-  });
+  const RollingPriceText({super.key, required this.value, required this.style});
 
   @override
   State<RollingPriceText> createState() => _RollingPriceTextState();
@@ -1907,9 +1933,7 @@ class _RollingPriceTextState extends State<RollingPriceText> {
             return ClipRect(
               child: SlideTransition(
                 position: Tween<Offset>(
-                  begin: isCurrent
-                      ? Offset(0.0, offset)
-                      : Offset(0.0, -offset),
+                  begin: isCurrent ? Offset(0.0, offset) : Offset(0.0, -offset),
                   end: Offset.zero,
                 ).animate(animation),
                 child: child,
