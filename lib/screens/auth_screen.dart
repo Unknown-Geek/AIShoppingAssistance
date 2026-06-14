@@ -207,8 +207,8 @@ class _AuthScreenState extends State<AuthScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF40916C).withValues(alpha: 0.25),
-                    const Color(0xFF40916C).withValues(alpha: 0.0),
+                    const Color(0xFFB3EFB2).withValues(alpha: 0.25),
+                    const Color(0xFFB3EFB2).withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -224,7 +224,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF40916C).withValues(alpha: 0.18),
+                    const Color(0xFFB3EFB2).withValues(alpha: 0.18),
                     const Color(0xFF001A23).withValues(alpha: 0.0),
                   ],
                 ),
@@ -567,10 +567,10 @@ class _AuthScreenState extends State<AuthScreen> {
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: const Color(0xFF40916C).withValues(alpha: 0.25),
+        color: const Color(0xFFB3EFB2).withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(25),
         border: Border.all(
-          color: const Color(0xFF40916C).withValues(alpha: 0.25),
+          color: const Color(0xFFB3EFB2).withValues(alpha: 0.25),
         ),
       ),
       child: Stack(
@@ -664,7 +664,7 @@ class _AuthScreenState extends State<AuthScreen> {
         fontSize: 14,
         fontWeight: FontWeight.normal,
       ),
-      prefixIcon: Icon(icon, color: const Color(0xFF40916C), size: 20),
+      prefixIcon: Icon(icon, color: const Color(0xFF001A23), size: 20),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: const Color(0xFFFFFFFF),
