@@ -1,3 +1,3 @@
-# qless_app
+# AI Shopping Assistance (Qless)
 
-A new Flutter project.
+A smart shopping assistant for retail stores.

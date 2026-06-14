@@ -228,7 +228,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Chef RAG',
+                      'Qless',
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontFamily: 'ClashDisplay',
                         fontWeight: FontWeight.bold,
