@@ -1339,9 +1339,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           color: Colors.white,
                         ),
                       )
-                    : Row(
+                    : const Row(
                         children: [
-                          const Text(
+                          Text(
                             'Checkout',
                             style: TextStyle(
                               fontSize: 16,
@@ -1349,8 +1349,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                               color: Colors.white,
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          const Icon(
+                          SizedBox(width: 6),
+                          Icon(
                             Icons.arrow_forward,
                             color: Colors.white,
                             size: 14,
