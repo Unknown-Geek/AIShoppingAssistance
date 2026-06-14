@@ -8,6 +8,7 @@ import '../models/cart_item_model.dart';
 import '../services/chromadb_client.dart';
 import '../services/cart_service.dart';
 import '../services/inventory_service.dart';
+import '../services/product_detection_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -23,6 +24,7 @@ enum _DbStatus { unknown, ok, error }
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
   final ChromaDbClient _chromaClient = ChromaDbClient();
+  final ProductDetectionService _detectionService = HuggingFaceProxyDetectionService();
   final TextEditingController _ragController = TextEditingController();
   late AnimationController _cursorController;
   late AnimationController _pulseController;
@@ -308,9 +310,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         );
       }
 
-      final CartItemModel? item = await _chromaClient.searchItemByPhoto(
-        capturedPhoto,
-      );
+      final CartItemModel? item = await _detectionService.detectItem(capturedPhoto);
 
       if (item != null && mounted) {
         // Show confirmation sheet — CLIP can confuse similar-looking products
@@ -1314,8 +1314,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           topLeft: Radius.circular(32),
           topRight: Radius.circular(32),
         ),
-        border: Border(
-          top: BorderSide(color: const Color(0xFFD2E4E6), width: 1.5),
+        border: const Border(
+          top: BorderSide(color: Color(0xFFD2E4E6), width: 1.5),
         ),
         boxShadow: [
           BoxShadow(
