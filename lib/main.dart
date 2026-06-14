@@ -51,7 +51,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Chef RAG Dashboard',
+      title: 'Qless',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'ClashGrotesk',
