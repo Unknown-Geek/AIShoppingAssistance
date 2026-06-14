@@ -1351,20 +1351,44 @@ class _DashboardScreenState extends State<DashboardScreen>
             onVerticalDragEnd: (details) {
               final velocity = details.primaryVelocity ?? 0;
               if (velocity < -300) {
-                _cartExpandController.forward();
+                _cartExpandController.animateTo(
+                  1.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                );
               } else if (velocity > 300) {
-                _cartExpandController.reverse();
+                _cartExpandController.animateTo(
+                  0.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                );
               } else if (_cartExpandController.value > 0.5) {
-                _cartExpandController.forward();
+                _cartExpandController.animateTo(
+                  1.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                );
               } else {
-                _cartExpandController.reverse();
+                _cartExpandController.animateTo(
+                  0.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                );
               }
             },
             onTap: () {
               if (_cartExpandController.value > 0.5) {
-                _cartExpandController.reverse();
+                _cartExpandController.animateTo(
+                  0.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                );
               } else {
-                _cartExpandController.forward();
+                _cartExpandController.animateTo(
+                  1.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                );
               }
             },
             child: Column(
