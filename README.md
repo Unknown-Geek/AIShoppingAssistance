@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/Qless.svg" alt="Qless Logo" width="160" />
+  <img src="assets/Qless-Banner.svg" alt="Qless Banner" width="100%" />
 </p>
 
 <h1 align="center">Qless</h1>
