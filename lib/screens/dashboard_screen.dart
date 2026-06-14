@@ -1354,7 +1354,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${_cartService.itemCount} Items',
+                      '${_cartService.itemCount} ${_cartService.itemCount == 1 ? 'Item' : 'Items'}',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
