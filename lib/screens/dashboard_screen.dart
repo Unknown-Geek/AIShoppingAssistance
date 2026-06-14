@@ -1060,12 +1060,17 @@ class _DashboardScreenState extends State<DashboardScreen>
     final double naturalHeight =
         (MediaQuery.of(context).size.height * 0.33) + 16.0;
 
-    return SizedBox(
-      height: naturalHeight * (1.0 - progress),
-      child: OverflowBox(
-        alignment: Alignment.bottomCenter,
-        maxHeight: naturalHeight,
-        child: Padding(
+    // ClipRect clips the OverflowBox overflow at this widget's own bounds
+    // (= body top = AppBar bottom / pill's lower edge). The AppBar's opaque
+    // background visually masks the clip point so the card appears to slide
+    // cleanly behind the pill rather than getting cut in open space.
+    return ClipRect(
+      child: SizedBox(
+        height: naturalHeight * (1.0 - progress),
+        child: OverflowBox(
+          alignment: Alignment.bottomCenter,
+          maxHeight: naturalHeight,
+          child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Container(
               decoration: BoxDecoration(
@@ -1324,6 +1329,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     ),
   ),
+),
 );
   }
 
