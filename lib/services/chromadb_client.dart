@@ -106,8 +106,6 @@ class ChromaDbClient {
 
     try {
       debugPrint('Uploading image directly to custom Hugging Face Space & generating CLIP embedding...');
-      final bytes = await photo.readAsBytes();
-      
       final String spaceUrl = dotenv.env['HF_SPACE_URL'] ?? '';
       if (spaceUrl.isEmpty) {
         throw Exception('HF_SPACE_URL is not configured in .env');
@@ -115,9 +113,9 @@ class ChromaDbClient {
 
       final request = http.MultipartRequest('POST', Uri.parse(spaceUrl));
       request.files.add(
-        http.MultipartFile.fromBytes(
+        await http.MultipartFile.fromPath(
           'file',
-          bytes,
+          photo.path,
           filename: 'image.jpg',
         ),
       );
