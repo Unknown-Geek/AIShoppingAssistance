@@ -24,7 +24,8 @@ enum _DbStatus { unknown, ok, error }
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
   final ChromaDbClient _chromaClient = ChromaDbClient();
-  final ProductDetectionService _detectionService = HuggingFaceProxyDetectionService();
+  final ProductDetectionService _detectionService =
+      HuggingFaceProxyDetectionService();
   final TextEditingController _ragController = TextEditingController();
   late AnimationController _cursorController;
 
@@ -183,7 +184,11 @@ class _DashboardScreenState extends State<DashboardScreen>
               Text(
                 'You are about to checkout ${_cartService.itemCount} item${_cartService.itemCount == 1 ? '' : 's'} for a total of',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF001A23)),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF001A23),
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -303,7 +308,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         );
       }
 
-      final CartItemModel? item = await _detectionService.detectItem(capturedPhoto);
+      final CartItemModel? item = await _detectionService.detectItem(
+        capturedPhoto,
+      );
 
       if (item != null && mounted) {
         // Show confirmation sheet — CLIP can confuse similar-looking products
@@ -542,7 +549,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFB3EFB2), width: 1.5),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFB3EFB2),
+                        width: 1.5,
+                      ),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -879,27 +889,102 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: const Color(0xFFFFFFFF),
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      titleSpacing: 0,
-      toolbarHeight: 64,
-      shape: const Border(
-        bottom: BorderSide(
-          color: Color(0xFFD2E4E6),
-          width: 1,
-        ),
-      ),
-      automaticallyImplyLeading: false,
-      title: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            GestureDetector(
-              onTap: _showProfileSheet,
-              child: Container(
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(72),
+      child: SafeArea(
+        child: Container(
+          height: 72,
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFFFF),
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF001A23).withValues(alpha: 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(color: const Color(0xFFD2E4E6)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: _showProfileSheet,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFFFFFFF),
+                    border: Border.all(color: const Color(0xFFD2E4E6)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      (() {
+                        final email =
+                            Supabase.instance.client.auth.currentUser?.email ??
+                            'U';
+                        return email.isNotEmpty ? email[0].toUpperCase() : 'U';
+                      })(),
+                      style: const TextStyle(
+                        fontFamily: 'ClashDisplay',
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF001A23),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: _checkDbStatus,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'DB Status',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF001A23),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        width: 1,
+                        height: 12,
+                        color: const Color(0xFF001A23).withValues(alpha: 0.12),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        switch (_dbStatus) {
+                          _DbStatus.ok => 'Live',
+                          _DbStatus.error => 'Error',
+                          _DbStatus.unknown => 'Checking…',
+                        },
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: switch (_dbStatus) {
+                            _DbStatus.ok => const Color(0xFFB3EFB2),
+                            _DbStatus.error => const Color(0xFFEF4444),
+                            _DbStatus.unknown => const Color(0xFF4A5568),
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
@@ -907,101 +992,31 @@ class _DashboardScreenState extends State<DashboardScreen>
                   color: const Color(0xFFFFFFFF),
                   border: Border.all(color: const Color(0xFFD2E4E6)),
                 ),
-                child: Center(
-                  child: Text(
-                    (() {
-                      final email =
-                          Supabase.instance.client.auth.currentUser?.email ??
-                          'U';
-                      return email.isNotEmpty ? email[0].toUpperCase() : 'U';
-                    })(),
-                    style: const TextStyle(
-                      fontFamily: 'ClashDisplay',
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF001A23),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            GestureDetector(
-              onTap: _checkDbStatus,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    const Text(
-                      'DB Status',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF001A23),
-                      ),
+                    const Icon(
+                      Icons.notifications_none_outlined,
+                      color: Color(0xFF001A23),
+                      size: 22,
                     ),
-                    const SizedBox(width: 6),
-                    Container(
-                      width: 1,
-                      height: 12,
-                      color: const Color(0xFF001A23).withValues(alpha: 0.12),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      switch (_dbStatus) {
-                        _DbStatus.ok => 'Live',
-                        _DbStatus.error => 'Error',
-                        _DbStatus.unknown => 'Checking…',
-                      },
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: switch (_dbStatus) {
-                          _DbStatus.ok => const Color(0xFFB3EFB2),
-                          _DbStatus.error => const Color(0xFFEF4444),
-                          _DbStatus.unknown => const Color(0xFF4A5568),
-                        },
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFB3EFB2),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFFFFFFF),
-                border: Border.all(color: const Color(0xFFD2E4E6)),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  const Icon(
-                    Icons.notifications_none_outlined,
-                    color: Color(0xFF001A23),
-                    size: 22,
-                  ),
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color(0xFFB3EFB2),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1242,22 +1257,28 @@ class _DashboardScreenState extends State<DashboardScreen>
                             height: 32,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _showZoomSlider 
-                                  ? const Color(0xFFB3EFB2) 
-                                  : const Color(0xFF1A1A1A).withValues(alpha: 0.6),
-                              boxShadow: _showZoomSlider 
+                              color: _showZoomSlider
+                                  ? const Color(0xFFB3EFB2)
+                                  : const Color(
+                                      0xFF1A1A1A,
+                                    ).withValues(alpha: 0.6),
+                              boxShadow: _showZoomSlider
                                   ? [
                                       BoxShadow(
-                                        color: const Color(0xFFB3EFB2).withValues(alpha: 0.4),
+                                        color: const Color(
+                                          0xFFB3EFB2,
+                                        ).withValues(alpha: 0.4),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
-                                      )
+                                      ),
                                     ]
                                   : null,
                             ),
                             child: Icon(
                               _showZoomSlider ? Icons.zoom_out : Icons.zoom_in,
-                              color: _showZoomSlider ? const Color(0xFF001A23) : Colors.white,
+                              color: _showZoomSlider
+                                  ? const Color(0xFF001A23)
+                                  : Colors.white,
                               size: 18,
                             ),
                           ),
@@ -1568,7 +1589,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                       child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.chat_bubble_outline, color: Color(0xFF001A23), size: 22),
+                          Icon(
+                            Icons.chat_bubble_outline,
+                            color: Color(0xFF001A23),
+                            size: 22,
+                          ),
                           SizedBox(height: 4),
                           Text(
                             'Chat',
