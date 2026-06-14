@@ -34,9 +34,11 @@ Future<void> main() async {
     debugPrint('Supabase initialization error: $e');
   }
 
-  // Pre-load local product catalog and cart session before rendering.
-  await InventoryService().initLocalCatalog();
-  await CartService().load();
+  // Pre-load local product catalog and cart session in parallel before rendering.
+  await Future.wait([
+    InventoryService().initLocalCatalog(),
+    CartService().load(),
+  ]);
 
   runApp(MainApp(cameras: cameras));
 }
