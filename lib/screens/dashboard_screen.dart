@@ -1053,10 +1053,18 @@ class _DashboardScreenState extends State<DashboardScreen>
     final progress = _cartExpandController.value;
     if (progress >= 1.0) return const SizedBox.shrink();
 
-    return ClipRect(
-      child: Align(
+    // Natural height of the camera slot: card height + top padding.
+    // OverflowBox lets the card stay at full size/corners while SizedBox
+    // controls how much layout space it occupies. The card then slides up
+    // and disappears behind the app bar — no straight mid-card clip line.
+    final double naturalHeight =
+        (MediaQuery.of(context).size.height * 0.33) + 16.0;
+
+    return SizedBox(
+      height: naturalHeight * (1.0 - progress),
+      child: OverflowBox(
         alignment: Alignment.bottomCenter,
-        heightFactor: 1.0 - progress,
+        maxHeight: naturalHeight,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Container(
