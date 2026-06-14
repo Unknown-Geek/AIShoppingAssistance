@@ -12,6 +12,7 @@ class InventoryService {
   final _supabase = Supabase.instance.client;
 
   final Map<String, String> _imageUrls = {};
+  final Map<String, String> _thumbnailUrls = {};  // Supabase Storage URLs
   final Map<String, Map<String, dynamic>> _localProducts = {};
 
   Future<void> initLocalCatalog() async {
@@ -38,7 +39,15 @@ class InventoryService {
   }
 
   String getImageUrl(String slug) {
+    // Prefer Supabase Storage thumbnail over local JSON fallback
+    if (_thumbnailUrls.containsKey(slug)) return _thumbnailUrls[slug]!;
     return _imageUrls[slug] ?? "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=200&auto=format&fit=crop";
+  }
+
+  void cacheThumbnailUrl(String slug, String? url) {
+    if (url != null && url.isNotEmpty) {
+      _thumbnailUrls[slug] = url;
+    }
   }
 
   /// Helper to check if credentials are set in .env
@@ -59,11 +68,13 @@ class InventoryService {
     try {
       final response = await _supabase
           .from('inventory')
-          .select('sku, slug, name, price_rupees, staging_dirs')
+          .select('sku, slug, name, price_rupees, staging_dirs, thumbnail_url')
           .eq('slug', slug)
           .maybeSingle();
       
       if (response != null) {
+        // Cache the thumbnail URL so getImageUrl() returns it immediately
+        cacheThumbnailUrl(slug, response['thumbnail_url'] as String?);
         debugPrint('[InventoryService] Successfully found product in Supabase: $response');
       } else {
         debugPrint('[InventoryService] No product found in Supabase matching slug: "$slug"');
