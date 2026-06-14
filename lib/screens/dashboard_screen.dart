@@ -1363,13 +1363,11 @@ class _DashboardScreenState extends State<DashboardScreen>
               GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onVerticalDragUpdate: (details) {
-                  final cameraViewportHeight =
-                      MediaQuery.of(context).size.height * 0.33;
+                  final cameraViewportHeight = MediaQuery.of(context).size.height * 0.33;
                   if (cameraViewportHeight > 0) {
-                    _cartExpandController.value =
-                        (_cartExpandController.value -
-                                (details.primaryDelta ?? 0) / cameraViewportHeight)
-                            .clamp(0.0, 1.0);
+                    _cartExpandController.value = (_cartExpandController.value -
+                            (details.primaryDelta ?? 0) / cameraViewportHeight)
+                        .clamp(0.0, 1.0);
                   }
                 },
                 onVerticalDragEnd: (details) {
@@ -1453,9 +1451,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFFB3EFB2,
-                                  ).withValues(alpha: 0.3),
+                                  color: const Color(0xFFB3EFB2).withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -1561,10 +1557,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                           details:
                                               "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
                                           quantity: item.quantity,
-                                          onIncrement: () =>
-                                              _incrementQuantity(index),
-                                          onDecrement: () =>
-                                              _decrementQuantity(index),
+                                          onIncrement: () => _incrementQuantity(index),
+                                          onDecrement: () => _decrementQuantity(index),
                                           onRemove: () => _removeItem(index),
                                         ),
                                       );
@@ -1578,21 +1572,19 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                       // ── Checkout Bar ──────────────────────────────────────
                       if (!_cartService.isEmpty)
-                        // AnimatedBuilder isolates checkout bar padding redraws
-                        // from the cart list above it.
-                        AnimatedBuilder(
-                          animation: _cartExpandController,
-                          builder: (context, child) => Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              0,
-                              8,
-                              0,
-                              120 - (100 * _cartExpandController.value),
+                          AnimatedBuilder(
+                            animation: _cartExpandController,
+                            builder: (context, child) => Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                0,
+                                8,
+                                0,
+                                120 - (100 * _cartExpandController.value),
+                              ),
+                              child: child!,
                             ),
-                            child: child!,
+                            child: _buildCheckoutBar(),
                           ),
-                          child: _buildCheckoutBar(),
-                        ),
                     ],
                   ),
                 ),
