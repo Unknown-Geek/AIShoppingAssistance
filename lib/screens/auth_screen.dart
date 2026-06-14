@@ -65,7 +65,9 @@ class _AuthScreenState extends State<AuthScreen> {
               context: context,
               barrierDismissible: false,
               builder: (ctx) => Dialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
                 backgroundColor: Colors.white,
                 child: Padding(
                   padding: const EdgeInsets.all(28),
@@ -77,11 +79,11 @@ class _AuthScreenState extends State<AuthScreen> {
                         height: 60,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFF23C8D9).withValues(alpha: 0.1),
+                          color: const Color(0xFF433075).withValues(alpha: 0.1),
                         ),
                         child: const Icon(
                           Icons.mark_email_unread_outlined,
-                          color: Color(0xFF23C8D9),
+                          color: Color(0xFF433075),
                           size: 30,
                         ),
                       ),
@@ -116,12 +118,12 @@ class _AuthScreenState extends State<AuthScreen> {
                             });
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF23C8D9),
+                            backgroundColor: const Color(0xFF111111),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(24),
                             ),
                           ),
                           child: const Text(
@@ -159,37 +161,79 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F8),
       body: Stack(
         children: [
-          // Background soft glowing gradients
+          // Background soft gradient
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFFF3F1FA),
+                    Color(0xFFE9E5FF),
+                    Color(0xFFF7F5FF),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+          ),
+          // Colorful glowing gradient bubbles (Orbs)
           Positioned(
-            top: -100,
-            left: -100,
+            top: MediaQuery.of(context).size.height * 0.05,
+            left: -80,
             child: Container(
               width: 350,
               height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF23C8D9).withValues(alpha: 0.18),
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF433075).withValues(alpha: 0.3),
+                    const Color(0xFF433075).withValues(alpha: 0.0),
+                  ],
+                ),
               ),
             ),
           ),
           Positioned(
-            bottom: -150,
-            right: -150,
+            top: MediaQuery.of(context).size.height * 0.25,
+            right: -60,
             child: Container(
-              width: 450,
-              height: 450,
+              width: 300,
+              height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF0EAFC4).withValues(alpha: 0.12),
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFFFA8A8).withValues(alpha: 0.35),
+                    const Color(0xFFFFD3B6).withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -80,
+            left: 20,
+            child: Container(
+              width: 380,
+              height: 380,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFA58CF4).withValues(alpha: 0.18),
+                    const Color(0xFF433075).withValues(alpha: 0.0),
+                  ],
+                ),
               ),
             ),
           ),
           Positioned.fill(
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
+              filter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
               child: Container(color: Colors.transparent),
             ),
           ),
@@ -210,18 +254,24 @@ class _AuthScreenState extends State<AuthScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: const Color(0xFFE2DEEF),
+                          width: 1.2,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF1A1A1A).withValues(alpha: 0.06),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
+                            color: const Color(
+                              0xFF433075,
+                            ).withValues(alpha: 0.06),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
                       child: const Center(
                         child: Icon(
                           Icons.shopping_bag_rounded,
-                          color: Color(0xFF23C8D9),
+                          color: Color(0xFF433075),
                           size: 38,
                         ),
                       ),
@@ -233,6 +283,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         fontFamily: 'ClashDisplay',
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF111827),
+                        letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -252,16 +303,19 @@ class _AuthScreenState extends State<AuthScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(28),
+                        border: Border.all(
+                          color: const Color(0xFFE2DEEF),
+                          width: 1.2,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF1A1A1A).withValues(alpha: 0.04),
+                            color: const Color(
+                              0xFF433075,
+                            ).withValues(alpha: 0.04),
                             blurRadius: 24,
                             offset: const Offset(0, 12),
                           ),
                         ],
-                        border: Border.all(
-                          color: const Color(0xFF1A1A1A).withValues(alpha: 0.03),
-                        ),
                       ),
                       child: Form(
                         key: _formKey,
@@ -461,13 +515,14 @@ class _AuthScreenState extends State<AuthScreen> {
                               child: ElevatedButton(
                                 onPressed: _isLoading ? null : _handleSubmit,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF23C8D9),
+                                  backgroundColor: const Color(0xFF111111),
                                   foregroundColor: Colors.white,
-                                  disabledBackgroundColor:
-                                      const Color(0xFF23C8D9).withValues(alpha: 0.6),
+                                  disabledBackgroundColor: const Color(
+                                    0xFF111111,
+                                  ).withValues(alpha: 0.6),
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(26),
                                   ),
                                 ),
                                 child: _isLoading
@@ -478,12 +533,14 @@ class _AuthScreenState extends State<AuthScreen> {
                                           strokeWidth: 2.5,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                            Colors.white,
-                                          ),
+                                                Colors.white,
+                                              ),
                                         ),
                                       )
                                     : Text(
-                                        _isSignIn ? 'Sign In' : 'Create Account',
+                                        _isSignIn
+                                            ? 'Sign In'
+                                            : 'Create Account',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
@@ -510,8 +567,11 @@ class _AuthScreenState extends State<AuthScreen> {
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
+        color: const Color(0xFFA58CF4).withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(25),
+        border: Border.all(
+          color: const Color(0xFFA58CF4).withValues(alpha: 0.15),
+        ),
       ),
       child: Stack(
         children: [
@@ -524,11 +584,11 @@ class _AuthScreenState extends State<AuthScreen> {
               child: Container(
                 margin: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF23C8D9),
+                  color: const Color(0xFF433075),
                   borderRadius: BorderRadius.circular(21),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF23C8D9).withValues(alpha: 0.3),
+                      color: const Color(0xFF433075).withValues(alpha: 0.25),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -552,7 +612,9 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: Text(
                       'Sign In',
                       style: TextStyle(
-                        color: _isSignIn ? Colors.white : const Color(0xFF6B7280),
+                        color: _isSignIn
+                            ? Colors.white
+                            : const Color(0xFF433075),
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -573,7 +635,9 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: Text(
                       'Sign Up',
                       style: TextStyle(
-                        color: !_isSignIn ? Colors.white : const Color(0xFF6B7280),
+                        color: !_isSignIn
+                            ? Colors.white
+                            : const Color(0xFF433075),
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -600,45 +664,31 @@ class _AuthScreenState extends State<AuthScreen> {
         fontSize: 14,
         fontWeight: FontWeight.normal,
       ),
-      prefixIcon: Icon(icon, color: const Color(0xFF9CA3AF), size: 20),
+      prefixIcon: Icon(icon, color: const Color(0xFFA58CF4), size: 20),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: const Color(0xFFF9FAFB),
+      fillColor: const Color(0xFFFAFAFA),
+      hoverColor: Colors.transparent,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: const Color(0xFF1A1A1A).withValues(alpha: 0.08),
-          width: 1,
-        ),
+        borderSide: const BorderSide(color: Color(0xFFE2DEEF), width: 1),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: const Color(0xFF1A1A1A).withValues(alpha: 0.08),
-          width: 1,
-        ),
+        borderSide: const BorderSide(color: Color(0xFFE2DEEF), width: 1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFF23C8D9),
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: Color(0xFF433075), width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFFEF4444),
-          width: 1,
-        ),
+        borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFFEF4444),
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
       ),
       errorStyle: const TextStyle(
         color: Color(0xFFEF4444),

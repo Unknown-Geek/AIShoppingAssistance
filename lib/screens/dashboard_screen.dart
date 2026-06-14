@@ -1,4 +1,3 @@
-
 import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -21,12 +20,13 @@ class DashboardScreen extends StatefulWidget {
 
 enum _DbStatus { unknown, ok, error }
 
-class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
+class _DashboardScreenState extends State<DashboardScreen>
+    with TickerProviderStateMixin {
   final ChromaDbClient _chromaClient = ChromaDbClient();
   final TextEditingController _ragController = TextEditingController();
   late AnimationController _cursorController;
   late AnimationController _pulseController;
-  
+
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
   bool _isSearchingImage = false;
@@ -74,7 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Future<void> _initializeCamera() async {
     if (widget.cameras.isEmpty) return;
-    
+
     // Use low resolution on mobile: CLIP only needs 224x224px, and high-res
     // captures cause a multi-megabyte JPEG write to disk, adding 2-3s of latency.
     // Web uses in-memory Blobs so resolution has no disk-write overhead there.
@@ -85,7 +85,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       enableAudio: false,
       imageFormatGroup: kIsWeb ? null : ImageFormatGroup.jpeg,
     );
-    
+
     try {
       await _cameraController!.initialize();
       if (mounted) {
@@ -118,10 +118,16 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   }
 
   Future<void> _updateHardwareZoom(double level) async {
-    if (_isHardwareZoomSupported && _cameraController != null && _cameraController!.value.isInitialized) {
+    if (_isHardwareZoomSupported &&
+        _cameraController != null &&
+        _cameraController!.value.isInitialized) {
       try {
-        final targetZoom = _minHardwareZoom + (level - 1.0) * ((_maxHardwareZoom - _minHardwareZoom) / 2.0);
-        await _cameraController!.setZoomLevel(targetZoom.clamp(_minHardwareZoom, _maxHardwareZoom));
+        final targetZoom =
+            _minHardwareZoom +
+            (level - 1.0) * ((_maxHardwareZoom - _minHardwareZoom) / 2.0);
+        await _cameraController!.setZoomLevel(
+          targetZoom.clamp(_minHardwareZoom, _maxHardwareZoom),
+        );
       } catch (e) {
         _isHardwareZoomSupported = false;
         debugPrint("Hardware zoom failed, disabling: $e");
@@ -161,11 +167,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF23C8D9).withValues(alpha: 0.1),
+                  color: const Color(0xFF433075).withValues(alpha: 0.1),
                 ),
                 child: const Icon(
                   Icons.shopping_bag_outlined,
-                  color: Color(0xFF23C8D9),
+                  color: Color(0xFF433075),
                   size: 30,
                 ),
               ),
@@ -182,10 +188,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               Text(
                 'You are about to checkout ${_cartService.itemCount} item${_cartService.itemCount == 1 ? '' : 's'} for a total of',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF6B7280),
-                ),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
               ),
               const SizedBox(height: 8),
               Text(
@@ -193,7 +196,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF23C8D9),
+                  color: Color(0xFF433075),
                 ),
               ),
               const SizedBox(height: 24),
@@ -205,7 +208,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(24),
                         ),
                         side: const BorderSide(color: Color(0xFFE5E7EB)),
                       ),
@@ -223,11 +226,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     child: ElevatedButton(
                       onPressed: () => Navigator.of(ctx).pop(true),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF23C8D9),
+                        backgroundColor: const Color(0xFF111111),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(24),
                         ),
                       ),
                       child: const Text(
@@ -263,11 +266,18 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+            const Icon(
+              Icons.check_circle_outline,
+              color: Colors.white,
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Text(
               'Order placed! ₹${total.toStringAsFixed(2)} charged.',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -299,7 +309,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         );
       }
 
-      final CartItemModel? item = await _chromaClient.searchItemByPhoto(capturedPhoto);
+      final CartItemModel? item = await _chromaClient.searchItemByPhoto(
+        capturedPhoto,
+      );
 
       if (item != null && mounted) {
         // Show confirmation sheet — CLIP can confuse similar-looking products
@@ -333,7 +345,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Error searching item', style: TextStyle(color: Colors.white)),
+            content: Text(
+              'Error searching item',
+              style: TextStyle(color: Colors.white),
+            ),
             backgroundColor: Color(0xFFEF4444),
           ),
         );
@@ -361,7 +376,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             children: [
               // Drag handle
               Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A1A).withValues(alpha: 0.12),
@@ -371,13 +387,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               Row(
                 children: [
                   Container(
-                    width: 64, height: 64,
+                    width: 64,
+                    height: 64,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
                       color: const Color(0xFFF3F4F6),
                     ),
                     clipBehavior: Clip.antiAlias,
-                    child: CachedNetworkImage(imageUrl: item.imageUrl, fit: BoxFit.cover),
+                    child: CachedNetworkImage(
+                      imageUrl: item.imageUrl,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -386,17 +406,29 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       children: [
                         const Text(
                           'Item detected',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           item.name,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF111827),
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '₹${item.price.toStringAsFixed(2)}',
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF23C8D9)),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF433075),
+                          ),
                         ),
                       ],
                     ),
@@ -409,12 +441,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(ctx, true),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF23C8D9),
+                    backgroundColor: const Color(0xFF111111),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(26),
+                    ),
                   ),
-                  child: const Text('Add to Cart', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  child: const Text(
+                    'Add to Cart',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
@@ -424,11 +461,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   onPressed: () => Navigator.pop(ctx, false),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(26),
+                    ),
                   ),
                   child: const Text(
                     'Not this item',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF6B7280),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
@@ -447,7 +490,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
             decoration: const BoxDecoration(
@@ -460,7 +505,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               children: [
                 Center(
                   child: Container(
-                    width: 40, height: 4,
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
                       color: const Color(0xFF1A1A1A).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(2),
@@ -470,7 +516,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 const SizedBox(height: 16),
                 const Text(
                   'Ask Chef RAG',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF111827),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -480,12 +530,32 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     hintText: 'Ask anything about the products...',
                     hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
                     filled: true,
-                    fillColor: const Color(0xFFF9FAFB),
+                    fillColor: const Color(0xFFFAFAFA),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
+                      borderSide: const BorderSide(
+                        color: Color(0xFFE2DEEF),
+                        width: 1,
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFE2DEEF),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF433075),
+                        width: 1.5,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
                   onSubmitted: (_) {
                     Navigator.pop(ctx);
@@ -501,12 +571,20 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       _askChefRag();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF23C8D9),
+                      backgroundColor: const Color(0xFF111111),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(26),
+                      ),
                     ),
-                    child: const Text('Ask', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                    child: const Text(
+                      'Ask',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -519,12 +597,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Future<void> _askChefRag() async {
     if (_ragController.text.trim().isEmpty) return;
-    
+
     final prompt = _ragController.text;
     _ragController.clear();
-    
+
     final response = await _chromaClient.askChefRag(prompt);
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -540,7 +618,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     final chromaStatus = await _chromaClient.checkConnectivity();
     final supabaseStatus = await InventoryService().checkConnectivity();
     if (!mounted) return;
-    final allOk = chromaStatus.startsWith('Connected') && supabaseStatus.startsWith('Connected');
+    final allOk =
+        chromaStatus.startsWith('Connected') &&
+        supabaseStatus.startsWith('Connected');
     setState(() => _dbStatus = allOk ? _DbStatus.ok : _DbStatus.error);
   }
 
@@ -548,7 +628,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     // Show a loading snackbar while checking
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Checking database connections...', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Checking database connections...',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.blueGrey,
         duration: Duration(milliseconds: 800),
       ),
@@ -568,9 +651,21 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('ChromaDB: $chromaStatus', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Text(
+                'ChromaDB: $chromaStatus',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text('Supabase: $supabaseStatus', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Text(
+                'Supabase: $supabaseStatus',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           backgroundColor: (isChromaOk && isSupabaseOk)
@@ -580,7 +675,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         ),
       );
       // Also update the indicator
-      setState(() => _dbStatus = (isChromaOk && isSupabaseOk) ? _DbStatus.ok : _DbStatus.error);
+      setState(
+        () => _dbStatus = (isChromaOk && isSupabaseOk)
+            ? _DbStatus.ok
+            : _DbStatus.error,
+      );
     }
   }
 
@@ -593,17 +692,71 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F8),
       appBar: _buildAppBar(),
       body: Stack(
         clipBehavior: Clip.none,
         children: [
+          // Background soft gradient
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFFF3F1FA),
+                    Color(0xFFE9E5FF),
+                    Color(0xFFF7F5FF),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+          ),
+          // Colorful glowing gradient bubbles (Orbs)
+          Positioned(
+            top: 20,
+            right: -60,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF433075).withValues(alpha: 0.18),
+                    const Color(0xFF433075).withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 100,
+            left: -40,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFFFA8A8).withValues(alpha: 0.2),
+                    const Color(0xFFFFD3B6).withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
           Column(
             children: [
               _buildCameraViewport(),
-              Expanded(
-                child: _buildShoppingZone(),
-              ),
+              Expanded(child: _buildShoppingZone()),
             ],
           ),
           Positioned(
@@ -646,14 +799,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ),
               CircleAvatar(
                 radius: 36,
-                backgroundColor: const Color(0xFF23C8D9).withValues(alpha: 0.1),
+                backgroundColor: const Color(0xFF433075).withValues(alpha: 0.1),
                 child: Text(
                   initial,
                   style: const TextStyle(
                     fontFamily: 'ClashDisplay',
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF23C8D9),
+                    color: Color(0xFF433075),
                   ),
                 ),
               ),
@@ -683,15 +836,22 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     Navigator.pop(ctx);
                     await Supabase.instance.client.auth.signOut();
                   },
-                  icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
-                  label: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
+                  icon: const Icon(
+                    Icons.logout_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  label: const Text(
+                    'Sign Out',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFEF4444),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(26),
                     ),
                   ),
                 ),
@@ -704,7 +864,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(26),
                     ),
                   ),
                   child: const Text(
@@ -732,16 +892,16 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFFFAFAFA),
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF1A1A1A).withValues(alpha: 0.04),
+                color: const Color(0xFF433075).withValues(alpha: 0.04),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
             ],
-            border: Border.all(color: const Color(0xFF1A1A1A).withValues(alpha: 0.04)),
+            border: Border.all(color: const Color(0xFFE2DEEF)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -753,26 +913,22 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   height: 44,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFF23C8D9).withValues(alpha: 0.1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF1A1A1A).withValues(alpha: 0.06),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    color: const Color(0xFFFAFAFA),
+                    border: Border.all(color: const Color(0xFFE2DEEF)),
                   ),
                   child: Center(
                     child: Text(
                       (() {
-                        final email = Supabase.instance.client.auth.currentUser?.email ?? 'U';
+                        final email =
+                            Supabase.instance.client.auth.currentUser?.email ??
+                            'U';
                         return email.isNotEmpty ? email[0].toUpperCase() : 'U';
                       })(),
                       style: const TextStyle(
                         fontFamily: 'ClashDisplay',
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF23C8D9),
+                        color: Color(0xFF433075),
                       ),
                     ),
                   ),
@@ -781,11 +937,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               GestureDetector(
                 onTap: _checkDbStatus,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFF1A1A1A).withValues(alpha: 0.04)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -794,8 +948,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         animation: _pulseController,
                         builder: (context, child) {
                           final dotColor = switch (_dbStatus) {
-                            _DbStatus.ok      => const Color(0xFF22C55E),
-                            _DbStatus.error   => const Color(0xFFEF4444),
+                            _DbStatus.ok => const Color(0xFF22C55E),
+                            _DbStatus.error => const Color(0xFFEF4444),
                             _DbStatus.unknown => const Color(0xFF9CA3AF),
                           };
                           return Container(
@@ -822,20 +976,24 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Container(width: 1, height: 12, color: const Color(0xFF1A1A1A).withValues(alpha: 0.08)),
+                      Container(
+                        width: 1,
+                        height: 12,
+                        color: const Color(0xFF433075).withValues(alpha: 0.12),
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         switch (_dbStatus) {
-                          _DbStatus.ok      => 'Live',
-                          _DbStatus.error   => 'Error',
+                          _DbStatus.ok => 'Live',
+                          _DbStatus.error => 'Error',
                           _DbStatus.unknown => 'Checking…',
                         },
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: switch (_dbStatus) {
-                            _DbStatus.ok      => const Color(0xFF22C55E),
-                            _DbStatus.error   => const Color(0xFFEF4444),
+                            _DbStatus.ok => const Color(0xFF22C55E),
+                            _DbStatus.error => const Color(0xFFEF4444),
                             _DbStatus.unknown => const Color(0xFF9CA3AF),
                           },
                         ),
@@ -849,8 +1007,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 height: 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xFF1A1A1A).withValues(alpha: 0.04)),
+                  color: const Color(0xFFFAFAFA),
+                  border: Border.all(color: const Color(0xFFE2DEEF)),
                 ),
                 child: Stack(
                   alignment: Alignment.center,
@@ -868,7 +1026,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         height: 7,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xFF23C8D9),
+                          color: Color(0xFF433075),
                         ),
                       ),
                     ),
@@ -885,231 +1043,268 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   Widget _buildCameraViewport() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: Container(
-          height: MediaQuery.of(context).size.height * 0.33,
-          color: const Color(0xFF1A1A1A),
-          child: Stack(
-            children: [
-              // FIXED: Correct portrait aspect ratio cropping using FittedBox + AspectRatio
-              if (_isCameraInitialized && _cameraController != null)
-                Positioned.fill(
-                  child: AnimatedScale(
-                    scale: _zoomLevel,
-                    duration: const Duration(milliseconds: 120),
-                    curve: Curves.easeOut,
-                    child: FittedBox(
-                      fit: BoxFit.cover,
-                      child: SizedBox(
-                        width: MediaQuery.of(context).size.width,
-                        child: AspectRatio(
-                          // Invert landscape aspect ratio constraints for seamless portrait preview paths
-                          aspectRatio: 1 / _cameraController!.value.aspectRatio,
-                          child: CameraPreview(_cameraController!),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: const Color(0xFFE2DEEF), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF433075).withValues(alpha: 0.06),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.33,
+            color: const Color(0xFF1A1A1A),
+            child: Stack(
+              children: [
+                // FIXED: Correct portrait aspect ratio cropping using FittedBox + AspectRatio
+                if (_isCameraInitialized && _cameraController != null)
+                  Positioned.fill(
+                    child: AnimatedScale(
+                      scale: _zoomLevel,
+                      duration: const Duration(milliseconds: 120),
+                      curve: Curves.easeOut,
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          child: AspectRatio(
+                            // Invert landscape aspect ratio constraints for seamless portrait preview paths
+                            aspectRatio:
+                                1 / _cameraController!.value.aspectRatio,
+                            child: CameraPreview(_cameraController!),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                )
-              else
-                Positioned.fill(
-                  child: Container(
-                    color: const Color(0xFF1A1A1A),
-                    child: const Center(
-                      child: CircularProgressIndicator(color: Color(0xFF23C8D9)),
-                    ),
-                  ),
-                ),
-              
-              // Scanning Reticle Overlay
-              Center(
-                child: SizedBox(
-                  width: 180.0,
-                  height: 180.0,
-                  child: CustomPaint(
-                    painter: ReticlePainter(
-                      color: const Color(0xFF23C8D9),
-                      strokeWidth: 3.5,
-                      borderRadius: 16,
-                      arcLength: 20,
-                    ),
-                    child: _isSearchingImage
-                        ? Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  const Color(0xFF23C8D9).withValues(alpha: 0.2),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
-                          )
-                        : null,
-                  ),
-                ),
-              ),
-
-              // Zoom Level HUD Overlay
-              Center(
-                child: IgnorePointer(
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: _showZoomSlider ? 1.0 : 0.0,
-                    curve: Curves.easeInOut,
+                  )
+                else
+                  Positioned.fill(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A1A).withValues(alpha: 0.55),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        '${_zoomLevel.toStringAsFixed(1)}x',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
+                      color: const Color(0xFF1A1A1A),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF7C3AED),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
 
-              // Zoom Button & Slider
-              Positioned(
-                bottom: 12,
-                right: 12,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedOpacity(
+                // Scanning Reticle Overlay
+                Center(
+                  child: SizedBox(
+                    width: 180.0,
+                    height: 180.0,
+                    child: CustomPaint(
+                      painter: ReticlePainter(
+                        color: const Color(0xFFE5E7EB),
+                        strokeWidth: 2.0,
+                        borderRadius: 16,
+                        arcLength: 20,
+                      ),
+                      child: _isSearchingImage
+                          ? Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    const Color(
+                                      0xFFA58CF4,
+                                    ).withValues(alpha: 0.3),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+
+                // Zoom Level HUD Overlay
+                Center(
+                  child: IgnorePointer(
+                    child: AnimatedOpacity(
                       duration: const Duration(milliseconds: 200),
                       opacity: _showZoomSlider ? 1.0 : 0.0,
                       curve: Curves.easeInOut,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
-                        width: _showZoomSlider ? 140 : 0,
-                        height: 32,
-                        margin: EdgeInsets.only(right: _showZoomSlider ? 8 : 0),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1A1A1A).withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                        clipBehavior: Clip.antiAlias,
-                        child: OverflowBox(
-                          minWidth: 0,
-                          maxWidth: 140,
-                          alignment: Alignment.centerLeft,
-                          child: SizedBox(
-                            width: 140,
-                            child: SliderTheme(
-                              data: SliderTheme.of(context).copyWith(
-                                activeTrackColor: const Color(0xFF23C8D9),
-                                inactiveTrackColor: Colors.white24,
-                                thumbColor: Colors.white,
-                                trackHeight: 2,
-                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                              ),
-                              child: Slider(
-                                value: _zoomLevel,
-                                min: 1.0,
-                                max: 3.0,
-                                onChanged: (val) {
-                                  setState(() {
-                                    _zoomLevel = val;
-                                  });
-                                  _updateHardwareZoom(val);
-                                },
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF1A1A1A,
+                          ).withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          '${_zoomLevel.toStringAsFixed(1)}x',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Zoom Button & Slider
+                Positioned(
+                  bottom: 12,
+                  right: 12,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: _showZoomSlider ? 1.0 : 0.0,
+                        curve: Curves.easeInOut,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          width: _showZoomSlider ? 140 : 0,
+                          height: 32,
+                          margin: EdgeInsets.only(
+                            right: _showZoomSlider ? 8 : 0,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFF1A1A1A,
+                            ).withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: OverflowBox(
+                            minWidth: 0,
+                            maxWidth: 140,
+                            alignment: Alignment.centerLeft,
+                            child: SizedBox(
+                              width: 140,
+                              child: SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  activeTrackColor: const Color(0xFF433075),
+                                  inactiveTrackColor: Colors.white24,
+                                  thumbColor: Colors.white,
+                                  trackHeight: 2,
+                                  thumbShape: const RoundSliderThumbShape(
+                                    enabledThumbRadius: 6,
+                                  ),
+                                  overlayShape: const RoundSliderOverlayShape(
+                                    overlayRadius: 12,
+                                  ),
+                                ),
+                                child: Slider(
+                                  value: _zoomLevel,
+                                  min: 1.0,
+                                  max: 3.0,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _zoomLevel = val;
+                                    });
+                                    _updateHardwareZoom(val);
+                                  },
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isSliderPersistent = !_isSliderPersistent;
-                          _showZoomSlider = _isSliderPersistent;
-                          _zoomButtonScale = 1.15;
-                        });
-                        Future.delayed(const Duration(milliseconds: 150), () {
-                          if (mounted) {
-                            setState(() {
-                              _zoomButtonScale = 1.0;
-                            });
-                          }
-                        });
-                      },
-                      onLongPressStart: (details) {
-                        setState(() {
-                          _showZoomSlider = true;
-                          _zoomButtonScale = 1.25;
-                          _dragStartPos = details.globalPosition;
-                          _zoomLevelAtStart = _zoomLevel;
-                        });
-                      },
-                      onLongPressMoveUpdate: (details) {
-                        final double dx = details.globalPosition.dx - _dragStartPos.dx;
-                        final double newZoom = (_zoomLevelAtStart - (dx / 70.0)).clamp(1.0, 3.0);
-                        setState(() {
-                          _zoomLevel = newZoom;
-                        });
-                        _updateHardwareZoom(newZoom);
-                      },
-                      onLongPressEnd: (details) {
-                        setState(() {
-                          _zoomButtonScale = 1.0;
-                          if (!_isSliderPersistent) {
-                            _showZoomSlider = false;
-                          }
-                        });
-                      },
-                      child: AnimatedScale(
-                        scale: _zoomButtonScale,
-                        duration: const Duration(milliseconds: 150),
-                        curve: Curves.easeOutBack,
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _showZoomSlider 
-                                ? const Color(0xFF23C8D9) 
-                                : const Color(0xFF1A1A1A).withValues(alpha: 0.6),
-                            boxShadow: _showZoomSlider 
-                                ? [
-                                    BoxShadow(
-                                      color: const Color(0xFF23C8D9).withValues(alpha: 0.4),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    )
-                                  ]
-                                : null,
-                          ),
-                          child: Icon(
-                            _showZoomSlider ? Icons.zoom_out : Icons.zoom_in,
-                            color: Colors.white,
-                            size: 18,
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isSliderPersistent = !_isSliderPersistent;
+                            _showZoomSlider = _isSliderPersistent;
+                            _zoomButtonScale = 1.15;
+                          });
+                          Future.delayed(const Duration(milliseconds: 150), () {
+                            if (mounted) {
+                              setState(() {
+                                _zoomButtonScale = 1.0;
+                              });
+                            }
+                          });
+                        },
+                        onLongPressStart: (details) {
+                          setState(() {
+                            _showZoomSlider = true;
+                            _zoomButtonScale = 1.25;
+                            _dragStartPos = details.globalPosition;
+                            _zoomLevelAtStart = _zoomLevel;
+                          });
+                        },
+                        onLongPressMoveUpdate: (details) {
+                          final double dx =
+                              details.globalPosition.dx - _dragStartPos.dx;
+                          final double newZoom =
+                              (_zoomLevelAtStart - (dx / 70.0)).clamp(1.0, 3.0);
+                          setState(() {
+                            _zoomLevel = newZoom;
+                          });
+                          _updateHardwareZoom(newZoom);
+                        },
+                        onLongPressEnd: (details) {
+                          setState(() {
+                            _zoomButtonScale = 1.0;
+                            if (!_isSliderPersistent) {
+                              _showZoomSlider = false;
+                            }
+                          });
+                        },
+                        child: AnimatedScale(
+                          scale: _zoomButtonScale,
+                          duration: const Duration(milliseconds: 150),
+                          curve: Curves.easeOutBack,
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _showZoomSlider
+                                  ? const Color(0xFF433075)
+                                  : const Color(
+                                      0xFF1A1A1A,
+                                    ).withValues(alpha: 0.6),
+                              boxShadow: _showZoomSlider
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(
+                                          0xFF433075,
+                                        ).withValues(alpha: 0.4),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Icon(
+                              _showZoomSlider ? Icons.zoom_out : Icons.zoom_in,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1119,12 +1314,22 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   Widget _buildShoppingZone() {
     return Container(
       margin: const EdgeInsets.only(top: 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFA),
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(32),
           topRight: Radius.circular(32),
         ),
+        border: Border(
+          top: BorderSide(color: const Color(0xFFE2DEEF), width: 1.5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF433075).withValues(alpha: 0.04),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
+          ),
+        ],
       ),
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
       child: Column(
@@ -1150,15 +1355,18 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF23C8D9),
+                        color: Color(0xFF433075),
                       ),
                     ),
                     const SizedBox(width: 8),
                   ],
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF23C8D9).withValues(alpha: 0.08),
+                      color: const Color(0xFF433075).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -1166,7 +1374,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF23C8D9),
+                        color: Color(0xFF433075),
                       ),
                     ),
                   ),
@@ -1195,11 +1403,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                                   height: 72,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: const Color(0xFF23C8D9).withValues(alpha: 0.05),
+                                    color: const Color(
+                                      0xFF433075,
+                                    ).withValues(alpha: 0.05),
                                   ),
                                   child: const Icon(
                                     Icons.shopping_cart_outlined,
-                                    color: Color(0xFF23C8D9),
+                                    color: Color(0xFF433075),
                                     size: 32,
                                   ),
                                 ),
@@ -1252,7 +1462,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                                 child: CartItem(
                                   imageUrl: item.imageUrl,
                                   name: item.name,
-                                  details: "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
+                                  details:
+                                      "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
                                   quantity: item.quantity,
                                   onIncrement: () => _incrementQuantity(index),
                                   onDecrement: () => _decrementQuantity(index),
@@ -1283,15 +1494,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   Widget _buildCheckoutBar() {
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF23C8D9), Color(0xFF0EA5B5)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFF433075),
+        borderRadius: BorderRadius.circular(40),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF23C8D9).withValues(alpha: 0.35),
+            color: const Color(0xFF433075).withValues(alpha: 0.3),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -1301,9 +1508,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         color: Colors.transparent,
         child: InkWell(
           onTap: _isCheckingOut ? null : _checkoutCart,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(40),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1377,12 +1584,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             child: Container(
               height: 82,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.85),
+                color: const Color(0xFFFAFAFA),
                 borderRadius: BorderRadius.circular(40),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+                border: Border.all(color: const Color(0xFFE2DEEF)),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF1A1A1A).withValues(alpha: 0.06),
+                    color: const Color(0xFF433075).withValues(alpha: 0.06),
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
@@ -1398,14 +1605,18 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.chat_bubble_outline, color: Color(0xFF9CA3AF), size: 22),
+                          Icon(
+                            Icons.chat_bubble_outline,
+                            color: Color(0xFF433075),
+                            size: 22,
+                          ),
                           SizedBox(height: 4),
                           Text(
                             'Chat',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF9CA3AF),
-                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF433075),
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
@@ -1419,7 +1630,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.mic_none, color: Color(0xFF9CA3AF), size: 22),
+                          Icon(
+                            Icons.mic_none,
+                            color: Color(0xFF9CA3AF),
+                            size: 22,
+                          ),
                           SizedBox(height: 4),
                           Text(
                             'Voice',
@@ -1469,11 +1684,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           height: 74,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF23C8D9),
+            color: const Color(0xFF433075),
             border: Border.all(color: Colors.white, width: 4),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF23C8D9).withValues(alpha: 0.3),
+                color: const Color(0xFF433075).withValues(alpha: 0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),

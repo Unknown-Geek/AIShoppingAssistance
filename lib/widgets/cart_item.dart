@@ -48,14 +48,14 @@ class _CartItemState extends State<CartItem> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF3F4F6)),
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE2DEEF), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1A1A1A).withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: const Color(0xFF433075).withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -78,7 +78,7 @@ class _CartItemState extends State<CartItem> {
                         child: SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF23C8D9)),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF433075)),
                         ),
                       ),
                       errorWidget: (context, url, error) => const Icon(
@@ -125,14 +125,14 @@ class _CartItemState extends State<CartItem> {
           Container(
             height: 32,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFFFAFAFA),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0x0F1A1A1A)),
-              boxShadow: const [
+              border: Border.all(color: const Color(0xFFE2DEEF)),
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x051A1A1A),
+                  color: const Color(0xFF433075).withValues(alpha: 0.04),
                   blurRadius: 4,
-                  offset: Offset(0, 1),
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),
@@ -144,7 +144,7 @@ class _CartItemState extends State<CartItem> {
                   behavior: HitTestBehavior.opaque,
                   child: const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Icon(Icons.remove, size: 14, color: Color(0xFF23C8D9)),
+                    child: Icon(Icons.remove, size: 14, color: Color(0xFF433075)),
                   ),
                 ),
                 AnimatedSwitcher(
@@ -188,7 +188,7 @@ class _CartItemState extends State<CartItem> {
                   behavior: HitTestBehavior.opaque,
                   child: const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Icon(Icons.add, size: 14, color: Color(0xFF23C8D9)),
+                    child: Icon(Icons.add, size: 14, color: Color(0xFF433075)),
                   ),
                 ),
               ],
