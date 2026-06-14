@@ -1042,19 +1042,13 @@ class _DashboardScreenState extends State<DashboardScreen>
     final progress = _cartExpandController.value;
     if (progress >= 1.0) return const SizedBox.shrink();
 
-    final height = (1.0 - progress) * (MediaQuery.of(context).size.height * 0.33);
-    final topPadding = (1.0 - progress) * 16.0;
-    final horizontalPadding = (1.0 - progress) * 16.0;
-
-    return Opacity(
-      opacity: (1.0 - progress).clamp(0.0, 1.0),
-      child: ClipRect(
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          heightFactor: 1.0 - progress,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(horizontalPadding, topPadding, horizontalPadding, 0),
-            child: Container(
+    return ClipRect(
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        heightFactor: 1.0 - progress,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
@@ -1307,10 +1301,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
         ),
       ),
-    ),
-  ),
-),
-);
+    );
   }
 
   Widget _buildShoppingZone() {
