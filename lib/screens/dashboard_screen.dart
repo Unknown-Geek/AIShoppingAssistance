@@ -886,17 +886,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           height: 72,
           margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFFFFF),
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF001A23).withValues(alpha: 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            border: Border.all(color: const Color(0xFFD2E4E6)),
+          decoration: const BoxDecoration(
+            color: Colors.transparent,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
