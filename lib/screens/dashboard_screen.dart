@@ -24,10 +24,10 @@ enum _DbStatus { unknown, ok, error }
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
   final ChromaDbClient _chromaClient = ChromaDbClient();
-  final ProductDetectionService _detectionService = HuggingFaceProxyDetectionService();
+  final ProductDetectionService _detectionService =
+      HuggingFaceProxyDetectionService();
   final TextEditingController _ragController = TextEditingController();
   late AnimationController _cursorController;
-  late AnimationController _pulseController;
 
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
@@ -46,6 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   // Cart database service (session-scoped, resets on checkout)
   final CartService _cartService = CartService();
   bool _isCheckingOut = false;
+  bool _isCheckoutHovered = false;
 
   // DB connectivity state — drives the status pill in the app bar
   _DbStatus _dbStatus = _DbStatus.unknown;
@@ -56,11 +57,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     _cursorController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-    )..repeat(reverse: true);
-
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
     _initializeCamera();
@@ -142,7 +138,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     _cartService.removeListener(_onCartChanged);
     _cameraController?.dispose();
     _cursorController.dispose();
-    _pulseController.dispose();
     _ragController.dispose();
     super.dispose();
   }
@@ -190,7 +185,11 @@ class _DashboardScreenState extends State<DashboardScreen>
               Text(
                 'You are about to checkout ${_cartService.itemCount} item${_cartService.itemCount == 1 ? '' : 's'} for a total of',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF001A23)),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF001A23),
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -310,7 +309,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         );
       }
 
-      final CartItemModel? item = await _detectionService.detectItem(capturedPhoto);
+      final CartItemModel? item = await _detectionService.detectItem(
+        capturedPhoto,
+      );
 
       if (item != null && mounted) {
         // Show confirmation sheet — CLIP can confuse similar-looking products
@@ -549,7 +550,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFB3EFB2), width: 1.5),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFB3EFB2),
+                        width: 1.5,
+                      ),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -946,29 +950,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      AnimatedBuilder(
-                        animation: _pulseController,
-                        builder: (context, child) {
-                          final dotColor = switch (_dbStatus) {
-                            _DbStatus.ok => const Color(0xFFB3EFB2),
-                            _DbStatus.error => const Color(0xFFEF4444),
-                            _DbStatus.unknown => const Color(0xFF4A5568),
-                          };
-                          return Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: dotColor.withValues(
-                                alpha: _dbStatus == _DbStatus.unknown
-                                    ? 0.6
-                                    : 0.3 + 0.7 * _pulseController.value,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 6),
                       const Text(
                         'DB Status',
                         style: TextStyle(
@@ -978,7 +959,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Container(width: 1, height: 12, color: const Color(0xFF001A23).withValues(alpha: 0.12)),
+                      Container(
+                        width: 1,
+                        height: 12,
+                        color: const Color(0xFF001A23).withValues(alpha: 0.12),
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         switch (_dbStatus) {
@@ -1106,21 +1091,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         arcLength: 20,
                       ),
                       child: _isSearchingImage
-                          ? Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    const Color(
-                                      0xFFB3EFB2,
-                                    ).withValues(alpha: 0.3),
-                                    Colors.transparent,
-                                  ],
-                                ),
-                              ),
-                            )
+                          ? const ScanningOverlay()
                           : null,
                     ),
                   ),
@@ -1273,22 +1244,28 @@ class _DashboardScreenState extends State<DashboardScreen>
                             height: 32,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _showZoomSlider 
-                                  ? const Color(0xFFB3EFB2) 
-                                  : const Color(0xFF1A1A1A).withValues(alpha: 0.6),
-                              boxShadow: _showZoomSlider 
+                              color: _showZoomSlider
+                                  ? const Color(0xFFB3EFB2)
+                                  : const Color(
+                                      0xFF1A1A1A,
+                                    ).withValues(alpha: 0.6),
+                              boxShadow: _showZoomSlider
                                   ? [
                                       BoxShadow(
-                                        color: const Color(0xFFB3EFB2).withValues(alpha: 0.4),
+                                        color: const Color(
+                                          0xFFB3EFB2,
+                                        ).withValues(alpha: 0.4),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
-                                      )
+                                      ),
                                     ]
                                   : null,
                             ),
                             child: Icon(
                               _showZoomSlider ? Icons.zoom_out : Icons.zoom_in,
-                              color: _showZoomSlider ? const Color(0xFF001A23) : Colors.white,
+                              color: _showZoomSlider
+                                  ? const Color(0xFF001A23)
+                                  : Colors.white,
                               size: 18,
                             ),
                           ),
@@ -1343,17 +1320,6 @@ class _DashboardScreenState extends State<DashboardScreen>
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (!_cartService.isEmpty) ...[
-                    Text(
-                      '₹${_cartService.totalPrice.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF001A23),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -1364,7 +1330,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${_cartService.itemCount} Items',
+                      '${_cartService.itemCount} ${_cartService.itemCount == 1 ? 'Item' : 'Items'}',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -1503,33 +1469,23 @@ class _DashboardScreenState extends State<DashboardScreen>
         child: InkWell(
           onTap: _isCheckingOut ? null : _checkoutCart,
           borderRadius: BorderRadius.circular(40),
+          onHover: (hovered) {
+            setState(() {
+              _isCheckoutHovered = hovered;
+            });
+          },
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${_cartService.itemCount} item${_cartService.itemCount == 1 ? '' : 's'}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '₹${_cartService.totalPrice.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+                RollingPriceText(
+                  value: _cartService.totalPrice,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
                 _isCheckingOut
                     ? const SizedBox(
@@ -1540,9 +1496,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                           color: Colors.white,
                         ),
                       )
-                    : const Row(
+                    : Row(
                         children: [
-                          Text(
+                          const Text(
                             'Checkout',
                             style: TextStyle(
                               fontSize: 16,
@@ -1550,11 +1506,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                               color: Colors.white,
                             ),
                           ),
-                          SizedBox(width: 6),
-                          Icon(
-                            Icons.arrow_forward,
-                            color: Colors.white,
-                            size: 14,
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            curve: Curves.easeOutCubic,
+                            padding: EdgeInsets.only(
+                              left: _isCheckoutHovered ? 10.0 : 6.0,
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white,
+                              size: 14,
+                            ),
                           ),
                         ],
                       ),
@@ -1599,7 +1561,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                       child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.chat_bubble_outline, color: Color(0xFF001A23), size: 22),
+                          Icon(
+                            Icons.chat_bubble_outline,
+                            color: Color(0xFF001A23),
+                            size: 22,
+                          ),
                           SizedBox(height: 4),
                           Text(
                             'Chat',
@@ -1763,4 +1729,199 @@ class ReticlePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class RollingPriceText extends StatefulWidget {
+  final double value;
+  final TextStyle style;
+
+  const RollingPriceText({
+    super.key,
+    required this.value,
+    required this.style,
+  });
+
+  @override
+  State<RollingPriceText> createState() => _RollingPriceTextState();
+}
+
+class _RollingPriceTextState extends State<RollingPriceText> {
+  double _oldValue = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _oldValue = widget.value;
+  }
+
+  @override
+  void didUpdateWidget(RollingPriceText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _oldValue = oldWidget.value;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double currentVal = widget.value;
+    final bool goingUp = currentVal > _oldValue;
+
+    final String oldText = '₹${_oldValue.toStringAsFixed(2)}';
+    final String newText = '₹${currentVal.toStringAsFixed(2)}';
+
+    final List<String> oldChars = oldText.split('').reversed.toList();
+    final List<String> newChars = newText.split('').reversed.toList();
+
+    final List<Widget> charWidgets = [];
+
+    // tabulate figures to prevent horizontal jitter
+    final TextStyle displayStyle = widget.style.copyWith(
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+    for (int i = 0; i < newChars.length; i++) {
+      final String newChar = newChars[i];
+      final String oldChar = i < oldChars.length ? oldChars[i] : '';
+
+      if (newChar == oldChar) {
+        charWidgets.add(
+          Text(
+            newChar,
+            key: ValueKey<String>('static-$i-$newChar'),
+            style: displayStyle,
+          ),
+        );
+      } else {
+        charWidgets.add(
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            switchInCurve: Curves.easeOutBack,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              final childKey = child.key as ValueKey<String>;
+              final isCurrent = childKey.value == 'active-$i-$newChar';
+              final offset = goingUp ? 1.0 : -1.0;
+
+              return ClipRect(
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: isCurrent
+                        ? Offset(0.0, offset)
+                        : Offset(0.0, -offset),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              newChar,
+              key: ValueKey<String>('active-$i-$newChar'),
+              style: displayStyle,
+            ),
+          ),
+        );
+      }
+    }
+
+    final widgets = charWidgets.reversed.toList();
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: widgets,
+    );
+  }
+}
+
+class ScanningOverlay extends StatefulWidget {
+  const ScanningOverlay({super.key});
+
+  @override
+  State<ScanningOverlay> createState() => _ScanningOverlayState();
+}
+
+class _ScanningOverlayState extends State<ScanningOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 180.0,
+      height: 180.0,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final value = _controller.value;
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              children: [
+                // Subtle background green tint
+                Container(
+                  color: const Color(0xFFB3EFB2).withValues(alpha: 0.04),
+                ),
+                // Translucent green gradient trail/glow behind the sweeping laser line
+                Positioned(
+                  top: (value * 180.0) - 60.0,
+                  left: 0,
+                  right: 0,
+                  height: 60.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          const Color(0xFFB3EFB2).withValues(alpha: 0.18),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Sweeping laser line
+                Positioned(
+                  top: value * 180.0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 2.5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFB3EFB2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFB3EFB2).withValues(alpha: 0.8),
+                          blurRadius: 8,
+                          spreadRadius: 1.5,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
