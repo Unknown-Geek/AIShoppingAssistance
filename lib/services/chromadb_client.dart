@@ -173,7 +173,7 @@ class ChromaDbClient {
           // Threshold: L2 distance on CLIP-normalized vectors (range 0–2).
           // 0.65 ≈ cosine similarity 0.79 — rejects uncertain matches that
           // caused similar-looking products (e.g. Lays variants) to be confused.
-          const double threshold = 0.65;
+          const double threshold = 0.95;
           if (distance > threshold) {
             debugPrint('Match rejected: Distance $distance exceeds threshold $threshold');
             debugPrint('--- CHROMA SIMILARITY SEARCH END (NO CONFIDENT MATCH) ---');
