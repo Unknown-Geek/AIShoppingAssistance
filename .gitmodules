@@ -1,4 +1,0 @@
-[submodule "hf_server"]
-	path = hf_server
-	url = https://huggingface.co/spaces/Mojo-Maniac/AIShoppingAssistance_Server
-	branch = main
