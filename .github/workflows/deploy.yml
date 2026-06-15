@@ -1,0 +1,46 @@
+name: Deploy Server (Hugging Face & Oracle VM)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'hf_server/**'
+
+jobs:
+  deploy_backup_hf:
+    name: Sync to Hugging Face Space (Backup Server)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          cd hf_server
+          git init
+          git checkout -b main
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add .
+          git commit -m "Deploy from GitHub Actions: ${{ github.sha }}"
+          git push https://Mojo-Maniac:$HF_TOKEN@huggingface.co/spaces/Mojo-Maniac/AIShoppingAssistance_Server main --force
+
+  deploy_primary_oracle:
+    name: Deploy to Oracle VM (Primary Server)
+    needs: deploy_backup_hf
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Deploy to Oracle VM
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ORACLE_VM_HOST }}
+          username: ${{ secrets.ORACLE_VM_USER }}
+          key: ${{ secrets.ORACLE_VM_SSH_KEY }}
+          script: |
+            cd ${{ secrets.ORACLE_VM_REPO_PATH }}
+            git fetch origin main
+            git reset --hard origin/main
+            chmod +x run_local.sh
+            ./run_local.sh
