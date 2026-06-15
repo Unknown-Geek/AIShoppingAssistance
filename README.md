@@ -22,8 +22,8 @@ graph TD
     D -->|Inference| E[ONNX Vision Encoder]
     E -->|Normalized 512-float vector| F[Chroma Vector Lookup]
     F -->|Match product slug| G[Inventory Metadata Resolution]
-    G -->|Local inventory.json lookup| H[Flutter Cart Service]
-    H -->|Local State & SharedPreferences| I[Updated Shopping Cart]
+    G -->|Supabase lookup| H[Flutter Cart Service]
+    H -->|Local State| I[Updated Shopping Cart]
 ```
 
 ### Flow Breakdown
