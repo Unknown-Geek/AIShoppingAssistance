@@ -9,5 +9,3 @@ pinned: false
 
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
 
-<!-- Test deployment workflow after VM update: resolve divergent branches -->
-
