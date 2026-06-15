@@ -12,14 +12,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Fetch all history for subtree split
 
-      - name: Push subtree to Hugging Face Space
+      - name: Push to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-          # Split the subtree and force push the resulting commit history to Hugging Face Space
-          git push https://Mojo-Maniac:$HF_TOKEN@huggingface.co/spaces/Mojo-Maniac/AIShoppingAssistance_Server $(git subtree split --prefix=hf_server ${{ github.ref_name }}):main --force
+          cd hf_server
+          git init
+          git checkout -b main
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add .
+          git commit -m "Deploy from GitHub Actions: ${{ github.sha }}"
+          git push https://Mojo-Maniac:$HF_TOKEN@huggingface.co/spaces/Mojo-Maniac/AIShoppingAssistance_Server main --force
