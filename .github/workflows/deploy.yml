@@ -2,7 +2,7 @@ name: Deploy Server (Hugging Face & Oracle VM)
 
 on:
   push:
-    branches: [ shravan, main ]
+    branches: [ main ]
     paths:
       - 'hf_server/**'
 
