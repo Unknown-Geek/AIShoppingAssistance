@@ -22,13 +22,14 @@ class _CheckoutBarState extends State<CheckoutBar> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF001A23),
+        color: theme.colorScheme.primary,
         borderRadius: BorderRadius.circular(40),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF001A23).withValues(alpha: 0.3),
+            color: theme.colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),

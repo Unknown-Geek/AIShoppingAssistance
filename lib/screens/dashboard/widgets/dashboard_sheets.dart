@@ -13,6 +13,7 @@ class DashboardSheets {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
+        final theme = Theme.of(ctx);
         return Container(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
           decoration: const BoxDecoration(
@@ -27,20 +28,20 @@ class DashboardSheets {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF001A23).withValues(alpha: 0.12),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               CircleAvatar(
                 radius: 36,
-                backgroundColor: const Color(0xFF001A23).withValues(alpha: 0.1),
+                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                 child: Text(
                   initial,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'ClashDisplay',
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ),
@@ -56,10 +57,10 @@ class DashboardSheets {
               const SizedBox(height: 4),
               Text(
                 email,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF001A23),
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 32),
@@ -139,6 +140,7 @@ class DashboardSheets {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
+        final theme = Theme.of(ctx);
         return Container(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
           decoration: const BoxDecoration(
@@ -189,19 +191,19 @@ class DashboardSheets {
                         const SizedBox(height: 4),
                         Text(
                           item.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF001A23),
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '₹${item.price.toStringAsFixed(2)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF001A23),
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                       ],
@@ -215,7 +217,7 @@ class DashboardSheets {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(ctx, true),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF001A23),
+                    backgroundColor: theme.colorScheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -277,6 +279,7 @@ class _RagSheetContentState extends State<_RagSheetContent> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -302,12 +305,12 @@ class _RagSheetContentState extends State<_RagSheetContent> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Ask Chef RAG',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF001A23),
+                color: theme.colorScheme.primary,
               ),
             ),
             const SizedBox(height: 12),
@@ -335,8 +338,8 @@ class _RagSheetContentState extends State<_RagSheetContent> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFB3EFB2),
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.secondary,
                     width: 1.5,
                   ),
                 ),
@@ -364,7 +367,7 @@ class _RagSheetContentState extends State<_RagSheetContent> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF001A23),
+                  backgroundColor: theme.colorScheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(

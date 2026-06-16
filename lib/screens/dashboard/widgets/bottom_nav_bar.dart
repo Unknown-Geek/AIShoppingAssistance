@@ -24,6 +24,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Stack(
       clipBehavior: Clip.none,
       alignment: Alignment.center,
@@ -40,7 +41,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 border: Border.all(color: const Color(0xFFD2E4E6)),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF001A23).withValues(alpha: 0.06),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.06),
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
@@ -53,20 +54,20 @@ class _BottomNavBarState extends State<BottomNavBar> {
                   Expanded(
                     child: InkWell(
                       onTap: widget.onChatTap,
-                      child: const Column(
+                      child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.chat_bubble_outline,
-                            color: Color(0xFF001A23),
+                            color: theme.colorScheme.primary,
                             size: 22,
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             'Chat',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF001A23),
+                              color: theme.colorScheme.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -104,12 +105,12 @@ class _BottomNavBarState extends State<BottomNavBar> {
             ),
           ),
         ),
-        _buildShutterButton(),
+        _buildShutterButton(theme),
       ],
     );
   }
 
-  Widget _buildShutterButton() {
+  Widget _buildShutterButton(ThemeData theme) {
     return GestureDetector(
       onTapDown: (_) {
         setState(() {
@@ -135,11 +136,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
           height: 74,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFFB3EFB2),
+            color: theme.colorScheme.secondary,
             border: Border.all(color: Colors.white, width: 4),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFB3EFB2).withValues(alpha: 0.3),
+                color: theme.colorScheme.secondary.withValues(alpha: 0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -147,17 +148,17 @@ class _BottomNavBarState extends State<BottomNavBar> {
           ),
           child: Center(
             child: widget.isSearchingImage
-                ? const SizedBox(
+                ? SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Color(0xFF001A23),
+                      color: theme.colorScheme.primary,
                     ),
                   )
-                : const Icon(
+                : Icon(
                     Icons.camera_alt_outlined,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                     size: 28,
                   ),
           ),

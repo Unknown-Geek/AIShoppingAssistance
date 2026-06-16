@@ -17,6 +17,7 @@ List<CameraDescription> cameras = [];
 final BrandConfig _activeBrand = BrandConfig.qless();
 
 Future<void> main() async {
+  BrandConfig.active = _activeBrand;
   WidgetsFlutterBinding.ensureInitialized();
 
   try {

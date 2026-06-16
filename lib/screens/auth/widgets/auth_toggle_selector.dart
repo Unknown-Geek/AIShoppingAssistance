@@ -12,13 +12,14 @@ class AuthToggleSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: const Color(0xFFB3EFB2).withValues(alpha: 0.25),
+        color: theme.colorScheme.secondary.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(25),
         border: Border.all(
-          color: const Color(0xFFB3EFB2).withValues(alpha: 0.25),
+          color: theme.colorScheme.secondary.withValues(alpha: 0.25),
         ),
       ),
       child: Stack(
@@ -32,11 +33,11 @@ class AuthToggleSelector extends StatelessWidget {
               child: Container(
                 margin: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF001A23),
+                  color: theme.colorScheme.primary,
                   borderRadius: BorderRadius.circular(21),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF001A23).withValues(alpha: 0.25),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.25),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -57,7 +58,7 @@ class AuthToggleSelector extends StatelessWidget {
                       style: TextStyle(
                         color: isSignIn
                             ? Colors.white
-                            : const Color(0xFF001A23),
+                            : theme.colorScheme.primary,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -75,7 +76,7 @@ class AuthToggleSelector extends StatelessWidget {
                       style: TextStyle(
                         color: !isSignIn
                             ? Colors.white
-                            : const Color(0xFF001A23),
+                            : theme.colorScheme.primary,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),

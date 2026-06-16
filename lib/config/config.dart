@@ -329,6 +329,8 @@ class BrandIdentity {
 // that the MaterialApp can consume directly.
 // ---------------------------------------------------------------------------
 class BrandConfig {
+  static BrandConfig active = BrandConfig.qless();
+
   final BrandIdentity identity;
   final BrandColors colors;
   final BrandTypography typography;

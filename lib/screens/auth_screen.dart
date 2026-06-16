@@ -81,21 +81,21 @@ class _AuthScreenState extends State<AuthScreen> {
                         height: 60,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFF001A23).withValues(alpha: 0.1),
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.mark_email_unread_outlined,
-                          color: Color(0xFF001A23),
+                          color: Theme.of(context).colorScheme.primary,
                           size: 30,
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
+                      Text(
                         'Confirm Email',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF001A23),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -120,7 +120,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             });
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF001A23),
+                            backgroundColor: Theme.of(context).colorScheme.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             elevation: 0,
@@ -161,6 +161,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       body: Stack(
         children: [
@@ -189,9 +190,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(
-                              0xFF001A23,
-                            ).withValues(alpha: 0.04),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.04),
                             blurRadius: 24,
                             offset: const Offset(0, 12),
                           ),
@@ -253,24 +252,25 @@ class _AuthScreenState extends State<AuthScreen> {
                             ],
 
                             // Email Address Field
-                            const Text(
+                            Text(
                               'Email Address',
                               style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF001A23)),
+                                  color: theme.colorScheme.primary),
                             ),
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               textInputAction: TextInputAction.next,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
-                                color: Color(0xFF001A23),
+                                color: theme.colorScheme.primary,
                                 fontWeight: FontWeight.w500,
                               ),
                               decoration: _buildInputDecoration(
+                                context,
                                 hint: 'you@example.com',
                                 icon: Icons.mail_outline_rounded,
                               ),
@@ -290,12 +290,12 @@ class _AuthScreenState extends State<AuthScreen> {
                             const SizedBox(height: 20),
 
                             // Password Field
-                            const Text(
+                            Text(
                               'Password',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF001A23),
+                                color: theme.colorScheme.primary,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -308,12 +308,13 @@ class _AuthScreenState extends State<AuthScreen> {
                               onFieldSubmitted: (_) {
                                 if (_isSignIn) _handleSubmit();
                               },
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
-                                color: Color(0xFF001A23),
+                                color: theme.colorScheme.primary,
                                 fontWeight: FontWeight.w500,
                               ),
                               decoration: _buildInputDecoration(
+                                context,
                                 hint: '••••••••',
                                 icon: Icons.lock_outline_rounded,
                                 suffixIcon: IconButton(
@@ -343,12 +344,12 @@ class _AuthScreenState extends State<AuthScreen> {
                             // Confirm Password Field (Sign Up only)
                             if (!_isSignIn) ...[
                               const SizedBox(height: 20),
-                              const Text(
+                              Text(
                                 'Confirm Password',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF001A23),
+                                  color: theme.colorScheme.primary,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -357,12 +358,13 @@ class _AuthScreenState extends State<AuthScreen> {
                                 obscureText: _obscureConfirmPassword,
                                 textInputAction: TextInputAction.done,
                                 onFieldSubmitted: (_) => _handleSubmit(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 15,
-                                  color: Color(0xFF001A23),
+                                  color: theme.colorScheme.primary,
                                   fontWeight: FontWeight.w500,
                                 ),
                                 decoration: _buildInputDecoration(
+                                  context,
                                   hint: '••••••••',
                                   icon: Icons.lock_outline_rounded,
                                   suffixIcon: IconButton(
@@ -402,11 +404,9 @@ class _AuthScreenState extends State<AuthScreen> {
                               child: ElevatedButton(
                                 onPressed: _isLoading ? null : _handleSubmit,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF001A23),
+                                  backgroundColor: theme.colorScheme.primary,
                                   foregroundColor: Colors.white,
-                                  disabledBackgroundColor: const Color(
-                                    0xFF001A23,
-                                  ).withValues(alpha: 0.6),
+                                  disabledBackgroundColor: theme.colorScheme.primary.withValues(alpha: 0.6),
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(26),
@@ -450,11 +450,13 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  InputDecoration _buildInputDecoration({
+  InputDecoration _buildInputDecoration(
+    BuildContext context, {
     required String hint,
     required IconData icon,
     Widget? suffixIcon,
   }) {
+    final theme = Theme.of(context);
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(
@@ -462,7 +464,7 @@ class _AuthScreenState extends State<AuthScreen> {
         fontSize: 14,
         fontWeight: FontWeight.normal,
       ),
-      prefixIcon: Icon(icon, color: const Color(0xFF001A23), size: 20),
+      prefixIcon: Icon(icon, color: theme.colorScheme.primary, size: 20),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: const Color(0xFFFFFFFF),
@@ -478,7 +480,7 @@ class _AuthScreenState extends State<AuthScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFF001A23), width: 1.5),
+        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),

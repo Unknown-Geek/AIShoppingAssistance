@@ -92,6 +92,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (_cartService.isEmpty || _isCheckingOut) return;
 
     final double total = _cartService.totalPrice;
+    final theme = Theme.of(context);
 
     // Show confirmation dialog
     final bool? confirmed = await showDialog<bool>(
@@ -110,40 +111,40 @@ class _DashboardScreenState extends State<DashboardScreen>
                 height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF001A23).withValues(alpha: 0.1),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.shopping_bag_outlined,
-                  color: Color(0xFF001A23),
+                  color: theme.colorScheme.primary,
                   size: 30,
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Confirm Checkout',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF001A23),
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'You are about to checkout ${_cartService.itemCount} item${_cartService.itemCount == 1 ? '' : 's'} for a total of',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF001A23),
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 '₹${total.toStringAsFixed(2)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF001A23),
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 24),
@@ -173,7 +174,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     child: ElevatedButton(
                       onPressed: () => Navigator.of(ctx).pop(true),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF001A23),
+                        backgroundColor: theme.colorScheme.primary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -214,9 +215,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         behavior: SnackBarBehavior.fixed,
         content: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.check_circle_outline,
-              color: Color(0xFFB3EFB2),
+              color: theme.colorScheme.secondary,
               size: 20,
             ),
             const SizedBox(width: 10),
@@ -229,7 +230,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF001A23),
+        backgroundColor: theme.colorScheme.primary,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -270,7 +271,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             SnackBar(
               behavior: SnackBarBehavior.fixed,
               content: Text('${item.name} added to cart!'),
-              backgroundColor: const Color(0xFF001A23),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               duration: const Duration(seconds: 1),
             ),
           );
@@ -278,14 +279,14 @@ class _DashboardScreenState extends State<DashboardScreen>
       } else if (mounted) {
         // Distance exceeded threshold — no confident match found
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             behavior: SnackBarBehavior.fixed,
-            content: Text(
+            content: const Text(
               'Item not recognized. Try a closer scan.',
               style: TextStyle(color: Colors.white),
             ),
-            backgroundColor: Color(0xFF001A23),
-            duration: Duration(seconds: 2),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -325,7 +326,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         SnackBar(
           behavior: SnackBarBehavior.fixed,
           content: Text(response, style: const TextStyle(color: Colors.white)),
-          backgroundColor: const Color(0xFF001A23),
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
     }
@@ -399,7 +400,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ],
           ),
           backgroundColor: (isChromaOk && isSupabaseOk)
-              ? const Color(0xFF001A23)
+              ? Theme.of(context).colorScheme.primary
               : const Color(0xFFEF4444),
           duration: const Duration(seconds: 4),
         ),
@@ -423,6 +424,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget build(BuildContext context) {
     final email = Supabase.instance.client.auth.currentUser?.email ?? 'Guest';
     final userInitial = email.isNotEmpty ? email[0].toUpperCase() : 'U';
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: DashboardAppBar(
@@ -437,12 +439,12 @@ class _DashboardScreenState extends State<DashboardScreen>
           // Background soft gradient
           Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Color(0xFFE8F1F2),
-                    Color(0xFFF1F8F8),
-                    Color(0xFFE8F1F2),
+                    theme.scaffoldBackgroundColor,
+                    Color.lerp(theme.scaffoldBackgroundColor, Colors.white, 0.5) ?? Colors.white,
+                    theme.scaffoldBackgroundColor,
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -461,8 +463,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF001A23).withValues(alpha: 0.18),
-                    const Color(0xFF001A23).withValues(alpha: 0.0),
+                    theme.colorScheme.primary.withValues(alpha: 0.18),
+                    theme.colorScheme.primary.withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -478,8 +480,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFFB3EFB2).withValues(alpha: 0.2),
-                    const Color(0xFFB3EFB2).withValues(alpha: 0.0),
+                    theme.colorScheme.secondary.withValues(alpha: 0.2),
+                    theme.colorScheme.secondary.withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -538,6 +540,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     return ListenableBuilder(
       listenable: _cartService,
       builder: (context, child) {
+        final theme = Theme.of(context);
         return Container(
           margin: const EdgeInsets.only(top: 16),
           decoration: const BoxDecoration(
@@ -636,12 +639,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'My Cart',
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF001A23),
+                              color: theme.colorScheme.primary,
                             ),
                           ),
                           Row(
@@ -653,15 +656,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFB3EFB2).withValues(alpha: 0.3),
+                                  color: theme.colorScheme.secondary.withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   '${_cartService.itemCount} ${_cartService.itemCount == 1 ? 'Item' : 'Items'}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xFF001A23),
+                                    color: theme.colorScheme.primary,
                                   ),
                                 ),
                               ),
@@ -696,23 +699,21 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         height: 72,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: const Color(
-                                            0xFF001A23,
-                                          ).withValues(alpha: 0.05),
+                                          color: theme.colorScheme.primary.withValues(alpha: 0.05),
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.shopping_cart_outlined,
-                                          color: Color(0xFF001A23),
+                                          color: theme.colorScheme.primary,
                                           size: 32,
                                         ),
                                       ),
                                       const SizedBox(height: 16),
-                                      const Text(
+                                      Text(
                                         'Your cart is empty',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
-                                          color: Color(0xFF001A23),
+                                          color: theme.colorScheme.primary,
                                         ),
                                       ),
                                       const SizedBox(height: 6),

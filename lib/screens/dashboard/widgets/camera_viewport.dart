@@ -87,6 +87,7 @@ class _CameraViewportState extends State<CameraViewport> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     // Keep preview in tree but collapsed visually when expanded (progress goes to 1.0)
     return ClipRect(
       child: Align(
@@ -100,7 +101,7 @@ class _CameraViewportState extends State<CameraViewport> {
               border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF001A23).withValues(alpha: 0.06),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.06),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -137,9 +138,9 @@ class _CameraViewportState extends State<CameraViewport> {
                       Positioned.fill(
                         child: Container(
                           color: const Color(0xFF1A1A1A),
-                          child: const Center(
+                          child: Center(
                             child: CircularProgressIndicator(
-                              color: Color(0xFF001A23),
+                              color: theme.colorScheme.primary,
                             ),
                           ),
                         ),
@@ -152,7 +153,7 @@ class _CameraViewportState extends State<CameraViewport> {
                         height: 180.0,
                         child: CustomPaint(
                           painter: ReticlePainter(
-                            color: const Color(0xFFB3EFB2),
+                            color: theme.colorScheme.secondary,
                             strokeWidth: 2.0,
                             borderRadius: 16,
                             arcLength: 20,
@@ -230,7 +231,7 @@ class _CameraViewportState extends State<CameraViewport> {
                                   width: 140,
                                   child: SliderTheme(
                                     data: SliderTheme.of(context).copyWith(
-                                      activeTrackColor: const Color(0xFFB3EFB2),
+                                      activeTrackColor: theme.colorScheme.secondary,
                                       inactiveTrackColor: Colors.white24,
                                       thumbColor: Colors.white,
                                       trackHeight: 2,
@@ -314,12 +315,12 @@ class _CameraViewportState extends State<CameraViewport> {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: _showZoomSlider
-                                      ? const Color(0xFFB3EFB2)
+                                      ? theme.colorScheme.secondary
                                       : const Color(0xFF1A1A1A).withValues(alpha: 0.6),
                                   boxShadow: _showZoomSlider
                                       ? [
                                           BoxShadow(
-                                            color: const Color(0xFFB3EFB2).withValues(alpha: 0.4),
+                                            color: theme.colorScheme.secondary.withValues(alpha: 0.4),
                                             blurRadius: 8,
                                             offset: const Offset(0, 2),
                                           ),
@@ -331,7 +332,7 @@ class _CameraViewportState extends State<CameraViewport> {
                                       ? Icons.zoom_out
                                       : Icons.zoom_in,
                                   color: _showZoomSlider
-                                      ? const Color(0xFF001A23)
+                                      ? theme.colorScheme.primary
                                       : Colors.white,
                                   size: 18,
                                 ),

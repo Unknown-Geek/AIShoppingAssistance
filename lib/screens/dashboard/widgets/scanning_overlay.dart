@@ -28,6 +28,7 @@ class _ScanningOverlayState extends State<ScanningOverlay>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SizedBox(
       width: 180.0,
       height: 180.0,
@@ -41,7 +42,7 @@ class _ScanningOverlayState extends State<ScanningOverlay>
               children: [
                 // Subtle background green tint
                 Container(
-                  color: const Color(0xFFB3EFB2).withValues(alpha: 0.04),
+                  color: theme.colorScheme.secondary.withValues(alpha: 0.04),
                 ),
                 // Translucent green gradient trail/glow behind the sweeping laser line
                 Positioned(
@@ -56,7 +57,7 @@ class _ScanningOverlayState extends State<ScanningOverlay>
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          const Color(0xFFB3EFB2).withValues(alpha: 0.18),
+                          theme.colorScheme.secondary.withValues(alpha: 0.18),
                         ],
                       ),
                     ),
@@ -70,10 +71,10 @@ class _ScanningOverlayState extends State<ScanningOverlay>
                   child: Container(
                     height: 2.5,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFB3EFB2),
+                      color: theme.colorScheme.secondary,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFB3EFB2).withValues(alpha: 0.8),
+                          color: theme.colorScheme.secondary.withValues(alpha: 0.8),
                           blurRadius: 8,
                           spreadRadius: 1.5,
                         ),

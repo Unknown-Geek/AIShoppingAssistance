@@ -12,12 +12,12 @@ class AuthBackground extends StatelessWidget {
         // Background soft gradient
         Positioned.fill(
           child: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Color(0xFFE8F1F2),
-                  Color(0xFFF1F8F8),
-                  Color(0xFFE8F1F2),
+                  Theme.of(context).scaffoldBackgroundColor,
+                  Color.lerp(Theme.of(context).scaffoldBackgroundColor, Colors.white, 0.5) ?? Colors.white,
+                  Theme.of(context).scaffoldBackgroundColor,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -36,8 +36,8 @@ class AuthBackground extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFF001A23).withValues(alpha: 0.3),
-                  const Color(0xFF001A23).withValues(alpha: 0.0),
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -53,8 +53,8 @@ class AuthBackground extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFFB3EFB2).withValues(alpha: 0.25),
-                  const Color(0xFFB3EFB2).withValues(alpha: 0.0),
+                  Theme.of(context).colorScheme.secondary.withValues(alpha: 0.25),
+                  Theme.of(context).colorScheme.secondary.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -70,8 +70,8 @@ class AuthBackground extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFFB3EFB2).withValues(alpha: 0.18),
-                  const Color(0xFF001A23).withValues(alpha: 0.0),
+                  Theme.of(context).colorScheme.secondary.withValues(alpha: 0.18),
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
                 ],
               ),
             ),

@@ -21,6 +21,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return PreferredSize(
       preferredSize: preferredSize,
       child: SafeArea(
@@ -33,7 +34,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF001A23).withValues(alpha: 0.04),
+                color: theme.colorScheme.primary.withValues(alpha: 0.04),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -56,11 +57,11 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                   child: Center(
                     child: Text(
                       userInitial,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'ClashDisplay',
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF001A23),
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ),
@@ -76,19 +77,19 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
+                      Text(
                         'DB Status',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF001A23),
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                       const SizedBox(width: 6),
                       Container(
                         width: 1,
                         height: 12,
-                        color: const Color(0xFF001A23).withValues(alpha: 0.12),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -101,9 +102,9 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: switch (dbStatus) {
-                            DbConnectionStatus.live => const Color(0xFFB3EFB2),
-                            DbConnectionStatus.error => const Color(0xFFEF4444),
-                            DbConnectionStatus.unknown => const Color(0xFF4A5568),
+                            DbConnectionStatus.live => theme.colorScheme.secondary,
+                            DbConnectionStatus.error => theme.colorScheme.error,
+                            DbConnectionStatus.unknown => theme.colorScheme.onSurfaceVariant,
                           },
                         ),
                       ),
@@ -122,9 +123,9 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.notifications_none_outlined,
-                      color: Color(0xFF001A23),
+                      color: theme.colorScheme.primary,
                       size: 22,
                     ),
                     Positioned(
@@ -133,9 +134,9 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                       child: Container(
                         width: 7,
                         height: 7,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xFFB3EFB2),
+                          color: theme.colorScheme.secondary,
                         ),
                       ),
                     ),
