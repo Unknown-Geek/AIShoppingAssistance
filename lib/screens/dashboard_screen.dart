@@ -551,7 +551,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             boxShadow: [
               BoxShadow(
-                color: Color(0xFF001A23),
+                color: Color(0x14001A23),
                 blurRadius: 24,
                 offset: Offset(0, -8),
               ),
