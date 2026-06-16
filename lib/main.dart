@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/auth_wrapper.dart';
 import 'services/cart_service.dart';
 import 'services/inventory_service.dart';
-import 'config/lib/Config.dart';
+import 'package:qless_app/config/lib/config.dart';
 
 List<CameraDescription> cameras = [];
 
