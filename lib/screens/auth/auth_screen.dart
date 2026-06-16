@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'auth/widgets/auth_background.dart';
-import 'auth/widgets/auth_brand_header.dart';
-import 'auth/widgets/auth_toggle_selector.dart';
+import 'widgets/auth_background.dart';
+import 'widgets/auth_brand_header.dart';
+import 'widgets/auth_toggle_selector.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});

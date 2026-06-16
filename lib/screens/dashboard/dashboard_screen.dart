@@ -2,19 +2,19 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'dashboard/widgets/cart_item.dart';
-import '../models/cart_item_model.dart';
-import '../services/chromadb_client.dart';
-import '../services/cart_service.dart';
-import '../services/inventory_service.dart';
-import '../services/product_detection_service.dart';
+import 'widgets/cart_item.dart';
+import '../../models/cart_item_model.dart';
+import '../../services/chromadb_client.dart';
+import '../../services/cart_service.dart';
+import '../../services/inventory_service.dart';
+import '../../services/product_detection_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'dashboard/widgets/dashboard_app_bar.dart';
-import 'dashboard/widgets/camera_viewport.dart';
-import 'dashboard/widgets/bottom_nav_bar.dart';
-import 'dashboard/widgets/checkout_bar.dart';
-import 'dashboard/widgets/dashboard_sheets.dart';
+import 'widgets/dashboard_app_bar.dart';
+import 'widgets/camera_viewport.dart';
+import 'widgets/bottom_nav_bar.dart';
+import 'widgets/checkout_bar.dart';
+import 'widgets/dashboard_sheets.dart';
 
 class DashboardScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
