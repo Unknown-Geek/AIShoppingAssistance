@@ -40,6 +40,14 @@ class FirecrawlRecipeTool:
             scrape_data = scrape_response.json()
 
             markdown = scrape_data.get("data", {}).get("markdown", "")
+            print("Ingredients found:", "Ingredients" in markdown)
+            print("Instructions found:", "Instructions" in markdown)
+            print("Method found:", "Method" in markdown)
+
+            print("\n\n===== FIRECRAWL MARKDOWN =====\n")
+            print(markdown[:15000])
+            print("\n===== END =====\n")
+
             if not markdown:
                 return None
 

@@ -1,5 +1,6 @@
 from recipe_tool import RecipeTool
 from firecrawl_recipe_tool import FirecrawlRecipeTool
+from recipe_parser import RecipeParser
 
 
 class RecipeAgent:
@@ -7,6 +8,7 @@ class RecipeAgent:
     def __init__(self):
         self.tool = RecipeTool()
         self.firecrawl_tool = FirecrawlRecipeTool()
+        self.parser = RecipeParser()
 
     async def generate_recipe(
         self,
@@ -29,7 +31,17 @@ class RecipeAgent:
         recipe = await self.firecrawl_tool.search_recipe(dish)
 
         if recipe is not None:
-            return recipe
+            parsed = self.parser.parse(
+                recipe["markdown"]
+            )
+            return {
+                "status": "success",
+                "dish": dish,
+                "servings": servings,
+                "ingredients": parsed["ingredients"],
+                "instructions": parsed["instructions"],
+                "source": recipe["url"]
+            }
 
         return {
             "status": "error",
