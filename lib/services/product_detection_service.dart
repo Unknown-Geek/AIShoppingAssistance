@@ -12,19 +12,37 @@ abstract class ProductDetectionService {
 }
 
 class HuggingFaceProxyDetectionService implements ProductDetectionService {
-  final String _baseUrl;
+  late final String _primaryUrl;
+  late final String _backupUrl;
   late final String _chromaApiKey;
 
-  HuggingFaceProxyDetectionService({String? baseUrl})
-      : _baseUrl = (baseUrl ?? dotenv.env['HF_SPACE_URL'] ?? '')
-            .replaceAll('/embed', '')
-            .replaceAll('/health', '')
-            .replaceAll(RegExp(r'/$'), '') {
+  HuggingFaceProxyDetectionService({String? primaryUrl, String? backupUrl}) {
+    String pUrl = primaryUrl ?? dotenv.env['PRIMARY_DETECTION_URL'] ?? dotenv.env['VM_DETECTION_URL'] ?? '';
+    String bUrl = backupUrl ?? dotenv.env['BACKUP_DETECTION_URL'] ?? '';
+
+    _primaryUrl = pUrl.replaceAll('/embed', '').replaceAll('/health', '').replaceAll(RegExp(r'/$'), '');
+    _backupUrl = bUrl.replaceAll('/embed', '').replaceAll('/health', '').replaceAll(RegExp(r'/$'), '');
     _chromaApiKey = dotenv.env['CHROMA_API_KEY'] ?? '';
-    
-    if (_baseUrl.isEmpty) {
-      debugPrint('Warning: HF_SPACE_URL is not set in .env');
-    }
+
+    debugPrint('[ProductDetectionService] Configured Primary: "$_primaryUrl" | Backup: "$_backupUrl"');
+  }
+
+  Future<http.Response> _sendDetectRequest(String baseUrl, List<int> bytes) async {
+    final url = Uri.parse('$baseUrl/detect');
+    final request = http.MultipartRequest('POST', url);
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: 'image.jpg',
+        contentType: MediaType('image', 'jpeg'),
+      ),
+    );
+    request.headers.addAll({
+      'X-Chroma-Token': _chromaApiKey,
+    });
+    final streamedResponse = await request.send().timeout(const Duration(seconds: 4));
+    return http.Response.fromStream(streamedResponse);
   }
 
   @override
@@ -32,40 +50,50 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
     debugPrint('--- UNIFIED DETECT START ---');
     debugPrint('Captured photo path: ${photo.path}');
 
-    if (_baseUrl.isEmpty) {
-      debugPrint('[ProductDetectionService] Error: Base URL is empty');
+    if (_primaryUrl.isEmpty) {
+      debugPrint('[ProductDetectionService] Error: Primary URL is empty');
       return null;
     }
 
-    final url = Uri.parse('$_baseUrl/detect');
-    debugPrint('Request URL: $url');
-
+    final bytes = await photo.readAsBytes();
     final overallStopwatch = Stopwatch()..start();
+    http.Response? response;
+    String activeUrl = _primaryUrl;
+
+    // Try primary first
     try {
-      final request = http.MultipartRequest('POST', url);
-      final bytes = await photo.readAsBytes();
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: 'image.jpg',
-          contentType: MediaType('image', 'jpeg'),
-        ),
-      );
-
-      // Securely pass secrets in headers (omitting Supabase to bypass DB lookup latency)
-      request.headers.addAll({
-        'X-Chroma-Token': _chromaApiKey,
-      });
-
+      debugPrint('Attempting primary endpoint: $activeUrl/detect');
       final networkStopwatch = Stopwatch()..start();
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      response = await _sendDetectRequest(activeUrl, bytes);
       networkStopwatch.stop();
+      debugPrint('[ProductDetectionService] Primary network roundtrip took: ${networkStopwatch.elapsedMilliseconds}ms');
+    } catch (e) {
+      debugPrint('[ProductDetectionService] Primary endpoint failed with exception: $e');
+    }
 
+    // Fall back to backup if primary failed or returned server error (5xx) or was not reachable
+    if ((response == null || response.statusCode >= 500) && _backupUrl.isNotEmpty) {
+      activeUrl = _backupUrl;
+      debugPrint('Falling back to backup endpoint: $activeUrl/detect');
+      try {
+        final networkStopwatch = Stopwatch()..start();
+        response = await _sendDetectRequest(activeUrl, bytes);
+        networkStopwatch.stop();
+        debugPrint('[ProductDetectionService] Backup network roundtrip took: ${networkStopwatch.elapsedMilliseconds}ms');
+      } catch (e) {
+        debugPrint('[ProductDetectionService] Backup endpoint also failed with exception: $e');
+      }
+    }
+
+    if (response == null) {
+      debugPrint('[ProductDetectionService] All endpoints failed to respond.');
+      overallStopwatch.stop();
+      return null;
+    }
+
+    try {
       debugPrint('Detect Response Status Code: ${response.statusCode}');
       debugPrint('Detect Response Body: ${response.body}');
-      debugPrint('[ProductDetectionService] Network roundtrip took: ${networkStopwatch.elapsedMilliseconds}ms');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -116,7 +144,7 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
         debugPrint('[ProductDetectionService] Network error: Status ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('[ProductDetectionService] Exception during detect: $e');
+      debugPrint('[ProductDetectionService] Exception parsing response: $e');
     }
     
     overallStopwatch.stop();

@@ -107,15 +107,13 @@ class ChromaDbClient {
 
     try {
       debugPrint('Uploading image directly to custom Hugging Face Space & generating CLIP embedding...');
-      String spaceUrl = dotenv.env['HF_SPACE_URL'] ?? '';
+      String spaceUrl = dotenv.env['PRIMARY_DETECTION_URL'] ?? dotenv.env['VM_DETECTION_URL'] ?? dotenv.env['BACKUP_DETECTION_URL'] ?? dotenv.env['HF_SPACE_URL'] ?? '';
       if (spaceUrl.isEmpty) {
-        throw Exception('HF_SPACE_URL is not configured in .env');
+        throw Exception('Neither PRIMARY_DETECTION_URL nor BACKUP_DETECTION_URL is configured in .env');
       }
       // Ensure the URL correctly points to the /embed endpoint
-      spaceUrl = spaceUrl.replaceAll('/health', '').replaceAll(RegExp(r'/$'), '');
-      if (!spaceUrl.endsWith('/embed')) {
-        spaceUrl = '$spaceUrl/embed';
-      }
+      spaceUrl = spaceUrl.replaceAll('/health', '').replaceAll('/detect', '').replaceAll('/embed', '').replaceAll(RegExp(r'/$'), '');
+      spaceUrl = '$spaceUrl/embed';
 
       final request = http.MultipartRequest('POST', Uri.parse(spaceUrl));
       final bytes = await photo.readAsBytes();
