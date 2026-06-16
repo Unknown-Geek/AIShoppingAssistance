@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import '../widgets/cart_item.dart';
+import 'dashboard/widgets/cart_item.dart';
 import '../models/cart_item_model.dart';
 import '../services/chromadb_client.dart';
 import '../services/cart_service.dart';
