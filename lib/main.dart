@@ -14,7 +14,7 @@ List<CameraDescription> cameras = [];
 // Active brand — swap this line to change the entire app's look and feel.
 // e.g. BrandConfig.lulu() | BrandConfig.carrefour() | BrandConfig.qless()
 // ---------------------------------------------------------------------------
-final BrandConfig _activeBrand = BrandConfig.lulu();
+final BrandConfig _activeBrand = BrandConfig.qless();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
