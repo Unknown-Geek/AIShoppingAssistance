@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ---------------------------------------------------------------------------
 // FontSource
@@ -367,11 +368,25 @@ class BrandConfig {
   // buildTheme()
   // Converts this BrandConfig into a Flutter ThemeData ready for MaterialApp.
   // ---------------------------------------------------------------------------
+  TextStyle _resolveStyle(FontConfig fontConfig, TextStyle baseStyle) {
+    if (fontConfig.source == FontSource.googleFont) {
+      try {
+        return GoogleFonts.getFont(
+          fontConfig.family,
+          textStyle: baseStyle,
+        );
+      } catch (e) {
+        return baseStyle.copyWith(fontFamily: fontConfig.family);
+      }
+    } else {
+      return baseStyle.copyWith(fontFamily: fontConfig.family);
+    }
+  }
+
   ThemeData buildTheme() {
     final c = colors;
     final t = typography;
 
-    final String displayFamily = t.displayFont.family;
     final String bodyFamily = t.bodyFont.family;
 
     final colorScheme = ColorScheme.light(
@@ -392,21 +407,21 @@ class BrandConfig {
 
     final textTheme = baseTextTheme
         .copyWith(
-          displayLarge: TextStyle(fontFamily: displayFamily),
-          displayMedium: TextStyle(fontFamily: displayFamily),
-          displaySmall: TextStyle(fontFamily: displayFamily),
-          headlineLarge: TextStyle(fontFamily: displayFamily),
-          headlineMedium: TextStyle(fontFamily: displayFamily),
-          headlineSmall: TextStyle(fontFamily: displayFamily),
-          titleLarge: TextStyle(fontFamily: displayFamily),
-          titleMedium: TextStyle(fontFamily: displayFamily),
-          titleSmall: TextStyle(fontFamily: displayFamily),
-          bodyLarge: TextStyle(fontFamily: bodyFamily),
-          bodyMedium: TextStyle(fontFamily: bodyFamily),
-          bodySmall: TextStyle(fontFamily: bodyFamily),
-          labelLarge: TextStyle(fontFamily: bodyFamily),
-          labelMedium: TextStyle(fontFamily: bodyFamily),
-          labelSmall: TextStyle(fontFamily: bodyFamily),
+          displayLarge: _resolveStyle(t.displayFont, baseTextTheme.displayLarge ?? const TextStyle()),
+          displayMedium: _resolveStyle(t.displayFont, baseTextTheme.displayMedium ?? const TextStyle()),
+          displaySmall: _resolveStyle(t.displayFont, baseTextTheme.displaySmall ?? const TextStyle()),
+          headlineLarge: _resolveStyle(t.displayFont, baseTextTheme.headlineLarge ?? const TextStyle()),
+          headlineMedium: _resolveStyle(t.displayFont, baseTextTheme.headlineMedium ?? const TextStyle()),
+          headlineSmall: _resolveStyle(t.displayFont, baseTextTheme.headlineSmall ?? const TextStyle()),
+          titleLarge: _resolveStyle(t.displayFont, baseTextTheme.titleLarge ?? const TextStyle()),
+          titleMedium: _resolveStyle(t.displayFont, baseTextTheme.titleMedium ?? const TextStyle()),
+          titleSmall: _resolveStyle(t.displayFont, baseTextTheme.titleSmall ?? const TextStyle()),
+          bodyLarge: _resolveStyle(t.bodyFont, baseTextTheme.bodyLarge ?? const TextStyle()),
+          bodyMedium: _resolveStyle(t.bodyFont, baseTextTheme.bodyMedium ?? const TextStyle()),
+          bodySmall: _resolveStyle(t.bodyFont, baseTextTheme.bodySmall ?? const TextStyle()),
+          labelLarge: _resolveStyle(t.bodyFont, baseTextTheme.labelLarge ?? const TextStyle()),
+          labelMedium: _resolveStyle(t.bodyFont, baseTextTheme.labelMedium ?? const TextStyle()),
+          labelSmall: _resolveStyle(t.bodyFont, baseTextTheme.labelSmall ?? const TextStyle()),
         )
         .apply(
           bodyColor: c.onSurface,
