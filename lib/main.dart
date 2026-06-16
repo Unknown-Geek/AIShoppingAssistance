@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/auth_wrapper.dart';
 import 'services/cart_service.dart';
 import 'services/inventory_service.dart';
-import 'package:qless_app/config/lib/config.dart';
+import 'config/config.dart';
 
 List<CameraDescription> cameras = [];
 
@@ -14,9 +14,10 @@ List<CameraDescription> cameras = [];
 // Active brand — swap this line to change the entire app's look and feel.
 // e.g. BrandConfig.lulu() | BrandConfig.carrefour() | BrandConfig.qless()
 // ---------------------------------------------------------------------------
-final BrandConfig _activeBrand = BrandConfig.lulu();
+final BrandConfig _activeBrand = BrandConfig.qless();
 
 Future<void> main() async {
+  BrandConfig.active = _activeBrand;
   WidgetsFlutterBinding.ensureInitialized();
 
   try {

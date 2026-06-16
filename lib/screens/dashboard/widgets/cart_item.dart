@@ -44,6 +44,7 @@ class _CartItemState extends State<CartItem> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -53,7 +54,7 @@ class _CartItemState extends State<CartItem> {
         border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF001A23).withValues(alpha: 0.02),
+            color: theme.colorScheme.primary.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -74,11 +75,11 @@ class _CartItemState extends State<CartItem> {
                     child: CachedNetworkImage(
                       imageUrl: widget.imageUrl,
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => const Center(
+                      placeholder: (context, url) => Center(
                         child: SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF001A23)),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.primary),
                         ),
                       ),
                       errorWidget: (context, url, error) => const Icon(
@@ -99,10 +100,10 @@ class _CartItemState extends State<CartItem> {
                         widget.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF001A23),
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 3),
@@ -130,7 +131,7 @@ class _CartItemState extends State<CartItem> {
               border: Border.all(color: const Color(0xFFD2E4E6)),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF001A23).withValues(alpha: 0.04),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.04),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -142,9 +143,9 @@ class _CartItemState extends State<CartItem> {
                 GestureDetector(
                   onTap: widget.onDecrement,
                   behavior: HitTestBehavior.opaque,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Icon(Icons.remove, size: 14, color: Color(0xFF001A23)),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Icon(Icons.remove, size: 14, color: theme.colorScheme.primary),
                   ),
                 ),
                 AnimatedSwitcher(
@@ -156,7 +157,7 @@ class _CartItemState extends State<CartItem> {
                     final isCurrent = childKey.value == widget.quantity;
                     final goingUp = widget.quantity > _previousQuantity;
                     final offset = goingUp ? 1.0 : -1.0;
-
+ 
                     return ClipRect(
                       child: SlideTransition(
                         position: Tween<Offset>(
@@ -174,10 +175,10 @@ class _CartItemState extends State<CartItem> {
                     child: Center(
                       child: Text(
                         widget.quantity.toString(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF001A23),
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ),
@@ -186,9 +187,9 @@ class _CartItemState extends State<CartItem> {
                 GestureDetector(
                   onTap: widget.onIncrement,
                   behavior: HitTestBehavior.opaque,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Icon(Icons.add, size: 14, color: Color(0xFF001A23)),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Icon(Icons.add, size: 14, color: theme.colorScheme.primary),
                   ),
                 ),
               ],

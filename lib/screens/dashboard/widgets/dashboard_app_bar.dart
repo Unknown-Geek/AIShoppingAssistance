@@ -1,0 +1,152 @@
+import 'package:flutter/material.dart';
+
+enum DbConnectionStatus { unknown, live, error }
+
+class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String userInitial;
+  final DbConnectionStatus dbStatus;
+  final VoidCallback onProfileTap;
+  final VoidCallback onDbStatusTap;
+
+  const DashboardAppBar({
+    super.key,
+    required this.userInitial,
+    required this.dbStatus,
+    required this.onProfileTap,
+    required this.onDbStatusTap,
+  });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(72);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return PreferredSize(
+      preferredSize: preferredSize,
+      child: SafeArea(
+        child: Container(
+          height: 72,
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFFFF),
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.primary.withValues(alpha: 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(color: const Color(0xFFD2E4E6)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: onProfileTap,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFFFFFFF),
+                    border: Border.all(color: const Color(0xFFD2E4E6)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      userInitial,
+                      style: TextStyle(
+                        fontFamily: 'ClashDisplay',
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: onDbStatusTap,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'DB Status',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        width: 1,
+                        height: 12,
+                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        switch (dbStatus) {
+                          DbConnectionStatus.live => 'Live',
+                          DbConnectionStatus.error => 'Error',
+                          DbConnectionStatus.unknown => 'Checking…',
+                        },
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: switch (dbStatus) {
+                            DbConnectionStatus.live => theme.colorScheme.secondary,
+                            DbConnectionStatus.error => theme.colorScheme.error,
+                            DbConnectionStatus.unknown => theme.colorScheme.onSurfaceVariant,
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFFFFFFF),
+                  border: Border.all(color: const Color(0xFFD2E4E6)),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.notifications_none_outlined,
+                      color: theme.colorScheme.primary,
+                      size: 22,
+                    ),
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: theme.colorScheme.secondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
