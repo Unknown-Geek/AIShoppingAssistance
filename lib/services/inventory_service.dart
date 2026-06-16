@@ -14,6 +14,7 @@ class InventoryService {
   final Map<String, String> _imageUrls = {};
   final Map<String, String> _thumbnailUrls = {};  // Supabase Storage URLs
   final Map<String, Map<String, dynamic>> _localProducts = {};
+  final Map<String, Map<String, dynamic>> _supabaseProductsCache = {};
 
   Future<void> initLocalCatalog() async {
     try {
@@ -59,6 +60,12 @@ class InventoryService {
 
   /// Queries the 'inventory' table in Supabase for a single product matching the slug.
   Future<Map<String, dynamic>?> getProductBySlug(String slug) async {
+    // Optimization: Return cached product details if already fetched
+    if (_supabaseProductsCache.containsKey(slug)) {
+      debugPrint('[InventoryService] Returning cached Supabase product details for slug: "$slug"');
+      return _supabaseProductsCache[slug];
+    }
+
     if (!_hasCredentials()) {
       debugPrint('[InventoryService] Cannot query: Supabase credentials are not configured in .env');
       return null;
@@ -73,6 +80,7 @@ class InventoryService {
           .maybeSingle();
       
       if (response != null) {
+        _supabaseProductsCache[slug] = response;
         // Cache the thumbnail URL so getImageUrl() returns it immediately
         cacheThumbnailUrl(slug, response['thumbnail_url'] as String?);
         debugPrint('[InventoryService] Successfully found product in Supabase: $response');

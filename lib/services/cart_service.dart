@@ -23,6 +23,7 @@ class CartService extends ChangeNotifier {
       } else {
         _items.clear();
         _persist();
+        _loadedUserId = null;
         notifyListeners();
       }
     });
@@ -33,6 +34,8 @@ class CartService extends ChangeNotifier {
   final List<CartItemModel> _items = [];
   bool _isLoaded = false;
   Timer? _syncTimer;
+  Future<void>? _activeLoadFuture;
+  String? _loadedUserId;
 
   void _scheduleSync() {
     _syncTimer?.cancel();
@@ -98,6 +101,15 @@ class CartService extends ChangeNotifier {
 
   /// Restoration method to fetch active cart from Supabase on login or app start.
   Future<void> _loadActiveCartFromSupabase(String userId) async {
+    if (_loadedUserId == userId) return;
+    if (_activeLoadFuture != null) {
+      await _activeLoadFuture;
+      return;
+    }
+
+    final completer = Completer<void>();
+    _activeLoadFuture = completer.future;
+
     try {
       final activeCart = await _supabase
           .from('user_carts')
@@ -111,10 +123,14 @@ class CartService extends ChangeNotifier {
         _items.clear();
         _items.addAll(dbItems.map((e) => CartItemModel.fromJson(e as Map<String, dynamic>)));
         _persist();
+        _loadedUserId = userId;
         notifyListeners();
       }
     } catch (e) {
       debugPrint('[CartService] Error loading active cart from Supabase: $e');
+    } finally {
+      _activeLoadFuture = null;
+      completer.complete();
     }
   }
 

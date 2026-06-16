@@ -239,22 +239,22 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _takePictureAndSearch() async {
     if (_isSearchingImage) return;
 
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.fixed,
+          content: const Text('Camera is unavailable or not ready.'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          duration: const Duration(seconds: 1),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSearchingImage = true);
 
     try {
-      XFile capturedPhoto = XFile('');
-      if (_cameraController != null && _cameraController!.value.isInitialized) {
-        capturedPhoto = await _cameraController!.takePicture();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            behavior: SnackBarBehavior.fixed,
-            content: Text('Camera unavailable. Triggering search anyway!'),
-            backgroundColor: Color(0xFF001A23),
-            duration: Duration(seconds: 1),
-          ),
-        );
-      }
+      final XFile capturedPhoto = await _cameraController!.takePicture();
 
       final CartItemModel? item = await _detectionService.detectItem(
         capturedPhoto,
