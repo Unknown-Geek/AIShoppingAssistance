@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:camera/camera.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'screens/auth_wrapper.dart';
+import 'screens/auth/auth_wrapper.dart';
 import 'services/cart_service.dart';
 import 'services/inventory_service.dart';
 import 'config/config.dart';

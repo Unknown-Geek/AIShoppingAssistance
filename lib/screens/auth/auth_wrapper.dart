@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_screen.dart';
-import 'dashboard_screen.dart';
+import '../dashboard/dashboard_screen.dart';
 
 class AuthWrapper extends StatefulWidget {
   final List<CameraDescription> cameras;
