@@ -1,6 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'auth/widgets/auth_background.dart';
+import 'auth/widgets/auth_brand_header.dart';
+import 'auth/widgets/auth_toggle_selector.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -159,85 +161,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       body: Stack(
         children: [
-          // Background soft gradient
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFFE8F1F2),
-                    Color(0xFFF1F8F8),
-                    Color(0xFFE8F1F2),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-            ),
-          ),
-          // Colorful glowing gradient bubbles (Orbs)
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.05,
-            left: -80,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFF001A23).withValues(alpha: 0.3),
-                    const Color(0xFF001A23).withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.25,
-            right: -60,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFB3EFB2).withValues(alpha: 0.25),
-                    const Color(0xFFB3EFB2).withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -80,
-            left: 20,
-            child: Container(
-              width: 380,
-              height: 380,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFB3EFB2).withValues(alpha: 0.18),
-                    const Color(0xFF001A23).withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
-              child: Container(color: Colors.transparent),
-            ),
-          ),
-
+          const AuthBackground(),
           // Core UI Container
           SafeArea(
             child: Center(
@@ -247,54 +174,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Brand / Logo Section
-                    Container(
-                      width: 76,
-                      height: 76,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: const Color(0xFFD2E4E6),
-                          width: 1.2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF001A23,
-                            ).withValues(alpha: 0.06),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.shopping_bag_rounded,
-                          color: Color(0xFF001A23),
-                          size: 38,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Qless',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontFamily: 'ClashDisplay',
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF001A23),
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Your Intelligent Shopping Assistant',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF4A5568),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    const AuthBrandHeader(),
                     const SizedBox(height: 36),
 
                     // Authentication Card
@@ -323,7 +203,15 @@ class _AuthScreenState extends State<AuthScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Custom Tab Toggle
-                            _buildToggleSelector(),
+                            AuthToggleSelector(
+                              isSignIn: _isSignIn,
+                              onToggle: (val) {
+                                setState(() {
+                                  _isSignIn = val;
+                                  _errorMessage = null;
+                                });
+                              },
+                            ),
                             const SizedBox(height: 28),
 
                             if (_errorMessage != null) ...[
@@ -368,10 +256,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             const Text(
                               'Email Address',
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF001A23),
-                              ),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF001A23)),
                             ),
                             const SizedBox(height: 8),
                             TextFormField(
@@ -533,8 +420,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                           strokeWidth: 2.5,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
+                                            Colors.white,
+                                          ),
                                         ),
                                       )
                                     : Text(
@@ -546,7 +433,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                              ),
+                               ),
                             ),
                           ],
                         ),
@@ -557,95 +444,6 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToggleSelector() {
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        color: const Color(0xFFB3EFB2).withValues(alpha: 0.25),
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(
-          color: const Color(0xFFB3EFB2).withValues(alpha: 0.25),
-        ),
-      ),
-      child: Stack(
-        children: [
-          AnimatedAlign(
-            alignment: _isSignIn ? Alignment.centerLeft : Alignment.centerRight,
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            child: FractionallySizedBox(
-              widthFactor: 0.5,
-              child: Container(
-                margin: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF001A23),
-                  borderRadius: BorderRadius.circular(21),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF001A23).withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isSignIn = true;
-                      _errorMessage = null;
-                    });
-                  },
-                  behavior: HitTestBehavior.opaque,
-                  child: Center(
-                    child: Text(
-                      'Sign In',
-                      style: TextStyle(
-                        color: _isSignIn
-                            ? Colors.white
-                            : const Color(0xFF001A23),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isSignIn = false;
-                      _errorMessage = null;
-                    });
-                  },
-                  behavior: HitTestBehavior.opaque,
-                  child: Center(
-                    child: Text(
-                      'Sign Up',
-                      style: TextStyle(
-                        color: !_isSignIn
-                            ? Colors.white
-                            : const Color(0xFF001A23),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
