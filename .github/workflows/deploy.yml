@@ -14,31 +14,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Push to Hugging Face Space
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install huggingface_hub
+        run: pip install huggingface_hub
+
+      - name: Upload to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          cd hf_server
-          git init
-          git checkout -b main
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add .
-          git commit -m "Deploy from GitHub Actions: ${{ github.sha }}"
-          
-          # Retry loop with backoff to handle transient 429 rate limit errors from Hugging Face
+          # Retry loop with backoff to handle transient rate limit or network errors
           for i in {1..5}; do
-            echo "Push attempt $i/5..."
-            if git push https://Mojo-Maniac:$HF_TOKEN@huggingface.co/spaces/Mojo-Maniac/AIShoppingAssistance_Server main --force; then
-              echo "Push successful!"
+            echo "Upload attempt $i/5..."
+            if hf upload Mojo-Maniac/AIShoppingAssistance_Server ./hf_server . --repo-type space --delete="*"; then
+              echo "Upload successful!"
               exit 0
             else
               if [ $i -eq 5 ]; then
-                echo "Failed to push to Hugging Face Space after 5 attempts."
+                echo "Failed to upload to Hugging Face Space after 5 attempts."
                 exit 1
               fi
               delay=$((i * 15))
-              echo "Push failed. Retrying in $delay seconds..."
+              echo "Upload failed. Retrying in $delay seconds..."
               sleep $delay
             fi
           done

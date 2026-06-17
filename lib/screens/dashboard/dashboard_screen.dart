@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'widgets/cart_item.dart';
+import 'widgets/chatbot_screen.dart';
 import '../../models/cart_item_model.dart';
 import '../../services/chromadb_client.dart';
 import '../../services/cart_service.dart';
@@ -678,7 +679,27 @@ class _DashboardScreenState extends State<DashboardScreen>
               );
             },
             child: BottomNavBar(
-              onChatTap: _showRagSheet,
+              onChatTap: () {
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (_, animation, __) => const ChatbotScreen(),
+                    transitionsBuilder: (_, animation, __, child) {
+                      return SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(-1, 0), // ← slide from left
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          )),
+                          child: child,
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 350),
+                    ),
+                  );
+                },
               onVoiceTap: () {},
               isSearchingImage: _isSearchingImage,
               onShutterTap: _takePictureAndSearch,
