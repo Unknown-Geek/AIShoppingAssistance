@@ -38,14 +38,29 @@ class RecipeAgent:
             parsed = self.parser.parse(
                 recipe["markdown"]
             )
+            original_servings = parsed.get("servings", 1)
+            if original_servings <= 0:
+                original_servings = 1
+            scale_factor = servings / original_servings
             
             structured_ingredients = []
             
             for ingredient in parsed["ingredients"]:
-                structured_ingredients.append(
+                ingredient_data = (
                     self.quantity_estimator.parse_ingredient(
                         ingredient
                     )
+                )
+
+                ingredient_data["quantity"] = (
+                    self.quantity_estimator.scale_quantity(
+                        ingredient_data["quantity"],
+                        scale_factor
+                    )
+                )
+
+                structured_ingredients.append(
+                    ingredient_data
                 )
             
             return {
