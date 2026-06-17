@@ -2,12 +2,23 @@ from quantity_estimator import QuantityEstimator
 
 q = QuantityEstimator()
 
-samples = [
-    "1 bay leaf",
-    "2 tablespoons mint leaves",
-    "½ teaspoon salt",
-    "400 grams basmati rice"
-]
+print(
+    q.parse_ingredient(
+        "▢ 2 cups (400 grams) aged basmati rice"
+    )
+)
 
-for item in samples:
-    print(q.parse_ingredient(item))
+print(
+    q.parse_ingredient(
+        "▢ ¾ cup carrots"
+    )
+)
+
+print(
+    q.parse_ingredient(
+        "▢ 1 cup yogurt"
+    )
+)
+print(q.parse_ingredient("green cardamom"))
+print(q.parse_ingredient("bay leaf"))
+print(q.parse_ingredient("green chili"))
