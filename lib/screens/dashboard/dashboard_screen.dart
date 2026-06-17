@@ -529,9 +529,24 @@ class _DashboardScreenState extends State<DashboardScreen>
               onChatTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ChatbotScreen()),
-                );
-              },
+                  PageRouteBuilder(
+                    pageBuilder: (_, animation, __) => const ChatbotScreen(),
+                    transitionsBuilder: (_, animation, __, child) {
+                      return SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(-1, 0), // ← slide from left
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          )),
+                          child: child,
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 350),
+                    ),
+                  );
+                },
               onVoiceTap: () {},
               isSearchingImage: _isSearchingImage,
               onShutterTap: _takePictureAndSearch,
