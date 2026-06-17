@@ -113,7 +113,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   void _startBackgroundScanning() {
     _backgroundScanTimer?.cancel();
-    _backgroundScanTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+    _backgroundScanTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _performBackgroundScan();
     });
     debugPrint("[DashboardScreen] Background scanning started.");
@@ -140,7 +140,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     XFile? capturedPhoto;
     try {
-      capturedPhoto = await _cameraController!.takePicture();
+      capturedPhoto = await _cameraController!.takePicture().timeout(const Duration(seconds: 2));
       
       // Release camera lock early so manual shutter is not blocked by backend API latency
       _isCameraBusy = false;
@@ -327,7 +327,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Future<void> _takePictureAndSearch() async {
-    if (_isSearchingImage || _isCameraBusy) return;
+    if (_isSearchingImage) return;
 
     if (_isCacheValid()) {
       debugPrint("[DashboardScreen] Using valid pre-emptive scan cache for instant confirm sheet.");
@@ -359,6 +359,20 @@ class _DashboardScreenState extends State<DashboardScreen>
       return;
     }
 
+    // Yield up to 500ms if the camera is busy with a background scan capture
+    int retryCount = 0;
+    while (_isCameraBusy && retryCount < 10) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      retryCount++;
+    }
+
+    if (!mounted) return;
+
+    if (_isSearchingImage || _isCameraBusy) {
+      debugPrint("[DashboardScreen] Shutter click dropped: camera remains busy.");
+      return;
+    }
+
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -376,7 +390,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     XFile? capturedPhoto;
     try {
-      capturedPhoto = await _cameraController!.takePicture();
+      capturedPhoto = await _cameraController!.takePicture().timeout(const Duration(seconds: 2));
       _isCameraBusy = false; // Release lock early once capture succeeds
 
       final CartItemModel? item = await _detectionService.detectItem(
@@ -447,7 +461,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       if (mounted) setState(() => _isSearchingImage = false);
     }
   }
-
 
 
   void _showRagSheet() {
