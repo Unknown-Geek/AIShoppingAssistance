@@ -62,7 +62,7 @@ class MessageBubble extends StatelessWidget {
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 _formatTime(message.timestamp),
                 style: TextStyle(
@@ -70,6 +70,7 @@ class MessageBubble extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w400,
                   color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                  letterSpacing: 0.6,
                 ),
               ),
             ],
@@ -147,7 +148,7 @@ class MessageBubble extends StatelessWidget {
                                 ),
                               ),
                             if (!isTyping) ...[
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 4),
                               Text(
                                 _formatTime(message.timestamp),
                                 style: TextStyle(
@@ -155,6 +156,7 @@ class MessageBubble extends StatelessWidget {
                                   fontSize: 11,
                                   fontWeight: FontWeight.w400,
                                   color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                                  letterSpacing: 0.6,
                                 ),
                               ),
                             ],
