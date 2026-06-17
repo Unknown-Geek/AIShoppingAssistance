@@ -67,7 +67,7 @@ class MessageBubble extends StatelessWidget {
                 _formatTime(message.timestamp),
                 style: TextStyle(
                   fontFamily: 'ClashGrotesk',
-                  fontSize: 13,
+                  fontSize: 11,
                   fontWeight: FontWeight.w400,
                   color: theme.colorScheme.primary.withValues(alpha: 0.6),
                 ),
@@ -152,7 +152,7 @@ class MessageBubble extends StatelessWidget {
                                 _formatTime(message.timestamp),
                                 style: TextStyle(
                                   fontFamily: 'ClashGrotesk',
-                                  fontSize: 13,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w400,
                                   color: theme.colorScheme.primary.withValues(alpha: 0.6),
                                 ),

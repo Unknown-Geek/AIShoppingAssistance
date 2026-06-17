@@ -677,7 +677,7 @@ class WelcomeCard extends StatelessWidget {
                 height: 56,
                 child: ClipOval(child: AnimatedOrb(size: 64)),
               ),
-              const SizedBox(width: 24),
+              const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
