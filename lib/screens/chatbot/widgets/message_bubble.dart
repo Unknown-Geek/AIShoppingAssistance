@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../models/chatbot_models.dart';
 import 'recipe_card.dart';
 import 'animated_orb.dart';
+import 'animated_content.dart';
 
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
@@ -25,9 +26,11 @@ class MessageBubble extends StatelessWidget {
     final isRecipe = message.recipe != null;
     final isTyping = message.text == null && message.recipe == null;
 
+    final Widget bubbleWidget;
+
     if (isUser) {
       // User Bubble Layout
-      return Align(
+      bubbleWidget = Align(
         alignment: Alignment.centerRight,
         child: Container(
           constraints: BoxConstraints(
@@ -62,14 +65,15 @@ class MessageBubble extends StatelessWidget {
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 _formatTime(message.timestamp),
                 style: TextStyle(
                   fontFamily: 'ClashGrotesk',
-                  fontSize: 13,
+                  fontSize: 11,
                   fontWeight: FontWeight.w400,
                   color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                  letterSpacing: 0.6,
                 ),
               ),
             ],
@@ -78,7 +82,7 @@ class MessageBubble extends StatelessWidget {
       );
     } else {
       // AI Bubble Layout (Left aligned, with Sparkle Avatar)
-      return Padding(
+      bubbleWidget = Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,7 +124,9 @@ class MessageBubble extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.04),
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.04,
+                              ),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -147,14 +153,17 @@ class MessageBubble extends StatelessWidget {
                                 ),
                               ),
                             if (!isTyping) ...[
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 4),
                               Text(
                                 _formatTime(message.timestamp),
                                 style: TextStyle(
                                   fontFamily: 'ClashGrotesk',
-                                  fontSize: 13,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w400,
-                                  color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                                  color: theme.colorScheme.primary.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                  letterSpacing: 0.6,
                                 ),
                               ),
                             ],
@@ -167,6 +176,17 @@ class MessageBubble extends StatelessWidget {
         ),
       );
     }
+
+    return AnimatedContent(
+      distance: 10.0,
+      direction: 'horizontal',
+      reverse: !isUser,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      initialOpacity: 0.0,
+      scale: 0.96, // Premium subtle scale-up
+      child: bubbleWidget,
+    );
   }
 }
 
@@ -218,7 +238,9 @@ class _TypingIndicatorState extends State<TypingIndicator>
               height: 8,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.primary.withValues(alpha: 0.3 + (value * 0.5)),
+                color: theme.colorScheme.primary.withValues(
+                  alpha: 0.3 + (value * 0.5),
+                ),
               ),
             );
           },
