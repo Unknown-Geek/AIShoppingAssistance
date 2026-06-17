@@ -89,7 +89,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
         border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF001A23).withOpacity(0.04),
+            color: const Color(0xFF001A23).withValues(alpha: 0.04),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -115,7 +115,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
             dishName,
             style: const TextStyle(
               fontFamily: 'ClashDisplay',
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Color(0xFF001A23),
             ),
@@ -126,9 +126,9 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
             'Ready in $readyTime • Serves $servings',
             style: TextStyle(
               fontFamily: 'ClashGrotesk',
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF001A23).withOpacity(0.6),
+              color: const Color(0xFF001A23).withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 12),
@@ -137,10 +137,10 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
             summary,
             style: TextStyle(
               fontFamily: 'ClashGrotesk',
-              fontSize: 16,
+              fontSize: 15,
               height: 1.4,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF001A23).withOpacity(0.8),
+              color: const Color(0xFF001A23).withValues(alpha: 0.8),
             ),
           ),
           // Expandable Ingredients & Instructions
@@ -186,7 +186,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                   '${item['quantity'] ?? ''} ${item['name'] ?? ''}',
                                   style: const TextStyle(
                                     fontFamily: 'ClashGrotesk',
-                                    fontSize: 16,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w500,
                                     color: Color(0xFF001A23),
                                   ),
@@ -218,7 +218,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                   '${entry.key + 1}.',
                                   style: const TextStyle(
                                     fontFamily: 'ClashDisplay',
-                                    fontSize: 16,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF001A23),
                                   ),
@@ -229,7 +229,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                     entry.value,
                                     style: const TextStyle(
                                       fontFamily: 'ClashGrotesk',
-                                      fontSize: 16,
+                                      fontSize: 15,
                                       height: 1.4,
                                       fontWeight: FontWeight.w500,
                                       color: Color(0xFF001A23),
@@ -294,7 +294,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
           border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF001A23).withOpacity(0.02),
+              color: const Color(0xFF001A23).withValues(alpha: 0.02),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

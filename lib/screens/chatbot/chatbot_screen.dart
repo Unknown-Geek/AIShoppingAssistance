@@ -510,7 +510,7 @@ class ChatHeaderPill extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontFamily: 'ClashDisplay',
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF001A23),
               ),
@@ -599,7 +599,7 @@ class WelcomeCard extends StatelessWidget {
                       'Hi there!',
                       style: TextStyle(
                         fontFamily: 'ClashDisplay',
-                        fontSize: 24,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF001A23),
                       ),
@@ -608,7 +608,7 @@ class WelcomeCard extends StatelessWidget {
                       'I\'m your Qless Assistant.',
                       style: TextStyle(
                         fontFamily: 'ClashDisplay',
-                        fontSize: 20,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF001A23),
                       ),
@@ -623,9 +623,9 @@ class WelcomeCard extends StatelessWidget {
             'Ask me questions, get item suggestions, update your cart, or find recipe ideas!',
             style: TextStyle(
               fontFamily: 'ClashGrotesk',
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF001A23).withOpacity(0.7),
+              color: const Color(0xFF001A23).withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -703,7 +703,7 @@ class _SuggestionPillState extends State<SuggestionPill> {
                   widget.text,
                   style: const TextStyle(
                     fontFamily: 'ClashGrotesk',
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF001A23),
                   ),
