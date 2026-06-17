@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:async';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
@@ -27,6 +30,10 @@ class _ChatMessage {
 }
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
+  final ImagePicker _imagePicker = ImagePicker();
+  String? _selectedFileName;
+  PlatformFile? _selectedFile;
+  XFile? _selectedImage;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -128,81 +135,122 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   }
 
   void _saveCurrentChat() {
-    if (_messages.isEmpty) return;
-    final title = _currentChatTitle != 'New Chat' ? _currentChatTitle : 'Chat ${_chatHistory.length + 1}';
-    _chatHistory.removeWhere((c) => c.title == title);
+  if (_messages.isEmpty) return;
+
+  final title = _currentChatTitle == 'New Chat'
+    ? (_messages.first.text ?? 'New Chat')
+    : _currentChatTitle;
+  setState(() {
+    _chatHistory.removeWhere((chat) => chat.title == title);
+
     _chatHistory.insert(
       0,
-      ChatSession(title: title, messages: List.from(_messages)),
+      ChatSession(
+        title: title,
+        messages: List<_ChatMessage>.from(_messages),
+      ),
     );
-    _saveChatHistory();
+  });
+
+  _saveChatHistory();
   }
 
   Future<void> _sendMessage() async {
-    final prompt = _controller.text.trim();
-    if (prompt.isEmpty || _loading) return;
+  final prompt = _controller.text.trim();
+  if (prompt.isEmpty || _loading) return;
 
-    setState(() {
-      _messages.add(_ChatMessage(isUser: true, text: prompt));
-      if (_messages.length == 1) {
-        _currentChatTitle = prompt;
+  setState(() {
+    _messages.add(_ChatMessage(isUser: true, text: prompt));
+
+    if (_messages.length == 1) {
+      _currentChatTitle = prompt;
+    }
+
+    _loading = true;
+  });
+
+  _saveCurrentChat();
+  _controller.clear();
+  _scrollToBottom();
+
+  try {
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/recipe-agent'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'dish': prompt,
+            'servings': 2,
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
+
+    dynamic data;
+    try {
+      data = jsonDecode(response.body);
+    } catch (_) {
+      data = null;
+    }
+
+    if (response.statusCode == 200 && data is Map<String, dynamic>) {
+      if (data['status'] == 'success') {
+        setState(() {
+          _messages.add(
+            _ChatMessage(isUser: false, recipe: data),
+          );
+        });
+      } else {
+        setState(() {
+          _messages.add(
+            _ChatMessage(
+              isUser: false,
+              text: data['message'] ?? 'Recipe not found',
+            ),
+          );
+        });
       }
-      _loading = true;
+    } else {
+      setState(() {
+        _messages.add(
+          _ChatMessage(
+            isUser: false,
+            text: 'Server error: ${response.statusCode}',
+          ),
+        );
+      });
+    }
+
+    _saveCurrentChat();
+  } on TimeoutException {
+    setState(() {
+      _messages.add(
+        const _ChatMessage(
+          isUser: false,
+          text: 'Request timed out. Please try again.',
+        ),
+      );
     });
 
-    _controller.clear();
-    _scrollToBottom();
-
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/recipe-agent'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'dish': prompt, 'servings': 2}),
-      );
-
-      dynamic data;
-      try {
-        data = jsonDecode(response.body);
-      } on FormatException {
-        data = null;
-      }
-
-      if (response.statusCode == 200 && data is Map<String, dynamic>) {
-        if (data['status'] == 'success') {
-          setState(() {
-            _messages.add(_ChatMessage(isUser: false, recipe: data));
-          });
-        } else {
-          final message = data['message'] as String? ?? 'Recipe not found';
-          setState(() {
-            _messages.add(_ChatMessage(isUser: false, text: message));
-          });
-        }
-        _saveCurrentChat();
-      } else {
-        final errorMessage = data is Map<String, dynamic>
-            ? data['message'] as String? ?? 'Recipe service returned ${response.statusCode}.'
-            : 'Recipe service returned ${response.statusCode}.';
-        setState(() {
-          _messages.add(_ChatMessage(isUser: false, text: errorMessage));
-        });
-        _saveCurrentChat();
-      }
-    } catch (e) {
-      setState(() {
-        _messages.add(_ChatMessage(
+    _saveCurrentChat();
+  } catch (e) {
+    setState(() {
+      _messages.add(
+        const _ChatMessage(
           isUser: false,
           text: 'Unable to connect to recipe service.',
-        ));
-      });
-      _saveCurrentChat();
-    } finally {
-      setState(() {
-        _loading = false;
-      });
-      _scrollToBottom();
-    }
+        ),
+      );
+    });
+
+    _saveCurrentChat();
+  } finally {
+    setState(() {
+      _loading = false;
+    });
+
+    _scrollToBottom();
   }
+}
 
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
@@ -410,30 +458,139 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               ),
             ),
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(color: Colors.white),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    onSubmitted: _loading ? null : (_) => _sendMessage(),
-                    decoration: InputDecoration(
-                      hintText: 'Ask for a recipe...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                IconButton(
-                  onPressed: _loading ? null : _sendMessage,
-                  icon: const Icon(Icons.send),
-                ),
-              ],
-            ),
+  padding: const EdgeInsets.all(16),
+  decoration: const BoxDecoration(
+    color: Colors.white,
+  ),
+  child: Row(
+    children: [
+      Expanded(
+        child: TextField(
+          controller: _controller,
+          onSubmitted: _loading ? null : (_) => _sendMessage(),
+          decoration: InputDecoration(
+  hintText: 'Ask for a recipe...',
+  filled: true,
+  fillColor: const Color(0xFFF3F4F6),
+
+  border: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(28),
+    borderSide: BorderSide.none,
+  ),
+
+  enabledBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(28),
+    borderSide: BorderSide.none,
+  ),
+
+  focusedBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(28),
+    borderSide: BorderSide.none,
+  ),
+
+  prefixIcon: Padding(
+    padding: const EdgeInsets.only(left: 8),
+    child: Center(
+      widthFactor: 1,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.grey.shade400,
           ),
+        ),
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          icon: const Icon(
+            Icons.add,
+            size: 18,
+          ),
+          onPressed: () async {
+            showModalBottomSheet(
+              context: context,
+              builder: (context) => SafeArea(
+                child: Wrap(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.image),
+                      title: const Text('Choose Image'),
+                      onTap: () async {
+                        Navigator.pop(context);
+
+                        final image =
+                            await _imagePicker.pickImage(
+                          source: ImageSource.gallery,
+                        );
+
+                        if (image != null) {
+                          setState(() {
+                            _selectedImage = image;
+                          });
+                        }
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.attach_file),
+                      title: const Text('Choose File'),
+                      onTap: () async {
+                        Navigator.pop(context);
+
+                        final result =
+                            await FilePicker.platform.pickFiles();
+
+                        if (result != null &&
+                            result.files.isNotEmpty) {
+                          setState(() {
+                            _selectedFile =
+                                result.files.first;
+                            _selectedFileName =
+                                result.files.first.name;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    ),
+  ),
+
+  suffixIcon: IconButton(
+    icon: const Icon(
+      Icons.mic_none_rounded,
+      size: 22,
+    ),
+    onPressed: () {
+      // Speech-to-text later
+    },
+  ),
+),
+        ),
+      ),
+
+      const SizedBox(width: 10),
+
+      CircleAvatar(
+        radius: 22,
+        backgroundColor: Colors.black,
+        child: IconButton(
+          onPressed: _loading ? null : _sendMessage,
+          icon: const Icon(
+            Icons.arrow_upward,
+            color: Colors.white,
+            size: 18,
+          ),
+        ),
+      ),
+    ],
+  ),
+),
         ],
       ),
     );
