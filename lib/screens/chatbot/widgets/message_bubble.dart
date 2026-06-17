@@ -20,6 +20,7 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isUser = message.isUser;
     final isRecipe = message.recipe != null;
     final isTyping = message.text == null && message.recipe == null;
@@ -35,9 +36,9 @@ class MessageBubble extends StatelessWidget {
           margin: const EdgeInsets.fromLTRB(24, 6, 24, 6),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFFB3EFB2).withValues(alpha: 0.20),
+            color: theme.colorScheme.secondary.withValues(alpha: 0.20),
             border: Border.all(
-              color: const Color(0xFFB3EFB2).withValues(alpha: 0.50),
+              color: theme.colorScheme.secondary.withValues(alpha: 0.50),
               width: 1.0,
             ),
             borderRadius: const BorderRadius.only(
@@ -53,12 +54,12 @@ class MessageBubble extends StatelessWidget {
             children: [
               Text(
                 message.text ?? '',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'ClashGrotesk',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   height: 1.5,
-                  color: Color(0xFF001A23),
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 2),
@@ -68,7 +69,7 @@ class MessageBubble extends StatelessWidget {
                   fontFamily: 'ClashGrotesk',
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
-                  color: const Color(0xFF001A23).withValues(alpha: 0.6),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -119,7 +120,7 @@ class MessageBubble extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF001A23).withValues(alpha: 0.04),
+                              color: theme.colorScheme.primary.withValues(alpha: 0.04),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -137,12 +138,12 @@ class MessageBubble extends StatelessWidget {
                             else
                               Text(
                                 message.text ?? 'Unknown error',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: 'ClashGrotesk',
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                   height: 1.5,
-                                  color: Color(0xFF001A23),
+                                  color: theme.colorScheme.primary,
                                 ),
                               ),
                             if (!isTyping) ...[
@@ -153,9 +154,7 @@ class MessageBubble extends StatelessWidget {
                                   fontFamily: 'ClashGrotesk',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w400,
-                                  color: const Color(
-                                    0xFF001A23,
-                                  ).withValues(alpha: 0.6),
+                                  color: theme.colorScheme.primary.withValues(alpha: 0.6),
                                 ),
                               ),
                             ],
@@ -212,13 +211,14 @@ class _TypingIndicatorState extends State<TypingIndicator>
                     ) +
                     1) /
                 2;
+            final theme = Theme.of(context);
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 2),
               width: 8,
               height: 8,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF001A23).withValues(alpha: 0.3 + (value * 0.5)),
+                color: theme.colorScheme.primary.withValues(alpha: 0.3 + (value * 0.5)),
               ),
             );
           },

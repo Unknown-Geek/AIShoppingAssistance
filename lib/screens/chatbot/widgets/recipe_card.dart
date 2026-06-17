@@ -41,13 +41,14 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
       );
     }
 
+    final theme = Theme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           'Added ${ingredients.length} ingredients to your cart!',
           style: const TextStyle(fontFamily: 'ClashGrotesk', fontWeight: FontWeight.w500),
         ),
-        backgroundColor: const Color(0xFF001A23),
+        backgroundColor: theme.colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
@@ -58,13 +59,14 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
     final dish = widget.recipe['dish'] ?? 'Recipe';
     Clipboard.setData(ClipboardData(text: 'Check out this recipe: $dish!'));
 
+    final theme = Theme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           'Copied recipe link for "$dish" to clipboard!',
           style: const TextStyle(fontFamily: 'ClashGrotesk', fontWeight: FontWeight.w500),
         ),
-        backgroundColor: const Color(0xFF001A23),
+        backgroundColor: theme.colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
@@ -73,6 +75,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final dishName = widget.recipe['dish'] ?? 'Recipe';
     final servings = widget.recipe['servings'] ?? 2;
     final readyTime = widget.recipe['ready_time'] ?? '20 min';
@@ -89,7 +92,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
         border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF001A23).withValues(alpha: 0.04),
+            color: theme.colorScheme.primary.withValues(alpha: 0.04),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -113,11 +116,11 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
           // Title
           Text(
             dishName,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'ClashDisplay',
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF001A23),
+              color: theme.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 6),
@@ -128,7 +131,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
               fontFamily: 'ClashGrotesk',
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF001A23).withValues(alpha: 0.6),
+              color: theme.colorScheme.primary.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 12),
@@ -140,7 +143,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
               fontSize: 15,
               height: 1.4,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF001A23).withValues(alpha: 0.8),
+              color: theme.colorScheme.primary.withValues(alpha: 0.8),
             ),
           ),
           // Expandable Ingredients & Instructions
@@ -155,13 +158,13 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                       const Divider(color: Color(0xFFD2E4E6), height: 1),
                       const SizedBox(height: 18),
                       // Ingredients Header
-                      const Text(
+                      Text(
                         'Ingredients',
                         style: TextStyle(
                           fontFamily: 'ClashDisplay',
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF001A23),
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -175,20 +178,20 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                 margin: const EdgeInsets.only(top: 6),
                                 width: 8,
                                 height: 8,
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Color(0xFFB3EFB2),
+                                  color: theme.colorScheme.secondary,
                                 ),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
                                   '${item['quantity'] ?? ''} ${item['name'] ?? ''}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'ClashGrotesk',
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xFF001A23),
+                                    color: theme.colorScheme.primary,
                                   ),
                                 ),
                               ),
@@ -198,13 +201,13 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                       }),
                       if (instructions.isNotEmpty) ...[
                         const SizedBox(height: 20),
-                        const Text(
+                        Text(
                           'Instructions',
                           style: TextStyle(
                             fontFamily: 'ClashDisplay',
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF001A23),
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -216,23 +219,23 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                               children: [
                                 Text(
                                   '${entry.key + 1}.',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'ClashDisplay',
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF001A23),
+                                    color: theme.colorScheme.primary,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     entry.value,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontFamily: 'ClashGrotesk',
                                       fontSize: 15,
                                       height: 1.4,
                                       fontWeight: FontWeight.w500,
-                                      color: Color(0xFF001A23),
+                                      color: theme.colorScheme.primary,
                                     ),
                                   ),
                                 ),
@@ -282,6 +285,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
     required String label,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
@@ -294,7 +298,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
           border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF001A23).withValues(alpha: 0.02),
+              color: theme.colorScheme.primary.withValues(alpha: 0.02),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -306,16 +310,16 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
             Icon(
               icon,
               size: 18,
-              color: const Color(0xFF2E7D32), // green accent
+              color: theme.colorScheme.primary,
             ),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'ClashGrotesk',
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF001A23),
+                color: theme.colorScheme.primary,
               ),
             ),
           ],

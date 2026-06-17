@@ -55,7 +55,7 @@ class ChatInputField extends StatelessWidget {
                   if (selectedImage != null)
                     InputChip(
                       labelStyle: const TextStyle(fontFamily: 'ClashGrotesk', fontWeight: FontWeight.w600),
-                      avatar: const Icon(Icons.image, size: 16, color: Color(0xFF001A23)),
+                      avatar: Icon(Icons.image, size: 16, color: Theme.of(context).colorScheme.primary),
                       label: Text(selectedImage!.name.split('/').last),
                       onDeleted: onClearImage,
                       deleteIconColor: const Color(0xFFEF4444),
@@ -65,7 +65,7 @@ class ChatInputField extends StatelessWidget {
                   if (selectedFileName != null)
                     InputChip(
                       labelStyle: const TextStyle(fontFamily: 'ClashGrotesk', fontWeight: FontWeight.w600),
-                      avatar: const Icon(Icons.attach_file, size: 16, color: Color(0xFF001A23)),
+                      avatar: Icon(Icons.attach_file, size: 16, color: Theme.of(context).colorScheme.primary),
                       label: Text(selectedFileName!),
                       onDeleted: onClearFile,
                       deleteIconColor: const Color(0xFFEF4444),
@@ -91,7 +91,7 @@ class ChatInputField extends StatelessWidget {
               border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF001A23).withValues(alpha: 0.06),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                 ),
@@ -107,14 +107,14 @@ class ChatInputField extends StatelessWidget {
                     child: Container(
                       width: 56,
                       height: 56,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Color(0xFFB3EFB2),
+                        color: Theme.of(context).colorScheme.secondary,
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Icon(
                           Icons.add_rounded,
-                          color: Color(0xFF001A23),
+                          color: Theme.of(context).colorScheme.onSecondary,
                           size: 24,
                         ),
                       ),
@@ -126,19 +126,19 @@ class ChatInputField extends StatelessWidget {
                     child: TextField(
                       controller: controller,
                       onSubmitted: loading ? null : (_) => onSend(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'ClashGrotesk',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF001A23),
+                        color: Theme.of(context).colorScheme.primary,
                       ),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Ask me anything...',
                         hintStyle: TextStyle(
                           fontFamily: 'ClashGrotesk',
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF4A5568),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         border: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -148,9 +148,9 @@ class ChatInputField extends StatelessWidget {
                   ),
                   // Mic / Voice Button
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.mic_none_rounded,
-                      color: Color(0xFF001A23),
+                      color: Theme.of(context).colorScheme.primary,
                       size: 24,
                     ),
                     onPressed: () {
@@ -291,6 +291,7 @@ class _AnimSendButtonState extends State<AnimSendButton> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final enabled = widget.onTap != null && !widget.loading;
     return GestureDetector(
       onTapDown: enabled ? (_) => setState(() => _isPressed = true) : null,
@@ -306,11 +307,11 @@ class _AnimSendButtonState extends State<AnimSendButton> {
           height: 56,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: enabled ? const Color(0xFF001A23) : const Color(0xFF001A23).withValues(alpha: 0.3),
+            color: enabled ? theme.colorScheme.primary : theme.colorScheme.primary.withValues(alpha: 0.3),
             boxShadow: enabled
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF001A23).withValues(alpha: 0.2),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.2),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),

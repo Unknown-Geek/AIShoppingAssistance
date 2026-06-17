@@ -260,9 +260,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFFE8F1F2),
+      backgroundColor: theme.scaffoldBackgroundColor,
       drawer: HistoryDrawer(
         chatHistory: _chatHistory,
         onStartNewChat: _startNewChat,
@@ -281,8 +282,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF001A23).withOpacity(0.08),
-                    const Color(0xFF001A23).withOpacity(0.0),
+                    theme.colorScheme.primary.withValues(alpha: 0.08),
+                    theme.colorScheme.primary.withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -298,8 +299,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFFB3EFB2).withOpacity(0.15),
-                    const Color(0xFFB3EFB2).withOpacity(0.0),
+                    theme.colorScheme.secondary.withValues(alpha: 0.15),
+                    theme.colorScheme.secondary.withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -334,15 +335,15 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const WelcomeCard(),
-                              const Padding(
-                                padding: EdgeInsets.fromLTRB(24, 16, 24, 12),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
                                 child: Text(
                                   'Try asking me',
                                   style: TextStyle(
                                     fontFamily: 'ClashDisplay',
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF001A23),
+                                    color: theme.colorScheme.primary,
                                   ),
                                 ),
                               ),
@@ -456,6 +457,7 @@ class ChatHeaderPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       height: 72,
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -466,7 +468,7 @@ class ChatHeaderPill extends StatelessWidget {
         border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF001A23).withValues(alpha: 0.04),
+            color: theme.colorScheme.primary.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -491,10 +493,10 @@ class ChatHeaderPill extends StatelessWidget {
                     width: 1.2,
                   ),
                 ),
-                child: const Center(
+                child: Center(
                   child: Icon(
                     Icons.history_rounded,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                     size: 20,
                   ),
                 ),
@@ -502,8 +504,8 @@ class ChatHeaderPill extends StatelessWidget {
             ),
           ),
           // Center Title
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 104),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 104),
             child: Text(
               'Qless Assistant',
               maxLines: 1,
@@ -512,7 +514,7 @@ class ChatHeaderPill extends StatelessWidget {
                 fontFamily: 'ClashDisplay',
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF001A23),
+                color: theme.colorScheme.primary,
               ),
             ),
           ),
@@ -532,12 +534,12 @@ class ChatHeaderPill extends StatelessWidget {
                     width: 1.2,
                   ),
                 ),
-                child: const Center(
+                child: Center(
                   child: Padding(
-                    padding: EdgeInsets.only(top: 2),
+                    padding: const EdgeInsets.only(top: 2),
                     child: Icon(
                       Icons.add_comment_outlined,
-                      color: Color(0xFF001A23),
+                      color: theme.colorScheme.primary,
                       size: 17,
                     ),
                   ),
@@ -556,6 +558,7 @@ class WelcomeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       padding: const EdgeInsets.all(28),
@@ -564,7 +567,7 @@ class WelcomeCard extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             Colors.white,
-            const Color(0xFFB3EFB2).withValues(alpha: 0.08),
+            theme.colorScheme.secondary.withValues(alpha: 0.08),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -573,7 +576,7 @@ class WelcomeCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF001A23).withValues(alpha: 0.04),
+            color: theme.colorScheme.primary.withValues(alpha: 0.04),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -582,14 +585,14 @@ class WelcomeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 56,
                 height: 56,
                 child: ClipOval(child: AnimatedOrb(size: 64)),
               ),
-              SizedBox(width: 24),
+              const SizedBox(width: 24),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -601,7 +604,7 @@ class WelcomeCard extends StatelessWidget {
                         fontFamily: 'ClashDisplay',
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF001A23),
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                     Text(
@@ -610,7 +613,7 @@ class WelcomeCard extends StatelessWidget {
                         fontFamily: 'ClashDisplay',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF001A23),
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ],
@@ -625,7 +628,7 @@ class WelcomeCard extends StatelessWidget {
               fontFamily: 'ClashGrotesk',
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF001A23).withValues(alpha: 0.7),
+              color: theme.colorScheme.primary.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -655,6 +658,7 @@ class _SuggestionPillState extends State<SuggestionPill> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
@@ -674,9 +678,9 @@ class _SuggestionPillState extends State<SuggestionPill> {
             border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: const Color(
-                  0xFF001A23,
-                ).withOpacity(_isPressed ? 0.03 : 0.05),
+                color: theme.colorScheme.primary.withValues(
+                  alpha: _isPressed ? 0.03 : 0.05,
+                ),
                 blurRadius: 16,
                 offset: _isPressed ? const Offset(0, 4) : const Offset(0, 8),
               ),
@@ -689,11 +693,11 @@ class _SuggestionPillState extends State<SuggestionPill> {
                 height: 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFB3EFB2).withOpacity(0.2),
+                  color: theme.colorScheme.secondary.withValues(alpha: 0.2),
                 ),
                 child: Icon(
                   widget.icon,
-                  color: const Color(0xFF001A23),
+                  color: theme.colorScheme.primary,
                   size: 20,
                 ),
               ),
@@ -701,18 +705,18 @@ class _SuggestionPillState extends State<SuggestionPill> {
               Expanded(
                 child: Text(
                   widget.text,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'ClashGrotesk',
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
-                color: Color(0xFF001A23),
+                color: theme.colorScheme.primary,
               ),
             ],
           ),
