@@ -686,7 +686,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                   );
                 },
-              onVoiceTap: () {},
+              onVoiceTap: _showRagSheet,
               isSearchingImage: _isSearchingImage,
               onShutterTap: _takePictureAndSearch,
             ),
