@@ -29,7 +29,18 @@ jobs:
           # Retry loop with backoff to handle transient rate limit or network errors
           for i in {1..5}; do
             echo "Upload attempt $i/5..."
-            if hf upload Mojo-Maniac/AIShoppingAssistance_Server ./hf_server . --repo-type space --delete="*"; then
+            if python - <<EOF
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ['HF_TOKEN'])
+          api.upload_folder(
+              folder_path='./hf_server',
+              repo_id='Mojo-Maniac/AIShoppingAssistance_Server',
+              repo_type='space',
+              delete_patterns='*'
+          )
+EOF
+            then
               echo "Upload successful!"
               exit 0
             else

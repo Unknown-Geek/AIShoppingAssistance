@@ -16,17 +16,17 @@ class ChatbotScreen extends StatefulWidget {
 
 class _ChatSession {
   final String title;
-  final List<_ChatMessage> messages;
+  final List<ChatMessage> messages;
 
   _ChatSession({required this.title, required this.messages});
 }
 
-class _ChatMessage {
+class ChatMessage {
   final bool isUser;
   final String? text;
   final Map<String, dynamic>? recipe;
 
-  const _ChatMessage({required this.isUser, this.text, this.recipe});
+  const ChatMessage({required this.isUser, this.text, this.recipe});
 }
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
@@ -38,7 +38,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final ScrollController _scrollController = ScrollController();
 
   bool _loading = false;
-  final List<_ChatMessage> _messages = [];
+  final List<ChatMessage> _messages = [];
   final List<_ChatSession> _chatHistory = [];
   String _currentChatTitle = 'New Chat';
 
@@ -72,7 +72,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         final data = entry as Map<String, dynamic>;
         final messages = (data['messages'] as List<dynamic>).map((messageData) {
           final map = messageData as Map<String, dynamic>;
-          return _ChatMessage(
+          return ChatMessage(
             isUser: map['isUser'] as bool,
             text: map['text'] as String?,
             recipe: map['recipe'] == null
@@ -147,7 +147,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       0,
       _ChatSession(
         title: title,
-        messages: List<_ChatMessage>.from(_messages),
+        messages: List<ChatMessage>.from(_messages),
       ),
     );
   });
@@ -164,7 +164,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   }
 
   setState(() {
-    _messages.add(_ChatMessage(isUser: true, text: prompt));
+    _messages.add(ChatMessage(isUser: true, text: prompt));
 
     if (_messages.length == 1) {
       _currentChatTitle = prompt;
@@ -203,13 +203,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       if (data['status'] == 'success') {
         setState(() {
           _messages.add(
-            _ChatMessage(isUser: false, recipe: data),
+            ChatMessage(isUser: false, recipe: data),
           );
         });
       } else {
         setState(() {
           _messages.add(
-            _ChatMessage(
+            ChatMessage(
               isUser: false,
               text: data['message'] ?? 'Recipe not found',
             ),
@@ -219,7 +219,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     } else {
       setState(() {
         _messages.add(
-          _ChatMessage(
+          ChatMessage(
             isUser: false,
             text: 'Server error: ${response.statusCode}',
           ),
@@ -231,7 +231,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   } on TimeoutException {
     setState(() {
       _messages.add(
-        const _ChatMessage(
+        const ChatMessage(
           isUser: false,
           text: 'Request timed out. Please try again.',
         ),
@@ -242,7 +242,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   } catch (e) {
     setState(() {
       _messages.add(
-        const _ChatMessage(
+        const ChatMessage(
           isUser: false,
           text: 'Unable to connect to recipe service.',
         ),
@@ -334,7 +334,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     );
   }
 
-  Widget _buildMessage(_ChatMessage message) {
+  Widget _buildMessage(ChatMessage message) {
     return Align(
       alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -465,139 +465,177 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               ),
             ),
           Container(
-  padding: const EdgeInsets.all(16),
-  decoration: const BoxDecoration(
-    color: Colors.white,
-  ),
-  child: Row(
-    children: [
-      Expanded(
-        child: TextField(
-          controller: _controller,
-          onSubmitted: _loading ? null : (_) => _sendMessage(),
-          decoration: InputDecoration(
-  hintText: 'Ask for a recipe...',
-  filled: true,
-  fillColor: const Color(0xFFF3F4F6),
-
-  border: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(28),
-    borderSide: BorderSide.none,
-  ),
-
-  enabledBorder: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(28),
-    borderSide: BorderSide.none,
-  ),
-
-  focusedBorder: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(28),
-    borderSide: BorderSide.none,
-  ),
-
-  prefixIcon: Padding(
-    padding: const EdgeInsets.only(left: 8),
-    child: Center(
-      widthFactor: 1,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.grey.shade400,
-          ),
-        ),
-        child: IconButton(
-          padding: EdgeInsets.zero,
-          icon: const Icon(
-            Icons.add,
-            size: 18,
-          ),
-          onPressed: () async {
-            showModalBottomSheet(
-              context: context,
-              builder: (context) => SafeArea(
-                child: Wrap(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.image),
-                      title: const Text('Choose Image'),
-                      onTap: () async {
-                        Navigator.pop(context);
-
-                        final image =
-                            await _imagePicker.pickImage(
-                          source: ImageSource.gallery,
-                        );
-
-                        if (image != null) {
-                          setState(() {
-                            _selectedImage = image;
-                          });
-                        }
-                      },
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_selectedImage != null || _selectedFileName != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        if (_selectedImage != null)
+                          InputChip(
+                            avatar: const Icon(Icons.image, size: 16),
+                            label: Text(_selectedImage!.name.split('/').last),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedImage = null;
+                              });
+                            },
+                          ),
+                        if (_selectedFileName != null)
+                          InputChip(
+                            avatar: const Icon(Icons.attach_file, size: 16),
+                            label: Text(_selectedFileName!),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedFile = null;
+                                _selectedFileName = null;
+                              });
+                            },
+                          ),
+                      ],
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.attach_file),
-                      title: const Text('Choose File'),
-                      onTap: () async {
-                        Navigator.pop(context);
+                  ),
+                ],
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        onSubmitted: _loading ? null : (_) => _sendMessage(),
+                        decoration: InputDecoration(
+                          hintText: 'Ask for a recipe...',
+                          filled: true,
+                          fillColor: const Color(0xFFF3F4F6),
 
-                        final result =
-                            await FilePicker.platform.pickFiles();
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(28),
+                            borderSide: BorderSide.none,
+                          ),
 
-                        if (result != null &&
-                            result.files.isNotEmpty) {
-                          setState(() {
-                            _selectedFile =
-                                result.files.first;
-                            _selectedFileName =
-                                result.files.first.name;
-                          });
-                        }
-                      },
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(28),
+                            borderSide: BorderSide.none,
+                          ),
+
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(28),
+                            borderSide: BorderSide.none,
+                          ),
+
+                          prefixIcon: Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Center(
+                              widthFactor: 1,
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ),
+                                child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  icon: const Icon(
+                                    Icons.add,
+                                    size: 18,
+                                  ),
+                                  onPressed: () async {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      builder: (context) => SafeArea(
+                                        child: Wrap(
+                                          children: [
+                                            ListTile(
+                                              leading: const Icon(Icons.image),
+                                              title: const Text('Choose Image'),
+                                              onTap: () async {
+                                                Navigator.pop(context);
+
+                                                final image =
+                                                    await _imagePicker.pickImage(
+                                                  source: ImageSource.gallery,
+                                                );
+
+                                                if (image != null) {
+                                                  setState(() {
+                                                    _selectedImage = image;
+                                                  });
+                                                }
+                                              },
+                                            ),
+                                            ListTile(
+                                              leading: const Icon(Icons.attach_file),
+                                              title: const Text('Choose File'),
+                                              onTap: () async {
+                                                Navigator.pop(context);
+
+                                                final result =
+                                                    await FilePicker.platform.pickFiles();
+
+                                                if (result != null &&
+                                                    result.files.isNotEmpty) {
+                                                  setState(() {
+                                                    _selectedFile =
+                                                        result.files.first;
+                                                    _selectedFileName =
+                                                        result.files.first.name;
+                                                  });
+                                                }
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          suffixIcon: IconButton(
+                            icon: const Icon(
+                              Icons.mic_none_rounded,
+                              size: 22,
+                            ),
+                            onPressed: () {
+                              // Speech-to-text later
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor: Colors.black,
+                      child: IconButton(
+                        onPressed: _loading ? null : _sendMessage,
+                        icon: const Icon(
+                          Icons.arrow_upward,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-            );
-          },
-        ),
-      ),
-    ),
-  ),
-
-  suffixIcon: IconButton(
-    icon: const Icon(
-      Icons.mic_none_rounded,
-      size: 22,
-    ),
-    onPressed: () {
-      // Speech-to-text later
-    },
-  ),
-),
-        ),
-      ),
-
-      const SizedBox(width: 10),
-
-      CircleAvatar(
-        radius: 22,
-        backgroundColor: Colors.black,
-        child: IconButton(
-          onPressed: _loading ? null : _sendMessage,
-          icon: const Icon(
-            Icons.arrow_upward,
-            color: Colors.white,
-            size: 18,
-          ),
-        ),
-      ),
-    ],
-  ),
-),
+              ],
+            ),
+          )
         ],
       ),
     );
