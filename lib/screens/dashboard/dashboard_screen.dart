@@ -112,7 +112,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   void _startBackgroundScanning() {
     _backgroundScanTimer?.cancel();
-    _backgroundScanTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+    _backgroundScanTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _performBackgroundScan();
     });
     debugPrint("[DashboardScreen] Background scanning started.");
