@@ -57,7 +57,7 @@ class MessageBubble extends StatelessWidget {
                   color: Color(0xFF001A23),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 2),
               Text(
                 _formatTime(message.timestamp),
                 style: TextStyle(
@@ -79,10 +79,13 @@ class MessageBubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Animated Orb AI Avatar
-            const SizedBox(
-              width: 44,
-              height: 44,
-              child: ClipOval(child: AnimatedOrb(size: 44)),
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: ClipOval(child: AnimatedOrb(size: 44)),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
