@@ -5,6 +5,8 @@ import time
 import datetime
 import re
 import httpx
+from recipe_agent import RecipeAgent
+from models import RecipeRequest
 from fastapi import FastAPI, File, UploadFile, BackgroundTasks, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
@@ -17,7 +19,7 @@ import numpy as np
 SLUG_STRIP_PATTERN = re.compile(r'-\d+$')
 
 app = FastAPI()
-
+recipe_agent = RecipeAgent()
 # Enable CORS so Flutter Web or local clients can call it directly
 app.add_middleware(
     CORSMiddleware,
@@ -183,6 +185,7 @@ async def detect_item(
     x_supabase_url: str = Header(default=None),
     x_supabase_key: str = Header(default=None)
 ):
+    
     start_total = time.time()
     try:
         t0 = time.time()
@@ -407,7 +410,12 @@ async def get_gallery():
 </html>
     """
     return html_content
-
+@app.post("/recipe-agent")
+async def recipe_agent_endpoint(request: RecipeRequest):
+    return await recipe_agent.generate_recipe(
+        request.dish,
+        request.servings
+    )
 @app.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
     return {"status": "ok"}
