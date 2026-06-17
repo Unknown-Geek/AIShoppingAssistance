@@ -178,11 +178,11 @@ class MessageBubble extends StatelessWidget {
     }
 
     return AnimatedContent(
-      distance: 30.0,
+      distance: 10.0,
       direction: 'horizontal',
       reverse: !isUser,
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOutCubic,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
       initialOpacity: 0.0,
       scale: 0.96, // Premium subtle scale-up
       child: bubbleWidget,
