@@ -139,7 +139,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     XFile? capturedPhoto;
     try {
-      capturedPhoto = await _cameraController!.takePicture();
+      capturedPhoto = await _cameraController!.takePicture().timeout(const Duration(seconds: 2));
       
       // Release camera lock early so manual shutter is not blocked by backend API latency
       _isCameraBusy = false;
@@ -375,7 +375,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     XFile? capturedPhoto;
     try {
-      capturedPhoto = await _cameraController!.takePicture();
+      capturedPhoto = await _cameraController!.takePicture().timeout(const Duration(seconds: 2));
       _isCameraBusy = false; // Release lock early once capture succeeds
 
       final CartItemModel? item = await _detectionService.detectItem(
