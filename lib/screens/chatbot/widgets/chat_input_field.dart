@@ -123,7 +123,7 @@ class ChatInputField extends StatelessWidget {
                         color: Color(0xFF001A23),
                       ),
                       decoration: const InputDecoration(
-                        hintText: 'Ask for a recipe...',
+                        hintText: 'Ask a question, update cart, or find recipes...',
                         hintStyle: TextStyle(
                           fontFamily: 'ClashGrotesk',
                           fontSize: 16,

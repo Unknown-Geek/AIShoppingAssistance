@@ -352,38 +352,34 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                 child: Column(
                                   children: [
                                     SuggestionPill(
-                                      text:
-                                          'Easy dinner recipes under 30 minutes',
+                                      text: 'Suggest healthy breakfast items to buy',
+                                      icon: Icons.shopping_basket_outlined,
+                                      onTap: () {
+                                        _controller.text = 'Suggest healthy breakfast items to buy';
+                                        _sendMessage();
+                                      },
+                                    ),
+                                    SuggestionPill(
+                                      text: 'Add milk, organic eggs and bread to my cart',
+                                      icon: Icons.add_shopping_cart_rounded,
+                                      onTap: () {
+                                        _controller.text = 'Add milk, organic eggs and bread to my cart';
+                                        _sendMessage();
+                                      },
+                                    ),
+                                    SuggestionPill(
+                                      text: 'Is organic milk healthier than regular milk?',
+                                      icon: Icons.help_outline_rounded,
+                                      onTap: () {
+                                        _controller.text = 'Is organic milk healthier than regular milk?';
+                                        _sendMessage();
+                                      },
+                                    ),
+                                    SuggestionPill(
+                                      text: 'Quick and easy dinner recipe ideas',
                                       icon: Icons.restaurant_menu_rounded,
                                       onTap: () {
-                                        _controller.text =
-                                            'Easy dinner recipes under 30 minutes';
-                                        _sendMessage();
-                                      },
-                                    ),
-                                    SuggestionPill(
-                                      text: 'Healthy breakfast ideas',
-                                      icon: Icons.spa_outlined,
-                                      onTap: () {
-                                        _controller.text =
-                                            'Healthy breakfast ideas';
-                                        _sendMessage();
-                                      },
-                                    ),
-                                    SuggestionPill(
-                                      text: 'Substitute for eggs in baking',
-                                      icon: Icons.swap_horiz_rounded,
-                                      onTap: () {
-                                        _controller.text =
-                                            'Substitute for eggs in baking';
-                                        _sendMessage();
-                                      },
-                                    ),
-                                    SuggestionPill(
-                                      text: 'High protein meals',
-                                      icon: Icons.egg_alt_outlined,
-                                      onTap: () {
-                                        _controller.text = 'High protein meals';
+                                        _controller.text = 'Quick and easy dinner recipe ideas';
                                         _sendMessage();
                                       },
                                     ),
@@ -508,7 +504,7 @@ class ChatHeaderPill extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 104),
             child: Text(
-              'Recipe Assistant',
+              'Qless Assistant',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -605,7 +601,7 @@ class WelcomeCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'I\'m your Recipe Assistant.',
+                      'I\'m your Qless Assistant.',
                       style: TextStyle(
                         fontFamily: 'ClashDisplay',
                         fontSize: 20,
@@ -620,7 +616,7 @@ class WelcomeCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Ask me for recipes, cooking tips, ingredient swaps and more!',
+            'Ask me questions, get item suggestions, update your cart, or find recipe ideas!',
             style: TextStyle(
               fontFamily: 'ClashGrotesk',
               fontSize: 16,
