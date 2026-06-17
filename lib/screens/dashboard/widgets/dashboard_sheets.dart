@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/cart_item_model.dart';
 import '../../../services/inventory_service.dart';
+import 'payment_sheet.dart';
 
 class DashboardSheets {
   static Future<void> showProfileSheet(
@@ -281,6 +282,24 @@ class DashboardSheets {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  static Future<void> showPaymentSheet(
+    BuildContext context, {
+    required double amount,
+    required VoidCallback onPaymentSuccess,
+  }) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return PaymentSheet(
+          amount: amount,
+          onPaymentSuccess: onPaymentSuccess,
         );
       },
     );
