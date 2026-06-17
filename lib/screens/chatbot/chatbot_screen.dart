@@ -31,8 +31,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final List<ChatMessage> _messages = [];
   final List<ChatSession> _chatHistory = [];
   String _currentChatTitle = 'New Chat';
+  String? _currentChatSessionId;
 
-  static const String _storageKey = 'chat_history_v1';
+  static const String _storageKey = 'chat_history_v2'; // Changed key to differentiate updated model storage
 
   static final String baseUrl = (() {
     final raw = dotenv.env['HF_SPACE_URL']?.trim() ?? '';
@@ -54,7 +55,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Future<void> _loadChatHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_storageKey);
+      var raw = prefs.getString(_storageKey);
+      
+      // Fallback to old storage key if new storage key doesn't exist yet
+      if (raw == null || raw.isEmpty) {
+        raw = prefs.getString('chat_history_v1');
+      }
+      
       if (raw == null || raw.isEmpty) return;
 
       final List<dynamic> decoded = jsonDecode(raw);
@@ -74,8 +81,24 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           );
         }).toList();
 
-        return ChatSession(title: data['title'] as String, messages: messages);
+        final title = data['title'] as String? ?? 'New Chat';
+        final id = data['id'] as String? ?? 'session_${DateTime.now().microsecondsSinceEpoch}_${title.hashCode}';
+        
+        final lastActiveStr = data['lastActive'] as String?;
+        final lastActive = lastActiveStr != null
+            ? (DateTime.tryParse(lastActiveStr) ?? DateTime.now())
+            : (messages.isNotEmpty ? messages.last.timestamp : DateTime.now());
+
+        return ChatSession(
+          id: id,
+          title: title,
+          messages: messages,
+          lastActive: lastActive,
+        );
       }).toList();
+
+      // Sort by lastActive descending
+      restored.sort((a, b) => b.lastActive.compareTo(a.lastActive));
 
       setState(() {
         _chatHistory.clear();
@@ -92,7 +115,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       final raw = jsonEncode(
         _chatHistory.map((session) {
           return {
+            'id': session.id,
             'title': session.title,
+            'lastActive': session.lastActive.toIso8601String(),
             'messages': session.messages.map((message) {
               return {
                 'isUser': message.isUser,
@@ -114,6 +139,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     setState(() {
       _messages.clear();
       _currentChatTitle = 'New Chat';
+      _currentChatSessionId = null;
     });
     if (_scaffoldKey.currentState?.isDrawerOpen == true) {
       Navigator.pop(context);
@@ -125,8 +151,41 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       _messages.clear();
       _messages.addAll(session.messages);
       _currentChatTitle = session.title;
+      _currentChatSessionId = session.id;
     });
     Navigator.pop(context);
+  }
+
+  void _deleteChatSession(ChatSession session) {
+    setState(() {
+      _chatHistory.removeWhere((chat) => chat.id == session.id);
+      if (_currentChatSessionId == session.id) {
+        _messages.clear();
+        _currentChatTitle = 'New Chat';
+        _currentChatSessionId = null;
+      }
+    });
+    _saveChatHistory();
+  }
+
+  void _renameChatSession(ChatSession session, String newTitle) {
+    if (newTitle.trim().isEmpty) return;
+    setState(() {
+      final index = _chatHistory.indexWhere((chat) => chat.id == session.id);
+      if (index != -1) {
+        final existing = _chatHistory[index];
+        _chatHistory[index] = ChatSession(
+          id: existing.id,
+          title: newTitle.trim(),
+          messages: existing.messages,
+          lastActive: existing.lastActive,
+        );
+      }
+      if (_currentChatSessionId == session.id) {
+        _currentChatTitle = newTitle.trim();
+      }
+    });
+    _saveChatHistory();
   }
 
   void _saveCurrentChat() {
@@ -135,13 +194,36 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     final title = _currentChatTitle == 'New Chat'
         ? (_messages.first.text ?? 'New Chat')
         : _currentChatTitle;
-    setState(() {
-      _chatHistory.removeWhere((chat) => chat.title == title);
 
-      _chatHistory.insert(
-        0,
-        ChatSession(title: title, messages: List<ChatMessage>.from(_messages)),
-      );
+    setState(() {
+      if (_currentChatSessionId != null) {
+        final index = _chatHistory.indexWhere((chat) => chat.id == _currentChatSessionId);
+        final updatedSession = ChatSession(
+          id: _currentChatSessionId!,
+          title: title,
+          messages: List<ChatMessage>.from(_messages),
+          lastActive: DateTime.now(),
+        );
+        if (index != -1) {
+          _chatHistory.removeAt(index);
+        }
+        _chatHistory.insert(0, updatedSession);
+      } else {
+        final newId = 'session_${DateTime.now().millisecondsSinceEpoch}';
+        _currentChatSessionId = newId;
+        _chatHistory.insert(
+          0,
+          ChatSession(
+            id: newId,
+            title: title,
+            messages: List<ChatMessage>.from(_messages),
+            lastActive: DateTime.now(),
+          ),
+        );
+      }
+      _currentChatTitle = title;
+      // Sort history to keep newest on top
+      _chatHistory.sort((a, b) => b.lastActive.compareTo(a.lastActive));
     });
 
     _saveChatHistory();
@@ -266,8 +348,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       drawer: HistoryDrawer(
         chatHistory: _chatHistory,
+        activeSessionId: _currentChatSessionId,
         onStartNewChat: _startNewChat,
         onOpenChatSession: _openChatSession,
+        onDeleteChatSession: _deleteChatSession,
+        onRenameChatSession: _renameChatSession,
       ),
       body: Stack(
         children: [

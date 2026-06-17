@@ -1,8 +1,15 @@
 class ChatSession {
+  final String id;
   final String title;
   final List<ChatMessage> messages;
+  final DateTime lastActive;
 
-  ChatSession({required this.title, required this.messages});
+  ChatSession({
+    required this.id,
+    required this.title,
+    required this.messages,
+    required this.lastActive,
+  });
 }
 
 class ChatMessage {
