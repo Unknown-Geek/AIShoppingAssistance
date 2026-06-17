@@ -365,6 +365,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       retryCount++;
     }
 
+    if (!mounted) return;
+
     if (_isSearchingImage || _isCameraBusy) {
       debugPrint("[DashboardScreen] Shutter click dropped: camera remains busy.");
       return;
