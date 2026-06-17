@@ -29,65 +29,75 @@ class ChatInputField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imagePicker = ImagePicker();
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 8,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Floating File/Image Chips above the text input pill
-            if (selectedImage != null || selectedFileName != null)
-              Padding(
-                padding: const EdgeInsets.only(left: 28.0, right: 28.0, bottom: 8.0),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    if (selectedImage != null)
-                      InputChip(
-                        labelStyle: const TextStyle(fontFamily: 'ClashGrotesk', fontWeight: FontWeight.w600),
-                        avatar: const Icon(Icons.image, size: 16, color: Color(0xFF001A23)),
-                        label: Text(selectedImage!.name.split('/').last),
-                        onDeleted: onClearImage,
-                        deleteIconColor: const Color(0xFFEF4444),
-                        backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                    if (selectedFileName != null)
-                      InputChip(
-                        labelStyle: const TextStyle(fontFamily: 'ClashGrotesk', fontWeight: FontWeight.w600),
-                        avatar: const Icon(Icons.attach_file, size: 16, color: Color(0xFF001A23)),
-                        label: Text(selectedFileName!),
-                        onDeleted: onClearFile,
-                        deleteIconColor: const Color(0xFFEF4444),
-                        backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                  ],
-                ),
-              ),
-            // Floating 84px input area
-            Container(
-              height: 84,
-              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(42),
-                border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF001A23).withOpacity(0.06),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
+    // Calculate equal visual gaps above and below the floating white pill
+    final double topGap = isKeyboardOpen ? 8.0 : (bottomPadding > 0 ? 24.0 : 16.0);
+    final double bottomGap = isKeyboardOpen ? 8.0 : (bottomPadding > 0 ? bottomPadding : 16.0);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Floating File/Image Chips above the text input pill
+          if (selectedImage != null || selectedFileName != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 28.0, right: 28.0, bottom: 8.0),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  if (selectedImage != null)
+                    InputChip(
+                      labelStyle: const TextStyle(fontFamily: 'ClashGrotesk', fontWeight: FontWeight.w600),
+                      avatar: const Icon(Icons.image, size: 16, color: Color(0xFF001A23)),
+                      label: Text(selectedImage!.name.split('/').last),
+                      onDeleted: onClearImage,
+                      deleteIconColor: const Color(0xFFEF4444),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  if (selectedFileName != null)
+                    InputChip(
+                      labelStyle: const TextStyle(fontFamily: 'ClashGrotesk', fontWeight: FontWeight.w600),
+                      avatar: const Icon(Icons.attach_file, size: 16, color: Color(0xFF001A23)),
+                      label: Text(selectedFileName!),
+                      onDeleted: onClearFile,
+                      deleteIconColor: const Color(0xFFEF4444),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
                 ],
               ),
-              child: Row(
+            ),
+          // Floating 84px input area
+          Container(
+            height: 84,
+            margin: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: topGap,
+              bottom: bottomGap,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(42),
+              border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF001A23).withValues(alpha: 0.06),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
                 children: [
                   // Plus Menu Button
                   GestureDetector(
@@ -158,8 +168,7 @@ class ChatInputField extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   void _showAttachmentBottomSheet(BuildContext context, ImagePicker imagePicker) {
@@ -297,11 +306,11 @@ class _AnimSendButtonState extends State<AnimSendButton> {
           height: 56,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: enabled ? const Color(0xFF001A23) : const Color(0xFF001A23).withOpacity(0.3),
+            color: enabled ? const Color(0xFF001A23) : const Color(0xFF001A23).withValues(alpha: 0.3),
             boxShadow: enabled
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF001A23).withOpacity(0.2),
+                      color: const Color(0xFF001A23).withValues(alpha: 0.2),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),

@@ -24,7 +24,7 @@ class HistoryDrawer extends StatelessWidget {
               decoration: BoxDecoration(color: Color(0xFFF7F8FA)),
               child: Text(
                 'History',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
             ListTile(

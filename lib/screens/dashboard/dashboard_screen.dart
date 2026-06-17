@@ -815,7 +815,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           Text(
                             'My Cart',
                             style: TextStyle(
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.primary,
                             ),

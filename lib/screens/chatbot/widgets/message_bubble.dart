@@ -51,32 +51,21 @@ class MessageBubble extends StatelessWidget {
                 message.text ?? '',
                 style: const TextStyle(
                   fontFamily: 'ClashGrotesk',
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w500,
                   height: 1.5,
                   color: Color(0xFF001A23),
                 ),
               ),
               const SizedBox(height: 6),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _formatTime(message.timestamp),
-                    style: TextStyle(
-                      fontFamily: 'ClashGrotesk',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      color: const Color(0xFF001A23).withOpacity(0.6),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Icon(
-                    Icons.done_all,
-                    size: 16,
-                    color: Color(0xFF2E7D32),
-                  ),
-                ],
+              Text(
+                _formatTime(message.timestamp),
+                style: TextStyle(
+                  fontFamily: 'ClashGrotesk',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF001A23).withOpacity(0.6),
+                ),
               ),
             ],
           ),
@@ -143,7 +132,7 @@ class MessageBubble extends StatelessWidget {
                                 message.text ?? 'Unknown error',
                                 style: const TextStyle(
                                   fontFamily: 'ClashGrotesk',
-                                  fontSize: 18,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                   height: 1.5,
                                   color: Color(0xFF001A23),

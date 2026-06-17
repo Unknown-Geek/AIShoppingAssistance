@@ -313,6 +313,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           ),
           // Main content
           SafeArea(
+            bottom: false,
             child: Column(
               children: [
                 // Floating Header Pill
@@ -391,7 +392,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                         )
                       : ListView.builder(
                           controller: _scrollController,
-                          padding: const EdgeInsets.only(bottom: 20),
+                          padding: const EdgeInsets.only(bottom: 8),
                           itemCount: _messages.length,
                           itemBuilder: (_, index) =>
                               MessageBubble(message: _messages[index]),
@@ -399,7 +400,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 ),
                 if (_loading)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.only(bottom: 8),
                     child: MessageBubble(
                       message: ChatMessage(
                         isUser: false,
