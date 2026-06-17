@@ -25,7 +25,23 @@ jobs:
           git config user.name "github-actions[bot]"
           git add .
           git commit -m "Deploy from GitHub Actions: ${{ github.sha }}"
-          git push https://Mojo-Maniac:$HF_TOKEN@huggingface.co/spaces/Mojo-Maniac/AIShoppingAssistance_Server main --force
+          
+          # Retry loop with backoff to handle transient 429 rate limit errors from Hugging Face
+          for i in {1..5}; do
+            echo "Push attempt $i/5..."
+            if git push https://Mojo-Maniac:$HF_TOKEN@huggingface.co/spaces/Mojo-Maniac/AIShoppingAssistance_Server main --force; then
+              echo "Push successful!"
+              exit 0
+            else
+              if [ $i -eq 5 ]; then
+                echo "Failed to push to Hugging Face Space after 5 attempts."
+                exit 1
+              fi
+              delay=$((i * 15))
+              echo "Push failed. Retrying in $delay seconds..."
+              sleep $delay
+            fi
+          done
 
   deploy_primary_oracle:
     name: Deploy to Oracle VM (Primary Server)
