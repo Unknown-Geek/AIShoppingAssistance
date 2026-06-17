@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'widgets/cart_item.dart';
+import 'widgets/chatbot_screen.dart';
 import '../../models/cart_item_model.dart';
 import '../../services/chromadb_client.dart';
 import '../../services/cart_service.dart';
@@ -525,7 +526,12 @@ class _DashboardScreenState extends State<DashboardScreen>
               );
             },
             child: BottomNavBar(
-              onChatTap: _showRagSheet,
+              onChatTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChatbotScreen()),
+                );
+              },
               onVoiceTap: () {},
               isSearchingImage: _isSearchingImage,
               onShutterTap: _takePictureAndSearch,
