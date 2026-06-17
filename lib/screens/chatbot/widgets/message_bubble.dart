@@ -33,9 +33,13 @@ class MessageBubble extends StatelessWidget {
             maxWidth: MediaQuery.of(context).size.width * 0.8,
           ),
           margin: const EdgeInsets.fromLTRB(24, 6, 24, 6),
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 22),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFFB3EFB2).withOpacity(0.20),
+            color: const Color(0xFFB3EFB2).withValues(alpha: 0.20),
+            border: Border.all(
+              color: const Color(0xFFB3EFB2).withValues(alpha: 0.40),
+              width: 1.0,
+            ),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(28),
               topRight: Radius.circular(28),
@@ -64,7 +68,7 @@ class MessageBubble extends StatelessWidget {
                   fontFamily: 'ClashGrotesk',
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
-                  color: const Color(0xFF001A23).withOpacity(0.6),
+                  color: const Color(0xFF001A23).withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -74,16 +78,16 @@ class MessageBubble extends StatelessWidget {
     } else {
       // AI Bubble Layout (Left aligned, with Sparkle Avatar)
       return Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Animated Orb AI Avatar
             const Padding(
-              padding: EdgeInsets.only(top: 8),
+              padding: EdgeInsets.only(top: 4),
               child: SizedBox(
-                width: 44,
-                height: 44,
+                width: 50,
+                height: 50,
                 child: ClipOval(child: AnimatedOrb(size: 44)),
               ),
             ),
@@ -98,8 +102,8 @@ class MessageBubble extends StatelessWidget {
                           maxWidth: MediaQuery.of(context).size.width * 0.7,
                         ),
                         padding: const EdgeInsets.symmetric(
-                          vertical: 18,
-                          horizontal: 22,
+                          vertical: 12,
+                          horizontal: 16,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -115,7 +119,7 @@ class MessageBubble extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF001A23).withOpacity(0.04),
+                              color: const Color(0xFF001A23).withValues(alpha: 0.04),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -151,7 +155,7 @@ class MessageBubble extends StatelessWidget {
                                   fontWeight: FontWeight.w400,
                                   color: const Color(
                                     0xFF001A23,
-                                  ).withOpacity(0.6),
+                                  ).withValues(alpha: 0.6),
                                 ),
                               ),
                             ],
@@ -214,7 +218,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
               height: 8,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF001A23).withOpacity(0.3 + (value * 0.5)),
+                color: const Color(0xFF001A23).withValues(alpha: 0.3 + (value * 0.5)),
               ),
             );
           },
