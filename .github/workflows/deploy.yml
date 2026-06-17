@@ -26,7 +26,17 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          hf upload Mojo-Maniac/AIShoppingAssistance_Server ./hf_server . --repo-type space --delete="*"
+          python - <<EOF
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ['HF_TOKEN'])
+          api.upload_folder(
+              folder_path='./hf_server',
+              repo_id='Mojo-Maniac/AIShoppingAssistance_Server',
+              repo_type='space',
+              delete_patterns='*'
+          )
+          EOF
 
   deploy_primary_oracle:
     name: Deploy to Oracle VM (Primary Server)
