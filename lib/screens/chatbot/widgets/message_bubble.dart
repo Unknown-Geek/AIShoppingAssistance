@@ -62,7 +62,7 @@ class MessageBubble extends StatelessWidget {
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 8),
               Text(
                 _formatTime(message.timestamp),
                 style: TextStyle(
@@ -147,7 +147,7 @@ class MessageBubble extends StatelessWidget {
                                 ),
                               ),
                             if (!isTyping) ...[
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 8),
                               Text(
                                 _formatTime(message.timestamp),
                                 style: TextStyle(
