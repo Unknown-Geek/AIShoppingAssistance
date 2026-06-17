@@ -412,9 +412,8 @@ async def get_gallery():
     return html_content
 @app.post("/recipe-agent")
 async def recipe_agent_endpoint(request: RecipeRequest):
-    return await recipe_agent.generate_recipe(
-        request.dish,
-        request.servings
+    return await recipe_agent.generate_recipe_from_prompt(
+        request.prompt
     )
 @app.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
