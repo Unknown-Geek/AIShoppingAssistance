@@ -1,15 +1,11 @@
 import httpx
 
-
 class FirecrawlRecipeTool:
-
     SEARCH_URL = "https://n8n.shravanpandala.me/firecrawl/v1/search"
     SCRAPE_URL = "https://n8n.shravanpandala.me/firecrawl/v1/scrape"
 
     async def search_recipe(self, dish_name: str):
-
         async with httpx.AsyncClient() as client:
-
             # Search
             search_response = await client.post(
                 self.SEARCH_URL,
@@ -20,7 +16,6 @@ class FirecrawlRecipeTool:
                 return None
 
             search_data = search_response.json()
-
             results = search_data.get("data", [])
 
             if not results:
@@ -38,7 +33,6 @@ class FirecrawlRecipeTool:
                 return None
 
             scrape_data = scrape_response.json()
-
             markdown = scrape_data.get("data", {}).get("markdown", "")
             print("Ingredients found:", "Ingredients" in markdown)
             print("Instructions found:", "Instructions" in markdown)

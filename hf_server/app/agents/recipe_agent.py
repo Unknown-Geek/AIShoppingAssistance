@@ -1,10 +1,8 @@
-from recipe_tool import RecipeTool
-from firecrawl_recipe_tool import FirecrawlRecipeTool
-from recipe_parser import RecipeParser
-
+from .tools.recipe_tool import RecipeTool
+from .tools.firecrawl_recipe_tool import FirecrawlRecipeTool
+from .recipe_parser import RecipeParser
 
 class RecipeAgent:
-
     def __init__(self):
         self.tool = RecipeTool()
         self.firecrawl_tool = FirecrawlRecipeTool()
@@ -15,7 +13,6 @@ class RecipeAgent:
         dish: str,
         servings: int
     ):
-
         recipe = await self.tool.search_recipe(dish)
 
         # MealDB found recipe

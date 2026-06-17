@@ -1,6 +1,5 @@
 import re
 
-
 class RecipeParser:
     BAD_WORDS = [
         "facebook",
