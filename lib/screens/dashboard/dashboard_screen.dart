@@ -326,7 +326,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Future<void> _takePictureAndSearch() async {
-    if (_isSearchingImage || _isCameraBusy) return;
+    if (_isSearchingImage) return;
 
     if (_isCacheValid()) {
       debugPrint("[DashboardScreen] Using valid pre-emptive scan cache for instant confirm sheet.");
@@ -355,6 +355,18 @@ class _DashboardScreenState extends State<DashboardScreen>
           );
         }
       }
+      return;
+    }
+
+    // Yield up to 500ms if the camera is busy with a background scan capture
+    int retryCount = 0;
+    while (_isCameraBusy && retryCount < 10) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      retryCount++;
+    }
+
+    if (_isSearchingImage || _isCameraBusy) {
+      debugPrint("[DashboardScreen] Shutter click dropped: camera remains busy.");
       return;
     }
 
