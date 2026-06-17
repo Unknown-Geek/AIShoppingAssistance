@@ -26,7 +26,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          huggingface-cli upload Mojo-Maniac/AIShoppingAssistance_Server ./hf_server . --repo-type space --delete="*"
+          hf upload Mojo-Maniac/AIShoppingAssistance_Server ./hf_server . --repo-type space --delete="*"
 
   deploy_primary_oracle:
     name: Deploy to Oracle VM (Primary Server)
