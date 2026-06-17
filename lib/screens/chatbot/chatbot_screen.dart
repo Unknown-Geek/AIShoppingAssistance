@@ -413,76 +413,82 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 ),
                 const SizedBox(height: 8),
                 Expanded(
-                  child: _messages.isEmpty
-                      ? SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const WelcomeCard(),
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
-                                child: Text(
-                                  'Try asking me',
-                                  style: TextStyle(
-                                    fontFamily: 'ClashDisplay',
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.colorScheme.primary,
+                  child: FadeContent(
+                    key: ValueKey(_currentChatSessionId ?? (_messages.isEmpty ? 'welcome' : 'new_chat')),
+                    blur: true,
+                    duration: const Duration(milliseconds: 1000),
+                    curve: Curves.easeOut,
+                    child: _messages.isEmpty
+                        ? SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const WelcomeCard(),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
+                                  child: Text(
+                                    'Try asking me',
+                                    style: TextStyle(
+                                      fontFamily: 'ClashDisplay',
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.primary,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      SuggestionPill(
+                                        text: 'Suggest healthy breakfast items to buy',
+                                        icon: Icons.shopping_basket_outlined,
+                                        onTap: () {
+                                          _controller.text = 'Suggest healthy breakfast items to buy';
+                                          _sendMessage();
+                                        },
+                                      ),
+                                      SuggestionPill(
+                                        text: 'Add milk, organic eggs and bread to my cart',
+                                        icon: Icons.add_shopping_cart_rounded,
+                                        onTap: () {
+                                          _controller.text = 'Add milk, organic eggs and bread to my cart';
+                                          _sendMessage();
+                                        },
+                                      ),
+                                      SuggestionPill(
+                                        text: 'Is organic milk healthier than regular milk?',
+                                        icon: Icons.help_outline_rounded,
+                                        onTap: () {
+                                          _controller.text = 'Is organic milk healthier than regular milk?';
+                                          _sendMessage();
+                                        },
+                                      ),
+                                      SuggestionPill(
+                                        text: 'Quick and easy dinner recipe ideas',
+                                        icon: Icons.restaurant_menu_rounded,
+                                        onTap: () {
+                                          _controller.text = 'Quick and easy dinner recipe ideas';
+                                          _sendMessage();
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                child: Column(
-                                  children: [
-                                    SuggestionPill(
-                                      text: 'Suggest healthy breakfast items to buy',
-                                      icon: Icons.shopping_basket_outlined,
-                                      onTap: () {
-                                        _controller.text = 'Suggest healthy breakfast items to buy';
-                                        _sendMessage();
-                                      },
-                                    ),
-                                    SuggestionPill(
-                                      text: 'Add milk, organic eggs and bread to my cart',
-                                      icon: Icons.add_shopping_cart_rounded,
-                                      onTap: () {
-                                        _controller.text = 'Add milk, organic eggs and bread to my cart';
-                                        _sendMessage();
-                                      },
-                                    ),
-                                    SuggestionPill(
-                                      text: 'Is organic milk healthier than regular milk?',
-                                      icon: Icons.help_outline_rounded,
-                                      onTap: () {
-                                        _controller.text = 'Is organic milk healthier than regular milk?';
-                                        _sendMessage();
-                                      },
-                                    ),
-                                    SuggestionPill(
-                                      text: 'Quick and easy dinner recipe ideas',
-                                      icon: Icons.restaurant_menu_rounded,
-                                      onTap: () {
-                                        _controller.text = 'Quick and easy dinner recipe ideas';
-                                        _sendMessage();
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.only(bottom: 8),
+                            itemCount: _messages.length,
+                            itemBuilder: (_, index) =>
+                                MessageBubble(message: _messages[index]),
                           ),
-                        )
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.only(bottom: 8),
-                          itemCount: _messages.length,
-                          itemBuilder: (_, index) =>
-                              MessageBubble(message: _messages[index]),
-                        ),
+                  ),
                 ),
                 if (_loading)
                   Padding(
@@ -807,6 +813,95 @@ class _SuggestionPillState extends State<SuggestionPill> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class FadeContent extends StatefulWidget {
+  final Widget child;
+  final bool blur;
+  final Duration duration;
+  final Duration delay;
+  final Curve curve;
+
+  const FadeContent({
+    super.key,
+    required this.child,
+    this.blur = true,
+    this.duration = const Duration(milliseconds: 1000),
+    this.delay = Duration.zero,
+    this.curve = Curves.easeOut,
+  });
+
+  @override
+  State<FadeContent> createState() => _FadeContentState();
+}
+
+class _FadeContentState extends State<FadeContent> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.duration,
+    );
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: widget.curve,
+    );
+
+    if (widget.delay == Duration.zero) {
+      _controller.forward();
+    } else {
+      Future.delayed(widget.delay, () {
+        if (mounted) {
+          _controller.forward();
+        }
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(FadeContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.child != oldWidget.child) {
+      _controller.reset();
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, childWidget) {
+        final double opacity = _animation.value;
+        final double sigma = widget.blur ? (1.0 - _animation.value) * 10.0 : 0.0;
+
+        Widget current = Opacity(
+          opacity: opacity,
+          child: childWidget,
+        );
+
+        if (sigma > 0.1) {
+          current = ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma, tileMode: TileMode.decal),
+            child: current,
+          );
+        }
+
+        return current;
+      },
+      child: widget.child,
     );
   }
 }
