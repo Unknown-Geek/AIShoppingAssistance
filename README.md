@@ -16,23 +16,33 @@ Qless is a modern mobile and backend prototype designed to enable seamless, AI-a
 
 ```mermaid
 graph TD
-    A[Flutter Camera Screen] -->|Take Picture| B[Product Detection Service]
-    B -->|Multipart HTTP POST /detect| C[FastAPI Backend]
-    C -->|RGB conversion & Preprocessing| D[CLIP Vision Processor]
-    D -->|Inference| E[ONNX Vision Encoder]
-    E -->|Normalized 512-float vector| F[Chroma Vector Lookup]
-    F -->|Match product slug| G[Inventory Metadata Resolution]
-    G -->|Supabase lookup| H[Flutter Cart Service]
-    H -->|Local State| I[Updated Shopping Cart]
+    A[Flutter Dashboard Screen] -->|Capture XFile| B[Product Detection Service]
+    B -->|Multipart HTTP POST /detect<br>with Chroma Auth Header| C[FastAPI Backend]
+    
+    subgraph FastAPI Backend App [FastAPI Server (hf_server/app/main.py)]
+        C -->|1. Convert to RGB & Preprocess| D[CLIP Vision Processor]
+        D -->|2. Generate inputs| E[ONNX Vision Encoder]
+        E -->|3. Get 512-float vector| F[Chroma Vector Lookup]
+    end
+    
+    F -->|Return matched product slug| B
+    B -->|4. Resolve Name, SKU, Price (0ms)| G[Inventory Metadata Resolution<br>(local inventory.json)]
+    
+    B -.->|5. Background fetch thumbnail URL| H[(Supabase Table: inventory)]
+    H -.->|Cache URL| G
+    
+    G -->|6. Return CartItemModel| I[Flutter Cart Service]
+    I -->|7. Update local state| J[Updated Shopping Cart]
+    I -.->|8. Async persistent sync| K[(Supabase Table: user_carts)]
 ```
 
 ### Flow Breakdown
 
-1. **Mobile Capture (`lib/screens/dashboard_screen.dart`):** Utilizes `CameraController` at low resolution to reduce upload payloads.
+1. **Mobile Capture (`lib/screens/dashboard/dashboard_screen.dart`):** Utilizes `CameraController` at low resolution to reduce upload payloads.
 2. **Detection Client (`lib/services/product_detection_service.dart`):** Sends the image to the FastAPI backend via a multipart POST request with Chroma authentication headers.
-3. **fastAPI Service (`hf_server/app.py`):** Preprocesses the image, runs inference on a local ONNX model (`Xenova/clip-vit-base-patch32`), and queries Chroma Cloud.
-4. **Local Metadata Resolution (`lib/services/inventory_service.dart`):** Map the matched product slug back to local metadata (`inventory.json`) in 0ms to bypass external database lookup latency.
-5. **State Sync & Persistence (`lib/services/cart_service.dart`):** Persists the mutated cart local state using `SharedPreferences` and optionally synchronizes with Supabase.
+3. **FastAPI Service (`hf_server/app/main.py`):** Preprocesses the image, runs inference on a local ONNX model (`Xenova/clip-vit-base-patch32`), and queries Chroma Cloud.
+4. **Local Metadata Resolution (`lib/services/inventory_service.dart`):** Maps the matched product slug back to local metadata (`inventory.json`) in 0ms to bypass external database lookup latency.
+5. **State Sync & Persistence (`lib/services/cart_service.dart`):** Persists the mutated cart local state using `SharedPreferences` and synchronizes with Supabase for logged-in users.
 
 ---
 
@@ -89,7 +99,9 @@ Create a `.env` file at the root directory of the Flutter project:
 
 ```env
 CHROMA_API_KEY=your_chroma_api_key_here
-HF_SPACE_URL=https://<your-hf-space>.hf.space/embed
+PRIMARY_DETECTION_URL=https://<your-primary-detection-url-or-ngrok-url>
+BACKUP_DETECTION_URL=https://<your-backup-detection-url-or-huggingface-space-url>
+HF_SPACE_URL=https://<your-huggingface-space-url>
 SUPABASE_URL=https://<your-project-ref>.supabase.co
 SUPABASE_ANON_KEY=your_supabase_anon_key_here
 ```
@@ -159,7 +171,7 @@ To access the local backend from a physical mobile device:
 ```bash
 ngrok http 8000
 ```
-Copy your ngrok forwarding URL and update `HF_SPACE_URL` in your `.env` file.
+Copy your ngrok forwarding URL and update `PRIMARY_DETECTION_URL` (and optionally `HF_SPACE_URL` if running chatbot features locally) in your `.env` file.
 
 ### 3. Test Ingestion/Detection via Curl
 ```bash
