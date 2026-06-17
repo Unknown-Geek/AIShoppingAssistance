@@ -26,33 +26,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Retry loop with backoff to handle transient rate limit or network errors
-          for i in {1..5}; do
-            echo "Upload attempt $i/5..."
-            if python - <<EOF
-          import os
-          from huggingface_hub import HfApi
-          api = HfApi(token=os.environ['HF_TOKEN'])
-          api.upload_folder(
-              folder_path='./hf_server',
-              repo_id='Mojo-Maniac/AIShoppingAssistance_Server',
-              repo_type='space',
-              delete_patterns='*'
-          )
-EOF
-            then
-              echo "Upload successful!"
-              exit 0
-            else
-              if [ $i -eq 5 ]; then
-                echo "Failed to upload to Hugging Face Space after 5 attempts."
-                exit 1
-              fi
-              delay=$((i * 15))
-              echo "Upload failed. Retrying in $delay seconds..."
-              sleep $delay
-            fi
-          done
+          python -c "import os; from huggingface_hub import HfApi; api = HfApi(token=os.environ['HF_TOKEN']); api.upload_folder(folder_path='./hf_server', repo_id='Mojo-Maniac/AIShoppingAssistance_Server', repo_type='space', delete_patterns='*')"
 
   deploy_primary_oracle:
     name: Deploy to Oracle VM (Primary Server)
