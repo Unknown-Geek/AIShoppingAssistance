@@ -286,38 +286,46 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     setState(() => _isCheckingOut = true);
 
-    // Simulate brief payment processing
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    await _cartService.checkout();
-
-    if (!mounted) return;
-    setState(() => _isCheckingOut = false);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.fixed,
-        content: Row(
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              color: theme.colorScheme.secondary,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Order placed! ₹${total.toStringAsFixed(2)} charged.',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+    // Open the premium payment sheet
+    DashboardSheets.showPaymentSheet(
+      context,
+      amount: total,
+      onPaymentSuccess: () async {
+        await _cartService.checkout();
+        if (mounted) {
+          setState(() => _isCheckingOut = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.fixed,
+              content: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    color: theme.colorScheme.secondary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Order placed! ₹${total.toStringAsFixed(2)} charged.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
+              backgroundColor: theme.colorScheme.primary,
+              duration: const Duration(seconds: 3),
             ),
-          ],
-        ),
-        backgroundColor: theme.colorScheme.primary,
-        duration: const Duration(seconds: 3),
-      ),
+          );
+        }
+      },
     );
+    
+    // Reset checking out state if they cancel or close the sheet
+    if (mounted) {
+      setState(() => _isCheckingOut = false);
+    }
   }
 
   bool _isCacheValid() {
