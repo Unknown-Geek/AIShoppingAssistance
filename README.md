@@ -17,16 +17,16 @@ Qless is a modern mobile and backend prototype designed to enable seamless, AI-a
 ```mermaid
 graph TD
     A[Flutter Dashboard Screen] -->|Capture XFile| B[Product Detection Service]
-    B -->|Multipart HTTP POST /detect<br>with Chroma Auth Header| C[FastAPI Backend]
+    B -->|Multipart HTTP POST /detect with Chroma Auth Header| C[FastAPI Backend]
     
     subgraph FastAPI Backend App ["FastAPI Server (hf_server/app/main.py)"]
-        C -->|1. Convert to RGB & Preprocess| D[CLIP Vision Processor]
+        C -->|1. Convert to RGB and Preprocess| D[CLIP Vision Processor]
         D -->|2. Generate inputs| E[ONNX Vision Encoder]
         E -->|3. Get 512-float vector| F[Chroma Vector Lookup]
     end
     
     F -->|Return matched product slug| B
-    B -->|4. Resolve Name, SKU, Price (0ms)| G["Inventory Metadata Resolution<br>(local inventory.json)"]
+    B -->|4. Resolve Name, SKU, Price - 0ms| G["Inventory Metadata Resolution - local inventory.json"]
     
     B -.->|5. Background fetch thumbnail URL| H[("Supabase Table: inventory")]
     H -.->|Cache URL| G
