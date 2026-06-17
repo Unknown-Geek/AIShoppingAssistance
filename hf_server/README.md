@@ -42,4 +42,3 @@ hf_server/
 ├── Dockerfile                  # Updated entrypoint cmd
 └── run_local.sh
 ```
-<!-- trigger -->
