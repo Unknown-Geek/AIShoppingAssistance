@@ -1,8 +1,11 @@
+import 'dart:io';
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'widgets/cart_item.dart';
+import 'widgets/chatbot_screen.dart';
 import '../../models/cart_item_model.dart';
 import '../../services/chromadb_client.dart';
 import '../../services/cart_service.dart';
@@ -25,7 +28,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final ChromaDbClient _chromaClient = ChromaDbClient();
   final ProductDetectionService _detectionService =
       HuggingFaceProxyDetectionService();
@@ -42,9 +45,17 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   DbConnectionStatus _dbStatus = DbConnectionStatus.unknown;
 
+  // Background scanning & locking state variables
+  Timer? _backgroundScanTimer;
+  bool _isCameraBusy = false;
+  CartItemModel? _cachedDetectedItem;
+  DateTime? _cachedDetectionTime;
+  bool _isConfirmSheetOpen = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _cursorController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -57,6 +68,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     _initializeCamera();
     _refreshDbStatus();
+    _startBackgroundScanning();
   }
 
   Future<void> _initializeCamera() async {
@@ -82,10 +94,82 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _stopBackgroundScanning();
     _cameraController?.dispose();
     _cursorController.dispose();
     _cartExpandController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _startBackgroundScanning();
+    } else {
+      _stopBackgroundScanning();
+    }
+  }
+
+  void _startBackgroundScanning() {
+    _backgroundScanTimer?.cancel();
+    _backgroundScanTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _performBackgroundScan();
+    });
+    debugPrint("[DashboardScreen] Background scanning started.");
+  }
+
+  void _stopBackgroundScanning() {
+    _backgroundScanTimer?.cancel();
+    _backgroundScanTimer = null;
+    debugPrint("[DashboardScreen] Background scanning stopped.");
+  }
+
+  Future<void> _performBackgroundScan() async {
+    // Requirements:
+    // 1. Camera must be initialized and NOT busy
+    // 2. Cart must be collapsed (expanded controller value == 0)
+    // 3. Shutter must NOT be actively searching/loading a manual scan
+    // 4. Confirmation sheet must NOT be open
+    if (!_isCameraInitialized || _cameraController == null || _isCameraBusy) return;
+    if (_cartExpandController.value > 0.0) return;
+    if (_isSearchingImage) return;
+    if (_isConfirmSheetOpen) return;
+
+    _isCameraBusy = true;
+
+    XFile? capturedPhoto;
+    try {
+      capturedPhoto = await _cameraController!.takePicture().timeout(const Duration(seconds: 2));
+      
+      // Release camera lock early so manual shutter is not blocked by backend API latency
+      _isCameraBusy = false;
+
+      final CartItemModel? item = await _detectionService.detectItem(capturedPhoto);
+
+      if (item != null && mounted) {
+        setState(() {
+          _cachedDetectedItem = item;
+          _cachedDetectionTime = DateTime.now();
+        });
+        debugPrint("[DashboardScreen] Pre-emptive scan detected: ${item.name}");
+      }
+    } catch (e) {
+      _isCameraBusy = false;
+      debugPrint("[DashboardScreen] Background scanning exception: $e");
+    } finally {
+      if (capturedPhoto != null && !kIsWeb) {
+        try {
+          final file = File(capturedPhoto.path);
+          if (await file.exists()) {
+            await file.delete();
+            debugPrint("[DashboardScreen] Cleaned up background temporary file: ${capturedPhoto.path}");
+          }
+        } catch (e) {
+          debugPrint("[DashboardScreen] Failed to delete temp background file: $e");
+        }
+      }
+    }
   }
 
   Future<void> _checkoutCart() async {
@@ -236,8 +320,58 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  bool _isCacheValid() {
+    if (_cachedDetectedItem == null || _cachedDetectionTime == null) return false;
+    final age = DateTime.now().difference(_cachedDetectionTime!);
+    return age < const Duration(seconds: 3);
+  }
+
   Future<void> _takePictureAndSearch() async {
     if (_isSearchingImage) return;
+
+    if (_isCacheValid()) {
+      debugPrint("[DashboardScreen] Using valid pre-emptive scan cache for instant confirm sheet.");
+      final item = _cachedDetectedItem!;
+      
+      // Clear the cache after consuming it to prevent double actions
+      setState(() {
+        _cachedDetectedItem = null;
+        _cachedDetectionTime = null;
+        _isConfirmSheetOpen = true;
+      });
+
+      final confirmed = await DashboardSheets.showItemConfirmSheet(context, item: item);
+      
+      if (mounted) {
+        setState(() => _isConfirmSheetOpen = false);
+        if (confirmed == true) {
+          _cartService.addItem(item);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.fixed,
+              content: Text('${item.name} added to cart!'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+      return;
+    }
+
+    // Yield up to 500ms if the camera is busy with a background scan capture
+    int retryCount = 0;
+    while (_isCameraBusy && retryCount < 10) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      retryCount++;
+    }
+
+    if (!mounted) return;
+
+    if (_isSearchingImage || _isCameraBusy) {
+      debugPrint("[DashboardScreen] Shutter click dropped: camera remains busy.");
+      return;
+    }
 
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -252,9 +386,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
 
     setState(() => _isSearchingImage = true);
+    _isCameraBusy = true;
 
+    XFile? capturedPhoto;
     try {
-      final XFile capturedPhoto = await _cameraController!.takePicture();
+      capturedPhoto = await _cameraController!.takePicture().timeout(const Duration(seconds: 2));
+      _isCameraBusy = false; // Release lock early once capture succeeds
 
       final CartItemModel? item = await _detectionService.detectItem(
         capturedPhoto,
@@ -263,8 +400,12 @@ class _DashboardScreenState extends State<DashboardScreen>
       if (item != null && mounted) {
         // Show confirmation sheet — CLIP can confuse similar-looking products
         // (e.g. different Lays flavours). User verifies before cart is updated.
+        setState(() => _isConfirmSheetOpen = true);
         final confirmed =
             await DashboardSheets.showItemConfirmSheet(context, item: item);
+        if (mounted) {
+          setState(() => _isConfirmSheetOpen = false);
+        }
         if (confirmed == true && mounted) {
           _cartService.addItem(item);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -305,10 +446,21 @@ class _DashboardScreenState extends State<DashboardScreen>
         );
       }
     } finally {
+      _isCameraBusy = false;
+      if (capturedPhoto != null && !kIsWeb) {
+        try {
+          final file = File(capturedPhoto.path);
+          if (await file.exists()) {
+            await file.delete();
+            debugPrint("[DashboardScreen] Cleaned up temporary photo file: ${capturedPhoto.path}");
+          }
+        } catch (e) {
+          debugPrint("[DashboardScreen] Failed to delete temp photo file: $e");
+        }
+      }
       if (mounted) setState(() => _isSearchingImage = false);
     }
   }
-
 
 
   void _showRagSheet() {
@@ -504,6 +656,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   isCameraInitialized: _isCameraInitialized,
                   isSearchingImage: _isSearchingImage,
                   progress: _cartExpandController.value,
+                  hasDetectedProduct: _isCacheValid(),
                 ),
                 Expanded(child: _buildShoppingZone()),
               ],
@@ -525,8 +678,28 @@ class _DashboardScreenState extends State<DashboardScreen>
               );
             },
             child: BottomNavBar(
-              onChatTap: _showRagSheet,
-              onVoiceTap: () {},
+              onChatTap: () {
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (_, animation, __) => const ChatbotScreen(),
+                    transitionsBuilder: (_, animation, __, child) {
+                      return SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(-1, 0), // ← slide from left
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          )),
+                          child: child,
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 350),
+                    ),
+                  );
+                },
+              onVoiceTap: _showRagSheet,
               isSearchingImage: _isSearchingImage,
               onShutterTap: _takePictureAndSearch,
             ),

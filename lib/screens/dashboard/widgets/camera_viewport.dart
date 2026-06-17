@@ -8,6 +8,7 @@ class CameraViewport extends StatefulWidget {
   final bool isCameraInitialized;
   final bool isSearchingImage;
   final double progress;
+  final bool hasDetectedProduct;
 
   const CameraViewport({
     super.key,
@@ -15,6 +16,7 @@ class CameraViewport extends StatefulWidget {
     required this.isCameraInitialized,
     required this.isSearchingImage,
     required this.progress,
+    required this.hasDetectedProduct,
   });
 
   @override
@@ -153,7 +155,9 @@ class _CameraViewportState extends State<CameraViewport> {
                         height: 180.0,
                         child: CustomPaint(
                           painter: ReticlePainter(
-                            color: theme.colorScheme.secondary,
+                            color: widget.hasDetectedProduct
+                                ? const Color(0xFF34D399) // Dynamic vibrant green feedback
+                                : theme.colorScheme.secondary,
                             strokeWidth: 2.0,
                             borderRadius: 16,
                             arcLength: 20,

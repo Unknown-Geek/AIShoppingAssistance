@@ -17,6 +17,10 @@ dependencies:
   camera: ^0.10.5+9
   shared_preferences: ^2.5.5
   supabase_flutter: ^2.6.0
+  speech_to_text: ^7.4.0        # ← add this
+  google_generative_ai: ^0.4.3 
+  file_picker: ^8.0.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

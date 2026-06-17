@@ -1,191 +1,35 @@
-from __future__ import annotations
 import os
 import io
 import time
 import datetime
-import re
-import httpx
-from recipe_agent import RecipeAgent
-from models import RecipeRequest
-from fastapi import FastAPI, File, UploadFile, BackgroundTasks, Header
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, File, UploadFile, Header
 from fastapi.responses import FileResponse, HTMLResponse
-from transformers import CLIPProcessor
 from PIL import Image
-from huggingface_hub import hf_hub_download
-import onnxruntime as ort
 import numpy as np
 
-SLUG_STRIP_PATTERN = re.compile(r'-\d+$')
+from ..config import IMAGES_DIR, SIMILARITY_THRESHOLD
+from ..services.detector import processor, session, get_image_embedding
+from ..services.chroma import ChromaSearcher
+from ..services.supabase import SupabaseQuerier
 
-app = FastAPI()
-recipe_agent = RecipeAgent()
-# Enable CORS so Flutter Web or local clients can call it directly
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+router = APIRouter()
 
-# Load model and processor on startup using ONNX Runtime
-model_id = "Xenova/clip-vit-base-patch32"
-device = "cpu"
-
-print("Loading CLIP processor 'openai/clip-vit-base-patch32'...")
-processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-
-print(f"Downloading ONNX model '{model_id}'...")
-model_file = hf_hub_download(repo_id=model_id, filename="onnx/vision_model.onnx")
-
-print("Initializing ONNX Runtime session...")
-# Limit intra-op and inter-op threads to match environment core count (typically 2 on free space CPU)
-ort_options = ort.SessionOptions()
-ort_options.intra_op_num_threads = 4
-ort_options.inter_op_num_threads = 4
-session = ort.InferenceSession(model_file, sess_options=ort_options, providers=["CPUExecutionProvider"])
-print("Model loaded successfully!")
-
-# Ensure captured_images directory exists
-IMAGES_DIR = "captured_images"
-os.makedirs(IMAGES_DIR, exist_ok=True)
-
-# Global shared HTTPX AsyncClient for connection pooling
-http_client: httpx.AsyncClient | None = None
-
-@app.on_event("startup")
-async def startup_event():
-    global http_client
-    http_client = httpx.AsyncClient()
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    global http_client
-    if http_client:
-        await http_client.aclose()
-
-# No longer saving images to disk
-
-class ChromaSearcher:
-    def __init__(self, token: str = None):
-        self.api_key = token or os.environ.get("CHROMA_API_KEY", "")
-        self.tenant = "99526d4b-48cf-4b20-896b-0947aa36d4ab"
-        self.database = "QLESS"
-        self.collection_id = "c1102322-920e-4775-96c1-e324bdadaa1d"
-        self.url = f"https://api.trychroma.com/api/v2/tenants/{self.tenant}/databases/{self.database}/collections/{self.collection_id}/query"
-
-    async def search(self, embedding: list[float]) -> tuple[str, float] | None:
-        if not self.api_key:
-            print("[ChromaSearcher] Warning: No Chroma API key found.")
-            return None
-
-        headers = {
-            "x-chroma-token": self.api_key,
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "query_embeddings": [embedding],
-            "n_results": 1
-        }
-
-        client = http_client if http_client is not None else httpx.AsyncClient()
-        close_client = http_client is None
-        try:
-            response = await client.post(self.url, headers=headers, json=payload, timeout=5.0)
-            if response.status_code == 200:
-                data = response.json()
-                metadatas = data.get("metadatas", [])
-                distances = data.get("distances", [])
- 
-                if metadatas and metadatas[0] and metadatas[0][0]:
-                    item_meta = metadatas[0][0]
-                    raw_name = item_meta.get("product_name", "Unknown Item")
-                    slug = self._normalize_slug(str(raw_name))
-                    distance = distances[0][0] if (distances and distances[0]) else 2.0
-                    return slug, float(distance)
-            else:
-                status = response.status_code
-                print(f"[ChromaSearcher] Query failed: {status} - {response.text}")
-        except Exception as e:
-            print(f"[ChromaSearcher] Error querying ChromaDB: {e}")
-        finally:
-            if close_client:
-                await client.aclose()
-        return None
-
-    def _normalize_slug(self, slug: str) -> str:
-        clean_slug = SLUG_STRIP_PATTERN.sub('', slug)
-        mapping = {
-            'roasted-almond-chocolate-bar-cadbury': 'dairy-milk-roast-almond-cadbury',
-            'cadbury-dairy-milk-crispello': 'dairy-milk-crispello-cadbury',
-            'fruit-and-nut-milk-chocolate-bar-cadbury': 'dairy-milk-chocolate-cadbury',
-        }
-        return mapping.get(clean_slug, clean_slug)
-
-class SupabaseQuerier:
-    def __init__(self, url: str = None, key: str = None):
-        self.url = url or os.environ.get("SUPABASE_URL", "")
-        self.key = key or os.environ.get("SUPABASE_ANON_KEY", "")
-
-    async def get_product_by_slug(self, slug: str) -> dict | None:
-        if not self.url or not self.key:
-            print("[SupabaseQuerier] Warning: Supabase credentials missing.")
-            return None
-
-        base_url = self.url.rstrip("/")
-        query_url = f"{base_url}/rest/v1/inventory?slug=eq.{slug}&select=sku,slug,name,price_rupees,staging_dirs"
-        
-        headers = {
-            "apikey": self.key,
-            "Authorization": f"Bearer {self.key}"
-        }
-
-        client = http_client if http_client is not None else httpx.AsyncClient()
-        close_client = http_client is None
-        try:
-            response = await client.get(query_url, headers=headers, timeout=5.0)
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list) and len(data) > 0:
-                    return data[0]
-            else:
-                print(f"[SupabaseQuerier] Query failed: {response.status_code} - {response.text}")
-        except Exception as e:
-            print(f"[SupabaseQuerier] Error querying Supabase: {e}")
-        finally:
-            if close_client:
-                await client.aclose()
-        return None
-
-@app.post("/embed")
+@router.post("/embed")
 async def get_embedding(file: UploadFile = File(...)):
     try:
         contents = await file.read()
-        image = Image.open(io.BytesIO(contents)).convert("RGB")
-        image = image.resize((224, 224), Image.Resampling.BILINEAR)
-        inputs = processor(images=image, return_tensors="np")
-        pixel_values = inputs["pixel_values"]
-        
-        outputs = session.run(["image_embeds"], {"pixel_values": pixel_values})
-        image_embeds = outputs[0]
-        
-        norm = np.linalg.norm(image_embeds, axis=-1, keepdims=True)
-        normalized_image_embeds = image_embeds / (norm + 1e-12)
-        
-        embedding = normalized_image_embeds[0].tolist()
+        embedding = get_image_embedding(contents)
         return {"status": "success", "embedding": embedding}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.post("/detect")
+@router.post("/detect")
 async def detect_item(
     file: UploadFile = File(...),
     x_chroma_token: str = Header(default=None),
     x_supabase_url: str = Header(default=None),
     x_supabase_key: str = Header(default=None)
 ):
-    
     start_total = time.time()
     try:
         t0 = time.time()
@@ -218,10 +62,9 @@ async def detect_item(
             return {"status": "success", "match_found": False, "reason": "No ChromaDB response"}
 
         slug, distance = search_result
-        threshold = 0.65
-        if distance > threshold:
-            print(f"[detect] Distance {distance} exceeds threshold {threshold} for {slug} (Finished in {time.time() - start_total:.4f}s)")
-            return {"status": "success", "match_found": False, "reason": f"Distance {distance} exceeds threshold {threshold}"}
+        if distance > SIMILARITY_THRESHOLD:
+            print(f"[detect] Distance {distance} exceeds threshold {SIMILARITY_THRESHOLD} for {slug} (Finished in {time.time() - start_total:.4f}s)")
+            return {"status": "success", "match_found": False, "reason": f"Distance {distance} exceeds threshold {SIMILARITY_THRESHOLD}"}
 
         # Only query Supabase if the client requested it by sending credentials.
         # Otherwise, skip to bypass database query latency and rely on client-side local lookup.
@@ -263,14 +106,14 @@ async def detect_item(
         print(f"[detect] Exception: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.get("/captured_images/{filename}")
+@router.get("/captured_images/{filename}")
 async def get_captured_image(filename: str):
     filepath = os.path.join(IMAGES_DIR, filename)
     if os.path.exists(filepath):
         return FileResponse(filepath)
     return {"error": "File not found"}
 
-@app.get("/gallery", response_class=HTMLResponse)
+@router.get("/gallery", response_class=HTMLResponse)
 async def get_gallery():
     files = []
     if os.path.exists(IMAGES_DIR):
@@ -410,20 +253,3 @@ async def get_gallery():
 </html>
     """
     return html_content
-@app.post("/recipe-agent")
-async def recipe_agent_endpoint(request: RecipeRequest):
-    return await recipe_agent.generate_recipe_from_prompt(
-        request.prompt
-    )
-@app.api_route("/health", methods=["GET", "HEAD"])
-def health_check():
-    return {"status": "ok"}
-
-@app.get("/")
-def read_root():
-    return {
-        "status": "running", 
-        "model": model_id,
-        "device": device
-    }
-

@@ -42,9 +42,9 @@ Future<void> main() async {
     debugPrint('Supabase initialization error: $e');
   }
 
-  // Pre-load local product catalog and cart session in parallel before rendering.
+  // Pre-load dynamic product catalog and cart session in parallel before rendering.
   await Future.wait([
-    InventoryService().initLocalCatalog(),
+    InventoryService().syncCatalogWithSupabase(),
     CartService().load(),
   ]);
 

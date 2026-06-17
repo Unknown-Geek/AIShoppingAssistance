@@ -6,7 +6,7 @@
 Qless is a modern mobile and backend prototype designed to enable seamless, AI-assisted self-checkout in retail environments. By leveraging computer vision and vector similarity search, Qless allows shoppers to scan products using their mobile device's camera, matches the visual identity against a vector catalog, and resolves it locally to cart-ready retail metadata in milliseconds.
 
 > [!NOTE]
-> **Current Project Status (In Development):** The hot path is fully implemented using a FastAPI backend (`hf_server/app.py`), a mobile Flutter app, Chroma, Supabase, and a client-side local cache (`inventory.json`). High-velocity components like client-side WebP compression and synthetic catalog data augmentation are planned milestones in the development lifecycle.
+> **Current Project Status (In Development):** The hot path is fully implemented using a FastAPI backend (`hf_server/app/main.py`), a mobile Flutter app, Chroma, Supabase, and a client-side local cache (`inventory.json`). High-velocity components like client-side WebP compression and synthetic catalog data augmentation are planned milestones in the development lifecycle.
 
 ---
 
@@ -146,7 +146,7 @@ python scripts/upload_thumbnails.py
 ### 1. Launch FastAPI Backend
 Start the local ASGI server from the repository root:
 ```bash
-uvicorn hf_server.app:app --host 0.0.0.0 --port 8000 --workers 1
+uvicorn hf_server.app.main:app --host 0.0.0.0 --port 8000 --workers 1
 ```
 
 Validate liveness:
