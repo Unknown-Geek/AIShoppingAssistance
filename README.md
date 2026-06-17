@@ -46,8 +46,6 @@ The FastAPI backend exposes the following endpoints for the mobile client:
 | `/health` | `GET`, `HEAD` | Liveness probe for deployment/tunnel monitoring | `{ "status": "ok" }` |
 | `/embed` | `POST` | Generate and return raw CLIP embeddings for an image | `{ "status": "success", "embedding": [...] }` |
 | `/detect` | `POST` | Run full detection path (embed + vector match + local resolve) | `{ "status": "success", "match_found": true, "item": {...} }` |
-| `/gallery` | `GET` | HTML dashboard showing recently captured scan images | HTML Page |
-| `/captured_images/{file}`| `GET` | Retrieve a specific raw captured image asset | Image binary |
 
 ---
 
