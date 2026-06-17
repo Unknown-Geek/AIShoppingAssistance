@@ -49,6 +49,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   void initState() {
     super.initState();
+    _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
     _loadChatHistory();
   }
 
@@ -139,7 +140,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     setState(() {
       _messages.clear();
       _currentChatTitle = 'New Chat';
-      _currentChatSessionId = null;
+      _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
     });
     if (_scaffoldKey.currentState?.isDrawerOpen == true) {
       Navigator.pop(context);
@@ -162,7 +163,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       if (_currentChatSessionId == session.id) {
         _messages.clear();
         _currentChatTitle = 'New Chat';
-        _currentChatSessionId = null;
+        _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
       }
     });
     _saveChatHistory();
@@ -416,8 +417,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   child: FadeContent(
                     key: ValueKey(_currentChatSessionId ?? (_messages.isEmpty ? 'welcome' : 'new_chat')),
                     blur: true,
-                    duration: const Duration(milliseconds: 1000),
-                    curve: Curves.easeOut,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
                     child: _messages.isEmpty
                         ? SingleChildScrollView(
                             physics: const BouncingScrollPhysics(),
@@ -864,14 +865,7 @@ class _FadeContentState extends State<FadeContent> with SingleTickerProviderStat
     }
   }
 
-  @override
-  void didUpdateWidget(FadeContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.child != oldWidget.child) {
-      _controller.reset();
-      _controller.forward();
-    }
-  }
+  // didUpdateWidget is removed to ensure the fade/blur animation only plays once on mounting (switching chats or creating a new chat) and not when sending messages.
 
   @override
   void dispose() {
