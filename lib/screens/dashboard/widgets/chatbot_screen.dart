@@ -14,11 +14,11 @@ class ChatbotScreen extends StatefulWidget {
   State<ChatbotScreen> createState() => _ChatbotScreenState();
 }
 
-class ChatSession {
+class _ChatSession {
   final String title;
   final List<_ChatMessage> messages;
 
-  ChatSession({required this.title, required this.messages});
+  _ChatSession({required this.title, required this.messages});
 }
 
 class _ChatMessage {
@@ -39,7 +39,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   bool _loading = false;
   final List<_ChatMessage> _messages = [];
-  final List<ChatSession> _chatHistory = [];
+  final List<_ChatSession> _chatHistory = [];
   String _currentChatTitle = 'New Chat';
 
   static const String _storageKey = 'chat_history_v1';
@@ -81,7 +81,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           );
         }).toList();
 
-        return ChatSession(
+        return _ChatSession(
           title: data['title'] as String,
           messages: messages,
         );
@@ -125,7 +125,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     Navigator.pop(context);
   }
 
-  void _openChatSession(ChatSession session) {
+  void _openChatSession(_ChatSession session) {
     setState(() {
       _messages.clear();
       _messages.addAll(session.messages);
@@ -145,7 +145,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
     _chatHistory.insert(
       0,
-      ChatSession(
+      _ChatSession(
         title: title,
         messages: List<_ChatMessage>.from(_messages),
       ),
@@ -159,6 +159,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final prompt = _controller.text.trim();
   if (prompt.isEmpty || _loading) return;
 
+  if (_selectedFileName != null || _selectedImage != null || _selectedFile != null) {
+    debugPrint('[ChatbotScreen] Attachment selected: ${_selectedFileName ?? _selectedFile?.name ?? _selectedImage?.path}');
+  }
+
   setState(() {
     _messages.add(_ChatMessage(isUser: true, text: prompt));
 
@@ -167,6 +171,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     }
 
     _loading = true;
+    _selectedFileName = null;
+    _selectedFile = null;
+    _selectedImage = null;
   });
 
   _saveCurrentChat();

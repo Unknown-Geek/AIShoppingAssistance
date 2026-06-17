@@ -463,28 +463,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
 
-
-  void _showRagSheet() {
-    DashboardSheets.showRagSheet(
-      context,
-      onSubmitted: _askChefRag,
-    );
-  }
-
-  Future<void> _askChefRag(String prompt) async {
-    final response = await _chromaClient.askChefRag(prompt);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.fixed,
-          content: Text(response, style: const TextStyle(color: Colors.white)),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-        ),
-      );
-    }
-  }
-
   /// Silent background check — updates the indicator, no snackbar.
   Future<void> _refreshDbStatus() async {
     final results = await Future.wait([
