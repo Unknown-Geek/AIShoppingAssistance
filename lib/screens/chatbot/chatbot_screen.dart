@@ -532,10 +532,13 @@ class ChatHeaderPill extends StatelessWidget {
                   ),
                 ),
                 child: const Center(
-                  child: Icon(
-                    Icons.add_comment_outlined,
-                    color: Color(0xFF001A23),
-                    size: 20,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 2),
+                    child: Icon(
+                      Icons.add_comment_outlined,
+                      color: Color(0xFF001A23),
+                      size: 17,
+                    ),
                   ),
                 ),
               ),
