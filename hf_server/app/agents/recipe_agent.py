@@ -1,12 +1,23 @@
+
 from .tools.recipe_tool import RecipeTool
 from .tools.firecrawl_recipe_tool import FirecrawlRecipeTool
 from .recipe_parser import RecipeParser
+
+from recipe_tool import RecipeTool
+from firecrawl_recipe_tool import FirecrawlRecipeTool
+from recipe_parser import RecipeParser
+from quantity_estimator import QuantityEstimator
+from groq_client import GroqClient
+
+
 
 class RecipeAgent:
     def __init__(self):
         self.tool = RecipeTool()
         self.firecrawl_tool = FirecrawlRecipeTool()
         self.parser = RecipeParser()
+        self.quantity_estimator = QuantityEstimator()
+        self.groq_client = GroqClient()
 
     async def generate_recipe(
         self,
@@ -31,11 +42,21 @@ class RecipeAgent:
             parsed = self.parser.parse(
                 recipe["markdown"]
             )
+            
+            structured_ingredients = []
+            
+            for ingredient in parsed["ingredients"]:
+                structured_ingredients.append(
+                    self.quantity_estimator.parse_ingredient(
+                        ingredient
+                    )
+                )
+            
             return {
                 "status": "success",
                 "dish": dish,
                 "servings": servings,
-                "ingredients": parsed["ingredients"],
+                "ingredients": structured_ingredients,
                 "instructions": parsed["instructions"],
                 "source": recipe["url"]
             }
@@ -44,3 +65,24 @@ class RecipeAgent:
             "status": "error",
             "message": "Recipe not found"
         }
+
+    async def generate_recipe_from_prompt(self, prompt: str):
+        """
+        Extract dish and servings from user prompt, then generate recipe.
+        
+        Args:
+            prompt (str): User input, e.g., "I want Veg Biryani for 5 people"
+        
+        Returns:
+            dict: Recipe response with status, dish, servings, ingredients, etc.
+        """
+        print("PROMPT:", prompt)
+
+        extracted = self.groq_client.extract_recipe_request(prompt)
+
+        print("EXTRACTED:", extracted)
+
+        dish = extracted["dish"]
+        servings = extracted["servings"]
+        
+        return await self.generate_recipe(dish, servings)
