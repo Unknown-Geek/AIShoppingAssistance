@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:async';
 import 'dart:ui';
@@ -12,6 +11,7 @@ import '../../models/chatbot_models.dart';
 import 'widgets/message_bubble.dart';
 import 'widgets/chat_input_field.dart';
 import 'widgets/history_drawer.dart';
+import 'widgets/animated_orb.dart';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
@@ -21,8 +21,8 @@ class ChatbotScreen extends StatefulWidget {
 }
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String? _selectedFileName;
-  PlatformFile? _selectedFile;
   XFile? _selectedImage;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -68,13 +68,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             recipe: map['recipe'] == null
                 ? null
                 : Map<String, dynamic>.from(map['recipe'] as Map),
+            timestamp: map['timestamp'] == null
+                ? null
+                : DateTime.tryParse(map['timestamp'] as String),
           );
         }).toList();
 
-        return ChatSession(
-          title: data['title'] as String,
-          messages: messages,
-        );
+        return ChatSession(title: data['title'] as String, messages: messages);
       }).toList();
 
       setState(() {
@@ -89,18 +89,21 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Future<void> _saveChatHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = jsonEncode(_chatHistory.map((session) {
-        return {
-          'title': session.title,
-          'messages': session.messages.map((message) {
-            return {
-              'isUser': message.isUser,
-              'text': message.text,
-              'recipe': message.recipe,
-            };
-          }).toList(),
-        };
-      }).toList());
+      final raw = jsonEncode(
+        _chatHistory.map((session) {
+          return {
+            'title': session.title,
+            'messages': session.messages.map((message) {
+              return {
+                'isUser': message.isUser,
+                'text': message.text,
+                'recipe': message.recipe,
+                'timestamp': message.timestamp.toIso8601String(),
+              };
+            }).toList(),
+          };
+        }).toList(),
+      );
       await prefs.setString(_storageKey, raw);
     } catch (e) {
       debugPrint('[ChatbotScreen] save history error: $e');
@@ -112,7 +115,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       _messages.clear();
       _currentChatTitle = 'New Chat';
     });
-    Navigator.pop(context);
+    if (_scaffoldKey.currentState?.isDrawerOpen == true) {
+      Navigator.pop(context);
+    }
   }
 
   void _openChatSession(ChatSession session) {
@@ -135,10 +140,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
       _chatHistory.insert(
         0,
-        ChatSession(
-          title: title,
-          messages: List<ChatMessage>.from(_messages),
-        ),
+        ChatSession(title: title, messages: List<ChatMessage>.from(_messages)),
       );
     });
 
@@ -168,10 +170,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           .post(
             Uri.parse('$baseUrl/recipe-agent'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'dish': prompt,
-              'servings': 2,
-            }),
+            body: jsonEncode({'dish': prompt, 'servings': 2}),
           )
           .timeout(const Duration(seconds: 10));
 
@@ -185,9 +184,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       if (response.statusCode == 200 && data is Map<String, dynamic>) {
         if (data['status'] == 'success') {
           setState(() {
-            _messages.add(
-              ChatMessage(isUser: false, recipe: data),
-            );
+            _messages.add(ChatMessage(isUser: false, recipe: data));
           });
         } else {
           setState(() {
@@ -214,7 +211,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     } on TimeoutException {
       setState(() {
         _messages.add(
-          const ChatMessage(
+          ChatMessage(
             isUser: false,
             text: 'Request timed out. Please try again.',
           ),
@@ -225,7 +222,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     } catch (e) {
       setState(() {
         _messages.add(
-          const ChatMessage(
+          ChatMessage(
             isUser: false,
             text: 'Unable to connect to recipe service.',
           ),
@@ -263,114 +260,29 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      key: _scaffoldKey,
+      backgroundColor: const Color(0xFFE8F1F2),
       drawer: HistoryDrawer(
         chatHistory: _chatHistory,
         onStartNewChat: _startNewChat,
         onOpenChatSession: _openChatSession,
       ),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          'Recipe Assistant',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
-          ),
-        ),
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12.0),
-          child: Center(
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(color: const Color(0xFFD2E4E6)),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Builder(
-                builder: (context) => IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(Icons.history, color: theme.colorScheme.primary, size: 20),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
-              ),
-            ),
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: Center(
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xFFD2E4E6)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(Icons.home_outlined, color: theme.colorScheme.primary, size: 20),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
       body: Stack(
         children: [
-          // Background soft gradient
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.scaffoldBackgroundColor,
-                    Color.lerp(theme.scaffoldBackgroundColor, Colors.white, 0.5) ?? Colors.white,
-                    theme.scaffoldBackgroundColor,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-            ),
-          ),
           // Colorful glowing gradient bubbles (Orbs)
           Positioned(
             top: 20,
             right: -60,
             child: Container(
-              width: 220,
-              height: 220,
+              width: 250,
+              height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    theme.colorScheme.primary.withValues(alpha: 0.12),
-                    theme.colorScheme.primary.withValues(alpha: 0.0),
+                    const Color(0xFF001A23).withOpacity(0.08),
+                    const Color(0xFF001A23).withOpacity(0.0),
                   ],
                 ),
               ),
@@ -380,14 +292,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             bottom: 100,
             left: -40,
             child: Container(
-              width: 250,
-              height: 250,
+              width: 300,
+              height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    theme.colorScheme.secondary.withValues(alpha: 0.15),
-                    theme.colorScheme.secondary.withValues(alpha: 0.0),
+                    const Color(0xFFB3EFB2).withOpacity(0.15),
+                    const Color(0xFFB3EFB2).withOpacity(0.0),
                   ],
                 ),
               ),
@@ -403,36 +315,100 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           SafeArea(
             child: Column(
               children: [
+                // Floating Header Pill
+                ChatHeaderPill(
+                  onHistoryTap: () {
+                    _scaffoldKey.currentState?.openDrawer();
+                  },
+                  onNewChatTap: () {
+                    _startNewChat();
+                  },
+                ),
+                const SizedBox(height: 8),
                 Expanded(
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    itemCount: _messages.length,
-                    itemBuilder: (_, index) => MessageBubble(message: _messages[index]),
-                  ),
+                  child: _messages.isEmpty
+                      ? SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const WelcomeCard(),
+                              const Padding(
+                                padding: EdgeInsets.fromLTRB(24, 16, 24, 12),
+                                child: Text(
+                                  'Try asking me',
+                                  style: TextStyle(
+                                    fontFamily: 'ClashDisplay',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF001A23),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                ),
+                                child: Column(
+                                  children: [
+                                    SuggestionPill(
+                                      text:
+                                          'Easy dinner recipes under 30 minutes',
+                                      icon: Icons.restaurant_menu_rounded,
+                                      onTap: () {
+                                        _controller.text =
+                                            'Easy dinner recipes under 30 minutes';
+                                        _sendMessage();
+                                      },
+                                    ),
+                                    SuggestionPill(
+                                      text: 'Healthy breakfast ideas',
+                                      icon: Icons.spa_outlined,
+                                      onTap: () {
+                                        _controller.text =
+                                            'Healthy breakfast ideas';
+                                        _sendMessage();
+                                      },
+                                    ),
+                                    SuggestionPill(
+                                      text: 'Substitute for eggs in baking',
+                                      icon: Icons.swap_horiz_rounded,
+                                      onTap: () {
+                                        _controller.text =
+                                            'Substitute for eggs in baking';
+                                        _sendMessage();
+                                      },
+                                    ),
+                                    SuggestionPill(
+                                      text: 'High protein meals',
+                                      icon: Icons.egg_alt_outlined,
+                                      onTap: () {
+                                        _controller.text = 'High protein meals';
+                                        _sendMessage();
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.only(bottom: 20),
+                          itemCount: _messages.length,
+                          itemBuilder: (_, index) =>
+                              MessageBubble(message: _messages[index]),
+                        ),
                 ),
                 if (_loading)
                   Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Generating recipe...',
-                          style: TextStyle(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: MessageBubble(
+                      message: ChatMessage(
+                        isUser: false,
+                        text: null, // trigger typing indicator
+                      ),
                     ),
                   ),
                 ChatInputField(
@@ -448,7 +424,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   },
                   onFileSelected: (file, fileName) {
                     setState(() {
-                      _selectedFile = file;
                       _selectedFileName = fileName;
                     });
                   },
@@ -459,7 +434,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   },
                   onClearFile: () {
                     setState(() {
-                      _selectedFile = null;
                       _selectedFileName = null;
                     });
                   },
@@ -468,6 +442,281 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class ChatHeaderPill extends StatelessWidget {
+  final VoidCallback onHistoryTap;
+  final VoidCallback onNewChatTap;
+
+  const ChatHeaderPill({
+    super.key,
+    required this.onHistoryTap,
+    required this.onNewChatTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 72,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF001A23).withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Left actions: History
+          Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: onHistoryTap,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(
+                    color: const Color(0xFFD2E4E6),
+                    width: 1.2,
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.history_rounded,
+                    color: Color(0xFF001A23),
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Center Title
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 104),
+            child: Text(
+              'Recipe Assistant',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'ClashDisplay',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF001A23),
+              ),
+            ),
+          ),
+          // Right action: New Chat (+)
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: onNewChatTap,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(
+                    color: const Color(0xFFD2E4E6),
+                    width: 1.2,
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.add_comment_outlined,
+                    color: Color(0xFF001A23),
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class WelcomeCard extends StatelessWidget {
+  const WelcomeCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        gradient: LinearGradient(
+          colors: [
+            Colors.white,
+            const Color(0xFFB3EFB2).withValues(alpha: 0.08),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(36),
+        border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF001A23).withValues(alpha: 0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              SizedBox(
+                width: 56,
+                height: 56,
+                child: ClipOval(child: AnimatedOrb(size: 64)),
+              ),
+              SizedBox(width: 24),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Hi there!',
+                      style: TextStyle(
+                        fontFamily: 'ClashDisplay',
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF001A23),
+                      ),
+                    ),
+                    Text(
+                      'I\'m your Recipe Assistant.',
+                      style: TextStyle(
+                        fontFamily: 'ClashDisplay',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF001A23),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Ask me for recipes, cooking tips, ingredient swaps and more!',
+            style: TextStyle(
+              fontFamily: 'ClashGrotesk',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF001A23).withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SuggestionPill extends StatefulWidget {
+  final String text;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const SuggestionPill({
+    super.key,
+    required this.text,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  State<SuggestionPill> createState() => _SuggestionPillState();
+}
+
+class _SuggestionPillState extends State<SuggestionPill> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.98 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          height: 76,
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(
+                  0xFF001A23,
+                ).withOpacity(_isPressed ? 0.03 : 0.05),
+                blurRadius: 16,
+                offset: _isPressed ? const Offset(0, 4) : const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFB3EFB2).withOpacity(0.2),
+                ),
+                child: Icon(
+                  widget.icon,
+                  color: const Color(0xFF001A23),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  widget.text,
+                  style: const TextStyle(
+                    fontFamily: 'ClashGrotesk',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF001A23),
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: Color(0xFF001A23),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
