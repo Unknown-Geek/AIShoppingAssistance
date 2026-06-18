@@ -1,10 +1,50 @@
 import re
+from typing import Optional
+
+# Words that describe preparation, not the ingredient itself — stripped from name
+_PREP_WORDS = re.compile(
+    r"^(chopped|minced|diced|grated|sliced|crushed|ground|peeled|toasted|roasted|"
+    r"fresh|freshly|frozen|canned|organic|whole|small|large|medium|"
+    r"optional|divided|cloves?)\s+",
+    re.IGNORECASE
+)
 
 
 class QuantityEstimator:
 
     def __init__(self):
         pass
+
+    @staticmethod
+    def _strip_prep_words(name: str) -> str:
+        """Remove leading preparation descriptors (chopped, fresh, etc.) from name"""
+        while True:
+            cleaned = _PREP_WORDS.sub("", name).strip()
+            if cleaned == name:
+                break
+            name = cleaned
+        return name.strip("-, ")
+
+    @staticmethod
+    def _handle_conversational_phrases(ingredient: str) -> Optional[dict]:
+        """Handle non-numeric phrases like 'to taste', 'for garnish', 'pinch of'"""
+        ingredient_lower = ingredient.lower()
+
+        if "to taste" in ingredient_lower:
+            name = re.sub(r"\bto taste\b", "", ingredient, flags=re.IGNORECASE).strip("-, ")
+            return {"quantity": "to taste", "name": QuantityEstimator._strip_prep_words(name)}
+
+        if "for garnish" in ingredient_lower:
+            name = re.sub(r"\bfor garnish\b", "", ingredient, flags=re.IGNORECASE).strip("-, ")
+            return {"quantity": "for garnish", "name": QuantityEstimator._strip_prep_words(name)}
+
+        pinch_match = re.match(r"^(\d+\.?\d*)?\s*(a\s+)?pinch(?:es)?\s+of\s+(.+)", ingredient, re.IGNORECASE)
+        if pinch_match:
+            qty = pinch_match.group(1) or "1"
+            name = pinch_match.group(3).strip()
+            return {"quantity": f"{qty.strip()} pinch", "name": QuantityEstimator._strip_prep_words(name)}
+
+        return None
 
     def parse_ingredient(self, ingredient: str):
         ingredient = ingredient.strip()
@@ -15,8 +55,12 @@ class QuantityEstimator:
         # Remove numbered list markers (e.g., "3. ")
         ingredient = re.sub(r"^\d+\.\s*", "", ingredient).strip()
         
+        # Handle conversational phrases before regex parsing
+        conv_result = self._handle_conversational_phrases(ingredient)
+        if conv_result:
+            return conv_result
+        
         # 1. Match ANY numeric quantity, unicode fraction, or fraction expression at the start
-        # This explicitly ensures strings starting with simple digits or symbols get matched
         num_match = re.match(r"^([\d½¼¾⅓⅔⅛\/\.\-\s]+)", ingredient)
         
         if num_match and num_match.group(1).strip():
@@ -41,21 +85,21 @@ class QuantityEstimator:
             
             return {
                 "quantity": quantity,
-                "name": name
+                "name": self._strip_prep_words(name)
             }
         
-        # Fallback: Check if it starts with a single digit or fraction symbol that might have been skipped
+        # Fallback: Check if it starts with a single digit or fraction symbol
         fallback_match = re.match(r"^([0-9½¼¾⅓⅔⅛])\s*(.*)$", ingredient)
         if fallback_match:
             return {
                 "quantity": fallback_match.group(1).strip(),
-                "name": fallback_match.group(2).strip()
+                "name": self._strip_prep_words(fallback_match.group(2).strip())
             }
         
         # No numeric start found at all
         return {
             "quantity": "",
-            "name": ingredient
+            "name": self._strip_prep_words(ingredient)
         }
     def scale_quantity(self, quantity_string: str, factor: float):
         """
