@@ -711,12 +711,13 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
           ),
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-              child: Container(color: Colors.transparent),
+          if (_isDashboardActive)
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                child: Container(color: Colors.transparent),
+              ),
             ),
-          ),
           // AnimatedBuilder isolates redraws to only the camera+cart layout
           // on each animation frame instead of rebuilding the entire screen.
           AnimatedBuilder(
@@ -725,7 +726,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               children: [
                 CameraViewport(
                   cameraController: _cameraController,
-                  isCameraInitialized: _isCameraInitialized,
+                  isCameraInitialized: _isDashboardActive && _isCameraInitialized,
                   isSearchingImage: _isSearchingImage,
                   progress: _cartExpandController.value,
                   hasDetectedProduct: _isCacheValid(),
