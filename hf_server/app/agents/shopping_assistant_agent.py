@@ -50,7 +50,7 @@ class ShoppingAssistantAgent:
             print(f"⚠️ [WARNING] Failed to load inventory database catalog from {inventory_path}: {e}")
             return []
 
-    async def process_recipe_workflow(self, current_cart_slugs: List[str], dish_query: str, servings: int) -> Dict[str, Any]:
+    async def process_recipe_workflow(self, user_id: str, current_cart_slugs: List[str], dish_query: str, servings: int) -> Dict[str, Any]:
         """
         Executes the full recipe pipeline, screens out payload injections, 
         consolidates recurring missing items/cart additions cleanly, and formats for Flutter.
@@ -232,6 +232,9 @@ class ShoppingAssistantAgent:
 # ─────────────────────────────────────────────────────────────
                 # PAYLOAD COMPOSITION & DATABASE WRITE BACK TRANSACTION
                 # ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+                # PAYLOAD COMPOSITION & DATABASE WRITE BACK TRANSACTION
+                # ─────────────────────────────────────────────────────────────
                 if final_match and final_match.get("sku"):
                     item_sku = final_match.get("sku")
                     item_slug = final_match.get("slug", ing_slug_fallback).lower().strip()
@@ -240,17 +243,18 @@ class ShoppingAssistantAgent:
                         continue
 
                     # 🚀 FORCE ACTIVE AGENT TOOL CALL INTERACTION
-                    is_committed = False
+                    is_committed = False  # ◄─ This must stay BEFORE the 'try' block starts
                     try:
                         # Fetch the function directly from the registry
                         tool_action_hook = ACTIVE_CART_TOOLS_REGISTRY["add_to_cart"]
                         
-                        # We force the user_id to match exactly what you are querying
-                        is_committed = tool_action_hook(user_id="demo_user_cet", sku=item_sku, quantity=1)
-                        print(f"🎯 [AGENT ACTION] Fired tool call for SKU {item_sku}. Result: {is_committed}")
+                        # Use the incoming dynamic user_id variable
+                        is_committed = tool_action_hook(user_id=user_id, sku=item_sku, quantity=1)
+                        print(f"🎯 [AGENT ACTION] Fired tool call for User '{user_id}' | SKU {item_sku}. Result: {is_committed}")
                     except Exception as tool_ex:
                         print(f"⚠️ [TOOL RUNTIME FAULT] Failed to run database tool: {tool_ex}")
-                        
+                        is_committed = False
+                    
                     # Handle Missing Ingredients List Consolidation Matrix
                     if item_sku in missing_ingredients_map:
                         missing_ingredients_map[item_sku]["required_quantity"] += f" + {final_qty}"

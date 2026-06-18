@@ -11,11 +11,14 @@ agent = ShoppingAssistantAgent()
 @router.post("/analyze-ingredients")
 async def analyze_recipe_ingredients(payload: RecipeRequest):
     try:
+        user = str(payload.user_id).lower().strip() # ◄─ EXTRACT THE USER ID
         slugs = [str(s) for s in payload.current_cart_slugs]
         query = str(payload.dish_query)
         srv = int(payload.servings)
         
+        # ◄─ PASS THE USER VARIABLE TO THE METHOD BELOW
         result = await agent.process_recipe_workflow(
+            user_id=user,
             current_cart_slugs=slugs,
             dish_query=query,
             servings=srv
