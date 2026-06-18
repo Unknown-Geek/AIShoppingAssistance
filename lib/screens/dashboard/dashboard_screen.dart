@@ -566,7 +566,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       try {
         final response = await http.get(Uri.parse('$cleanPrimary/health')).timeout(const Duration(seconds: 2));
         if (response.statusCode == 200) {
-          activeBackends.add("Colab (Active)");
+          activeBackends.add("Oracle (Active)");
         }
       } catch (_) {
         // Silent fail for primary
