@@ -101,25 +101,73 @@ class ShoppingAssistantAgent:
             # 2. Fire the whole batch into our new AI Semantic Engine!
             ai_matched_items = self.recipe_agent.match_inventory_with_ai(parsed_ingredients, self.inventory)
 
-            # 3. Clean up casing variables and filter out what is in their active cart
+            # 3. Build an AI result lookup keyed by ingredient name (deterministic source-of-truth).
+            # The AI may silently drop unmatched ingredients instead of returning sku: UNKNOWN,
+            # so we must iterate parsed_ingredients (the source of truth) and inject UNKNOWN
+            # for anything the AI skipped.
+            ai_lookup: Dict[str, Dict[str, Any]] = {}
+            for item in ai_matched_items:
+                req_name = item.get("name", "").lower().strip()
+                ai_lookup[req_name] = item
+
+            # 4. Clean up casing variables and filter out what is in their active cart
             missing_ingredients = []
             cart_slugs_set = set(str(slug).lower().strip() for slug in current_cart_slugs)
+            seen_skus: set = set()
 
-            for item in ai_matched_items:
-                item_slug = item.get("slug", "").lower().strip()
-                
+            for ing in parsed_ingredients:
+                ing_name = ing.get("name", "").strip()
+                ing_name_lower = ing_name.lower().strip()
+                ing_slug = ing_name_lower.replace(" ", "-")
+
                 # If they already bought it, skip it entirely!
-                if item_slug in cart_slugs_set:
+                if ing_slug in cart_slugs_set:
                     continue
-                    
-                missing_ingredients.append({
-                    "sku": item.get("sku", "UNKNOWN"),
-                    "slug": item.get("slug", item_slug),
-                    "name": item.get("name"),
-                    "price_rupees": float(item.get("price_rupees", 0.0)),
-                    "thumbnail_url": item.get("thumbnail_url", ""),
-                    "required_quantity": item.get("required_quantity", "")
-                })
+
+                # Smart deduplication for unit strings: avoid "2 cups cups"
+                qty_str = ing.get("quantity", "").strip()
+                unit_str = ing.get("unit", "").strip()
+                if unit_str and unit_str.lower() not in qty_str.lower():
+                    final_qty = f"{qty_str} {unit_str}".strip()
+                else:
+                    final_qty = qty_str
+
+                # Find the AI match for this specific ingredient
+                ai_match = ai_lookup.get(ing_name_lower)
+                if not ai_match:
+                    # Fuzzy fallback: ingredient name is contained in or contains the AI result name
+                    ai_match = next(
+                        (v for k, v in ai_lookup.items() if k in ing_name_lower or ing_name_lower in k),
+                        None
+                    )
+
+                if ai_match and ai_match.get("sku") != "UNKNOWN":
+                    item_sku = str(ai_match.get("sku", ""))
+                    item_slug = ai_match.get("slug", ing_slug).lower().strip()
+
+                    if item_slug in cart_slugs_set or item_sku in seen_skus:
+                        continue
+
+                    seen_skus.add(item_sku)
+                    missing_ingredients.append({
+                        "sku": item_sku,
+                        "slug": ai_match.get("slug", ing_slug),
+                        "name": ai_match.get("name", ing_name),
+                        "price_rupees": float(ai_match.get("price_rupees", 0.0)),
+                        "thumbnail_url": ai_match.get("thumbnail_url", ""),
+                        "required_quantity": final_qty
+                    })
+                else:
+                    # AI didn't match or returned UNKNOWN — inject UNKNOWN entry so the ingredient
+                    # doesn't silently disappear from the shopping list.
+                    missing_ingredients.append({
+                        "sku": "UNKNOWN",
+                        "slug": ing_slug,
+                        "name": ing_name,
+                        "price_rupees": 0.0,
+                        "thumbnail_url": "",
+                        "required_quantity": final_qty
+                    })
 
             return {
                 "dish": str(dish_query),

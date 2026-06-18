@@ -91,6 +91,12 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
         candidates = []
         seen = set()
 
+        # Sauce/condiment guardrail: prevent condiment products (sauce, ketchup, jam, spread)
+        # from matching raw ingredients that don't mention the condiment category.
+        # e.g. "Sweet Onion Sauce" must NOT match "Onion" — sauce != raw vegetable.
+        # "paste" is intentionally excluded since pastes (Ginger Garlic Paste) are valid ingredient matches.
+        sauce_keywords = {"sauce", "ketchup", "jam", "spread"}
+
         for ing in parsed_ingredients:
             ing_name = ing.get("name", "").lower().strip()
             # Clean out common leakage remnants that survived parsing
@@ -109,6 +115,10 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
 
                 item_name = item.get("name", "").lower()
                 item_slug = item.get("slug", "").lower()
+
+                # Sauce Guardrail: if the item is a condiment and the ingredient is not, skip
+                if any(sk in item_name for sk in sauce_keywords) and not any(sk in ing_name for sk in sauce_keywords):
+                    continue
 
                 # Broad containment matching: token in name/slug, or full name in item name
                 if any(token in item_name or token in item_slug for token in ing_tokens) or ing_name in item_name:
