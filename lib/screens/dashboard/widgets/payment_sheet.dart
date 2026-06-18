@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../config/config.dart';
 import '../../../services/payment_service.dart';
 
 class PaymentSheet extends StatefulWidget {
@@ -20,9 +23,12 @@ class PaymentSheet extends StatefulWidget {
 
 class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderStateMixin {
   final PaymentService _paymentService = PaymentService();
-  PaymentMethodType _selectedMethod = PaymentMethodType.card;
+  
+  // UI States
+  bool _showSimulator = false;
+  PaymentMethodType _selectedSimulatorMethod = PaymentMethodType.card;
 
-  // Form keys and controllers
+  // Form keys and controllers for simulation
   final _cardFormKey = GlobalKey<FormState>();
   final _upiFormKey = GlobalKey<FormState>();
 
@@ -73,7 +79,6 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
       });
     });
 
-
     _cardHolderController.addListener(() {
       setState(() {
         _cardHolderStr = _cardHolderController.text.isEmpty
@@ -106,55 +111,32 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
     return 'CARD';
   }
 
-  Future<void> _handlePayment() async {
-    // Hide keyboard
-    FocusScope.of(context).unfocus();
-
-    if (_selectedMethod == PaymentMethodType.card) {
-      if (!_cardFormKey.currentState!.validate()) return;
-    } else if (_selectedMethod == PaymentMethodType.upi) {
-      if (!_upiFormKey.currentState!.validate()) return;
-    }
+  // Launch official Razorpay SDK Checkout
+  Future<void> _handleRazorpayCheckout() async {
+    final email = Supabase.instance.client.auth.currentUser?.email ?? 'guest@example.com';
+    final appName = BrandConfig.active.identity.appName;
 
     setState(() {
       _isProcessing = true;
       _isSuccess = false;
       _isError = false;
       _errorMessage = null;
-      _statusMessage = 'Initiating Secure Gateway Connection...';
+      _statusMessage = 'Launching Razorpay Checkout...';
     });
-
-    // Simulate different loading phases for immersive visual feedback
-    Timer(const Duration(milliseconds: 700), () {
-      if (mounted && _isProcessing) {
-        setState(() => _statusMessage = 'Encrypting Transaction Credentials...');
-      }
-    });
-
-    Timer(const Duration(milliseconds: 1400), () {
-      if (mounted && _isProcessing) {
-        setState(() => _statusMessage = 'Requesting Bank Authorization...');
-      }
-    });
-
-    Map<String, String> details = {};
-    if (_selectedMethod == PaymentMethodType.card) {
-      details = {
-        'cardNumber': _cardNumberController.text,
-        'expiry': _expiryController.text,
-        'cvv': _cvvController.text,
-      };
-    } else if (_selectedMethod == PaymentMethodType.upi) {
-      details = {
-        'upiId': _upiController.text,
-      };
-    }
 
     try {
-      final result = await _paymentService.processPayment(
-        method: _selectedMethod,
+      // Platform support check (Web + Mobile are supported; Desktop is not)
+      if (!kIsWeb && !(Platform.isAndroid || Platform.isIOS)) {
+        throw UnsupportedError(
+          'Razorpay SDK requires Web, Android or iOS.\n'
+          'Use the Sandbox Simulator below for testing on desktop.'
+        );
+      }
+
+      final result = await _paymentService.startRazorpayCheckout(
         amount: widget.amount,
-        details: details,
+        email: email,
+        appName: appName,
       );
 
       if (!mounted) return;
@@ -164,10 +146,9 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           _isProcessing = false;
           _isSuccess = true;
           _transactionId = result.transactionId;
-          _statusMessage = 'Payment Processed Successfully!';
+          _statusMessage = result.message;
         });
 
-        // Fire success callback after showing the checkmark animation for a bit
         Future.delayed(const Duration(milliseconds: 2000), () {
           if (mounted) {
             widget.onPaymentSuccess();
@@ -179,7 +160,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           _isProcessing = false;
           _isError = true;
           _errorMessage = result.message;
-          _statusMessage = 'Payment Transaction Declined';
+          _statusMessage = 'Payment Unsuccessful';
         });
       }
     } catch (e) {
@@ -187,8 +168,88 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
         setState(() {
           _isProcessing = false;
           _isError = true;
-          _errorMessage = 'An unexpected connection error occurred: $e';
-          _statusMessage = 'Gateway Timeout';
+          _errorMessage = e is UnsupportedError ? e.message : 'SDK Error: $e';
+          _statusMessage = 'Cannot Launch SDK';
+        });
+      }
+    }
+  }
+
+  // Run Simulator Transaction
+  Future<void> _handleSimulationCheckout() async {
+    FocusScope.of(context).unfocus();
+
+    if (_selectedSimulatorMethod == PaymentMethodType.card) {
+      if (!_cardFormKey.currentState!.validate()) return;
+    } else if (_selectedSimulatorMethod == PaymentMethodType.upi) {
+      if (!_upiFormKey.currentState!.validate()) return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+      _isSuccess = false;
+      _isError = false;
+      _errorMessage = null;
+      _statusMessage = 'Connecting to Sandbox Simulator...';
+    });
+
+    Timer(const Duration(milliseconds: 700), () {
+      if (mounted && _isProcessing) {
+        setState(() => _statusMessage = 'Processing Simulated Transaction...');
+      }
+    });
+
+    Map<String, String> details = {};
+    if (_selectedSimulatorMethod == PaymentMethodType.card) {
+      details = {
+        'cardNumber': _cardNumberController.text,
+        'expiry': _expiryController.text,
+        'cvv': _cvvController.text,
+      };
+    } else if (_selectedSimulatorMethod == PaymentMethodType.upi) {
+      details = {
+        'upiId': _upiController.text,
+      };
+    }
+
+    try {
+      final result = await _paymentService.processSimulation(
+        method: _selectedSimulatorMethod,
+        amount: widget.amount,
+        details: details,
+      );
+
+      if (!mounted) return;
+
+      if (result.success) {
+        setState(() {
+          _isProcessing = false;
+          _isSuccess = true;
+          _transactionId = result.transactionId;
+          _statusMessage = result.message;
+        });
+
+        Future.delayed(const Duration(milliseconds: 2000), () {
+          if (mounted) {
+            widget.onPaymentSuccess();
+            Navigator.pop(context);
+          }
+        });
+      } else {
+        setState(() {
+          _isProcessing = false;
+          _isError = true;
+          _errorMessage = result.message;
+          _statusMessage = 'Simulated Payment Declined';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _isError = true;
+          _errorMessage = 'Simulation failed: $e';
+          _statusMessage = 'Simulation Error';
         });
       }
     }
@@ -210,8 +271,8 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           boxShadow: const [
             BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
+              color: Colors.black12,
+              blurRadius: 16,
               spreadRadius: 2,
             )
           ],
@@ -225,14 +286,17 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                   ? _buildSuccessState(theme)
                   : _isError
                       ? _buildErrorState(theme)
-                      : _buildFormState(theme, isDark),
+                      : _showSimulator
+                          ? _buildSimulatorFormState(theme, isDark)
+                          : _buildRazorpayCheckoutState(theme),
         ),
       ),
     );
   }
 
-  // ── 1. FORM STATE ────────────────────────────────────────────────────────
-  Widget _buildFormState(ThemeData theme, bool isDark) {
+  // ── 1. PRIMARY RAZORPAY STATE ────────────────────────────────────────────
+  Widget _buildRazorpayCheckoutState(ThemeData theme) {
+    final appName = BrandConfig.active.identity.appName;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,17 +322,18 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Select Payment Mode',
+                  'Razorpay Checkout',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    fontFamily: 'ClashDisplay',
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Amount to charge: ₹${widget.amount.toStringAsFixed(2)}',
+                  'Merchant: $appName',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
@@ -283,7 +348,182 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
         ),
         const SizedBox(height: 20),
 
-        // Payment Method Options Tab Selector
+        // Order Summary Card
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.08),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Order Amount',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Secure Transaction',
+                    style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              Text(
+                '₹${widget.amount.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                  fontFamily: 'ClashDisplay',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Razorpay official launcher button
+        GestureDetector(
+          onTap: _handleRazorpayCheckout,
+          child: Container(
+            width: double.infinity,
+            height: 54,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF3399FF), Color(0xFF0055B3)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(27),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF3399FF).withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                )
+              ],
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.security, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Text(
+                  'Pay securely with Razorpay',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        Center(
+          child: Text(
+            'Supports UPI, Cards, Netbanking, Wallets',
+            style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Divider(height: 1),
+        const SizedBox(height: 16),
+
+        // Sandbox Simulator Link
+        Center(
+          child: TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _showSimulator = true;
+              });
+            },
+            icon: const Icon(Icons.bug_report_outlined, size: 18),
+            label: const Text(
+              'Testing on web/desktop? Use Sandbox Simulator',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.primary.withValues(alpha: 0.6),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── 2. SANDBOX SIMULATOR STATE ───────────────────────────────────────────
+  Widget _buildSimulatorFormState(ThemeData theme, bool isDark) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Handle
+        Center(
+          child: Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 20),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+
+        // Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Sandbox Simulator',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'ClashDisplay',
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Amount: ₹${widget.amount.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _showSimulator = false;
+                });
+              },
+              icon: const Icon(Icons.arrow_back_rounded, size: 16),
+              label: const Text('Back'),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.primary,
+              ),
+            )
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Simulator Tab Selector
         Row(
           children: [
             _buildTabButton(
@@ -310,10 +550,10 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
         ),
         const SizedBox(height: 24),
 
-        // Form Contents
-        if (_selectedMethod == PaymentMethodType.card)
+        // Simulator Forms
+        if (_selectedSimulatorMethod == PaymentMethodType.card)
           _buildCardForm(theme)
-        else if (_selectedMethod == PaymentMethodType.upi)
+        else if (_selectedSimulatorMethod == PaymentMethodType.upi)
           _buildUpiForm(theme)
         else
           _buildGooglePayForm(theme),
@@ -327,12 +567,12 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
     required String label,
     required ThemeData theme,
   }) {
-    final isSelected = _selectedMethod == type;
+    final isSelected = _selectedSimulatorMethod == type;
     return Expanded(
       child: GestureDetector(
         onTap: () {
           setState(() {
-            _selectedMethod = type;
+            _selectedSimulatorMethod = type;
           });
         },
         child: Container(
@@ -373,7 +613,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
     );
   }
 
-  // ── CARD FORM ────────────────────────────────────────────────────────────
+  // ── CARD SIMULATION FORM ─────────────────────────────────────────────────
   Widget _buildCardForm(ThemeData theme) {
     final cardType = _getCardType(_cardNumberStr);
     return Form(
@@ -412,7 +652,6 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Gold Chip Simulation
                       Container(
                         width: 45,
                         height: 35,
@@ -593,13 +832,13 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             },
           ),
           const SizedBox(height: 24),
-          _buildActionButton(theme, 'Pay ₹${widget.amount.toStringAsFixed(2)}'),
+          _buildActionButton(theme, 'Pay ₹${widget.amount.toStringAsFixed(2)}', _handleSimulationCheckout),
         ],
       ),
     );
   }
 
-  // ── UPI FORM ─────────────────────────────────────────────────────────────
+  // ── UPI SIMULATION FORM ──────────────────────────────────────────────────
   Widget _buildUpiForm(ThemeData theme) {
     return Form(
       key: _upiFormKey,
@@ -611,7 +850,6 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
           ),
           const SizedBox(height: 12),
-          // Popular apps select grid
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -640,7 +878,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             },
           ),
           const SizedBox(height: 24),
-          _buildActionButton(theme, 'Pay ₹${widget.amount.toStringAsFixed(2)}'),
+          _buildActionButton(theme, 'Pay ₹${widget.amount.toStringAsFixed(2)}', _handleSimulationCheckout),
         ],
       ),
     );
@@ -693,7 +931,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
     );
   }
 
-  // ── GPAY FORM ────────────────────────────────────────────────────────────
+  // ── GPAY SIMULATION FORM ─────────────────────────────────────────────────
   Widget _buildGooglePayForm(ThemeData theme) {
     return Column(
       children: [
@@ -721,7 +959,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Pay securely using cards saved to your account',
+                      'Simulate one-tap biometric sandbox credentials',
                       style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12),
                     ),
                   ],
@@ -731,14 +969,13 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           ),
         ),
         const SizedBox(height: 40),
-        // Google Pay native styled button
         GestureDetector(
-          onTap: _handlePayment,
+          onTap: _handleSimulationCheckout,
           child: Container(
             width: double.infinity,
             height: 52,
             decoration: BoxDecoration(
-              color: const Color(0xFF000000), // GPay styling defaults to dark background
+              color: const Color(0xFF000000),
               borderRadius: BorderRadius.circular(26),
               boxShadow: [
                 BoxShadow(
@@ -751,7 +988,6 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Gpay logo text simulation
                 const Text(
                   'G',
                   style: TextStyle(
@@ -777,7 +1013,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                 ),
                 const SizedBox(width: 8),
                 const Text(
-                  'Pay with Card',
+                  'Sandbox Checkout',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -792,7 +1028,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
     );
   }
 
-  // ── SHARED WIDGET BUILDERS ───────────────────────────────────────────────
+  // ── UTILS AND COMMON FIELDS ──────────────────────────────────────────────
   InputDecoration _getInputDecoration(ThemeData theme, String label, IconData icon) {
     return InputDecoration(
       labelText: label,
@@ -820,12 +1056,12 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildActionButton(ThemeData theme, String text) {
+  Widget _buildActionButton(ThemeData theme, String text, VoidCallback onPressed) {
     return SizedBox(
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: _handlePayment,
+        onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: theme.colorScheme.onPrimary,
@@ -844,14 +1080,13 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
     );
   }
 
-  // ── 2. PROCESSING STATE ──────────────────────────────────────────────────
+  // ── 3. PROCESSING STATE ──────────────────────────────────────────────────
   Widget _buildProcessingState(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Circular progress simulation with pulses
           SizedBox(
             width: 80,
             height: 80,
@@ -873,7 +1108,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           ),
           const SizedBox(height: 8),
           Text(
-            'Please do not press back or close the application.',
+            'Please do not press back or close this window.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
@@ -885,14 +1120,13 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
     );
   }
 
-  // ── 3. SUCCESS STATE ─────────────────────────────────────────────────────
+  // ── 4. SUCCESS STATE ─────────────────────────────────────────────────────
   Widget _buildSuccessState(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Large Success Icon with green circle
           Container(
             width: 80,
             height: 80,
@@ -908,7 +1142,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           ),
           const SizedBox(height: 24),
           const Text(
-            'Order Confirmed!',
+            'Payment Confirmed!',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -921,7 +1155,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             _statusMessage,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Colors.grey,
             ),
@@ -941,7 +1175,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                   'Transaction ID',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
                 ),
-                Text(
+                SelectableText(
                   _transactionId,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF001A23)),
                 ),
@@ -953,7 +1187,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
     );
   }
 
-  // ── 4. ERROR STATE ───────────────────────────────────────────────────────
+  // ── 5. ERROR STATE ───────────────────────────────────────────────────────
   Widget _buildErrorState(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
