@@ -870,6 +870,27 @@ class _DashboardScreenState extends State<DashboardScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    debugPrint("🧠 [UI] Initializing AI Agent Recipe Trigger...");
+                                    
+                                    // Call the network-to-state bridge method we just added
+                                    final result = await _cartService.analyzeAndInjectRecipeIngredients(
+                                      dishQuery: "Veg Biryani",
+                                      servings: 4,
+                                    );
+
+                                    if (result != null) {
+                                      debugPrint("✅ [UI SUCCESS] Agent processed recipe!");
+                                    } else {
+                                      debugPrint("❌ [UI FAILURE] Check if your Uvicorn server is running.");
+                                    }
+                                  },
+                                  child: const Text("⚡ Test AI Agent Cart Addition"),
+                                ),
+                              ),
                               if (_cartService.isEmpty) ...[
                                 const SizedBox(height: 40),
                                 Center(

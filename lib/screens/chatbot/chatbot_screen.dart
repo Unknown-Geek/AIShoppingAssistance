@@ -41,7 +41,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     var clean = raw.replaceAll(RegExp(r'/health$'), '');
     clean = clean.replaceAll(RegExp(r'/detect$'), '');
     clean = clean.replaceAll(RegExp(r'/embed$'), '');
-    clean = clean.replaceAll(RegExp(r'/recipe-agent$'), '');
+    clean = clean.replaceAll(RegExp(r'/recipe/analyze-ingredients/$'), '');
     clean = clean.replaceAll(RegExp(r'/$'), '');
     return clean.isEmpty ? 'http://127.0.0.1:8000' : clean;
   })();
@@ -251,7 +251,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     try {
       final response = await http
           .post(
-            Uri.parse('$baseUrl/recipe-agent'),
+            Uri.parse('$baseUrl/recipe/analyze-ingredients/'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'dish': prompt, 'servings': 2}),
           )
