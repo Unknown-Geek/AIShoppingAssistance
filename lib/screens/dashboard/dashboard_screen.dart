@@ -726,7 +726,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               children: [
                 CameraViewport(
                   cameraController: _cameraController,
-                  isCameraInitialized: _isDashboardActive && _isCameraInitialized,
+                  isCameraInitialized: _isCameraInitialized,
                   isSearchingImage: _isSearchingImage,
                   progress: _cartExpandController.value,
                   hasDetectedProduct: _isCacheValid(),
