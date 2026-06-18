@@ -20,3 +20,5 @@ docker run -d \
   ai-shopping-assistance-server
 
 echo "[*] Done! Server is running and accessible locally at http://127.0.0.1:6082"
+
+# Trigger deployment: 2026-06-19T01:56:00
