@@ -711,12 +711,13 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
           ),
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-              child: Container(color: Colors.transparent),
+          if (_isDashboardActive)
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                child: Container(color: Colors.transparent),
+              ),
             ),
-          ),
           // AnimatedBuilder isolates redraws to only the camera+cart layout
           // on each animation frame instead of rebuilding the entire screen.
           AnimatedBuilder(
@@ -754,28 +755,58 @@ class _DashboardScreenState extends State<DashboardScreen>
                 setState(() => _isDashboardActive = false);
                 _stopBackgroundScanning();
 
-                await Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    pageBuilder: (_, animation, __) => const ChatbotScreen(),
-                    transitionsBuilder: (_, animation, __, child) {
-                      return SlideTransition(
-                        position:
-                            Tween<Offset>(
-                              begin: const Offset(-1, 0), // ← slide from left
-                              end: Offset.zero,
-                            ).animate(
-                              CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeOutCubic,
-                              ),
-                            ),
+                final route = PageRouteBuilder(
+                  pageBuilder: (_, animation, __) => const ChatbotScreen(),
+                  transitionsBuilder: (_, animation, secondaryAnimation, child) {
+                    final slideAnimation = Tween<Offset>(
+                      begin: const Offset(-1.0, 0.0),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.fastOutSlowIn,
+                        reverseCurve: Curves.fastOutSlowIn.flipped,
+                      ),
+                    );
+
+                    return SlideTransition(
+                      position: slideAnimation,
+                      child: Material(
+                        elevation: 16,
+                        shadowColor: Colors.black38,
                         child: child,
-                      );
-                    },
-                    transitionDuration: const Duration(milliseconds: 220),
-                  ),
+                      ),
+                    );
+                  },
+                  transitionDuration: const Duration(milliseconds: 300),
+                  reverseTransitionDuration: const Duration(milliseconds: 250),
                 );
+
+                final pushFuture = Navigator.push(context, route);
+
+                route.animation?.addStatusListener((status) async {
+                  if (status == AnimationStatus.completed) {
+                    if (_cameraController != null && _cameraController!.value.isInitialized) {
+                      try {
+                        await _cameraController!.pausePreview();
+                        debugPrint("[DashboardScreen] Paused camera preview.");
+                      } catch (e) {
+                        debugPrint("Error pausing camera: $e");
+                      }
+                    }
+                  } else if (status == AnimationStatus.reverse) {
+                    if (_cameraController != null && _cameraController!.value.isInitialized) {
+                      try {
+                        await _cameraController!.resumePreview();
+                        debugPrint("[DashboardScreen] Resumed camera preview.");
+                      } catch (e) {
+                        debugPrint("Error resuming camera: $e");
+                      }
+                    }
+                  }
+                });
+
+                await pushFuture;
 
                 setState(() => _isDashboardActive = true);
                 if (_cameraController == null || !_cameraController!.value.isInitialized) {
