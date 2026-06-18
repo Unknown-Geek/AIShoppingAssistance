@@ -1,65 +1,43 @@
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
-import '../models/recipe_response.dart';
-import '../models/ingredient_model.dart';
+import 'import_declarations.dart'; // Add your standard package paths
 
 class RecipeAgentService {
-  final String _baseUrl = dotenv.env['HF_SPACE_URL'] ?? '';
+  final String backendUrl = Config.backendUrl; // References your config setup
 
-  Future<RecipeResponse> processPrompt(String userPrompt) async {
-    final dish = _extractDishName(userPrompt);
-    final servings = _estimateServings(userPrompt);
-
+  Future<Map<String, dynamic>> analyzeAndGetMissing(List<String> cartSlugs, String dish, int servings) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/recipe-agent'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'dish': dish, 'servings': servings}),
+      Uri.parse('$backendUrl/recipe/analyze-ingredients'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "current_cart_slugs": cartSlugs,
+        "dish_query": dish,
+        "servings": servings,
+      }),
     );
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to fetch recipe');
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to process recipe orchestration layer");
     }
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-
-    if (data['status'] != 'success') {
-      throw Exception(data['message'] ?? 'Recipe not found');
-    }
-
-    final ingredients = (data['ingredients'] as List).map((i) {
-      return IngredientModel(
-        name: i['name'] as String,
-        quantity: 1,
-        unit: i['quantity'] as String? ?? '',
-      );
-    }).toList();
-
-    return RecipeResponse(
-      dishName: data['dish'] as String,
-      servings: data['servings'] as int,
-      ingredients: ingredients,
-      recommendations: [],
-    );
   }
 
-  String _extractDishName(String prompt) {
-    return prompt.toLowerCase()
-        .replaceAll(RegExp(r'how (do i |to |can i )?make\s*'), '')
-        .replaceAll(RegExp(r'recipe for\s*'), '')
-        .replaceAll(RegExp(r'i want to cook\s*'), '')
-        .replaceAll(RegExp(r'\bfor\s+\d+\s*(people|persons|servings)?\b'), '')
-        .replaceAll(RegExp(r'[?.!]'), '')
-        .trim();
-  }
-
-  int _estimateServings(String prompt) {
-    final match = RegExp(r'\b(\d+)\s*(people|persons|servings)?\b')
-        .firstMatch(prompt);
-    if (match != null) {
-      final n = int.tryParse(match.group(1) ?? '');
-      if (n != null && n > 0 && n <= 100) return n;
+  // Primary Goal: Add missing items seamlessly back into the workflow
+  void addMissingIngredientsToCart(List<dynamic> missingIngredients, CartService cartService) {
+    for (var item in missingIngredients) {
+      if (item['sku'] != 'UNKNOWN') {
+        // Instantiate using your model mappings
+        CartItemModel missingItem = CartItemModel(
+          sku: item['sku'],
+          slug: item['slug'],
+          name: item['name'],
+          priceRupees: item['price_rupees'].toDouble(),
+          thumbnailUrl: item['thumbnail_url'],
+          quantity: 1, // Add default increment unit
+        );
+        
+        // This triggers your immediate SharedPreferences update + async background Supabase sync
+        cartService.addItemToCart(missingItem);
+      }
     }
-    return 2;
   }
 }

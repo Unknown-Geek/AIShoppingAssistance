@@ -253,3 +253,5 @@ async def get_gallery():
 </html>
     """
     return html_content
+
+
