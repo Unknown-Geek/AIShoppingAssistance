@@ -51,6 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   CartItemModel? _cachedDetectedItem;
   DateTime? _cachedDetectionTime;
   bool _isConfirmSheetOpen = false;
+  bool _isDashboardActive = true;
 
   @override
   void initState() {
@@ -145,6 +146,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   void _startBackgroundScanning() {
+    if (!_isDashboardActive) return;
     _backgroundScanTimer?.cancel();
     _backgroundScanTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _performBackgroundScan();
@@ -748,8 +750,11 @@ class _DashboardScreenState extends State<DashboardScreen>
               );
             },
             child: BottomNavBar(
-              onChatTap: () {
-                Navigator.push(
+              onChatTap: () async {
+                setState(() => _isDashboardActive = false);
+                _stopBackgroundScanning();
+
+                await Navigator.push(
                   context,
                   PageRouteBuilder(
                     pageBuilder: (_, animation, __) => const ChatbotScreen(),
@@ -768,9 +773,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                         child: child,
                       );
                     },
-                    transitionDuration: const Duration(milliseconds: 350),
+                    transitionDuration: const Duration(milliseconds: 220),
                   ),
                 );
+
+                setState(() => _isDashboardActive = true);
+                if (_cameraController == null || !_cameraController!.value.isInitialized) {
+                  await _initializeCamera();
+                }
+                _startBackgroundScanning();
               },
               onVoiceTap: _showRagSheet,
               isSearchingImage: _isSearchingImage,
