@@ -416,81 +416,110 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 ),
                 const SizedBox(height: 8),
                 Expanded(
-                  child: FadeContent(
-                    key: ValueKey(_currentChatSessionId ?? (_messages.isEmpty ? 'welcome' : 'new_chat')),
-                    blur: !_isTransitioning,
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOut,
-                    child: _messages.isEmpty
-                        ? SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const WelcomeCard(),
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                                  child: Text(
-                                    'Try asking me',
-                                    style: TextStyle(
-                                      fontFamily: 'ClashDisplay',
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: FadeContent(
+                          key: ValueKey(_currentChatSessionId ?? (_messages.isEmpty ? 'welcome' : 'new_chat')),
+                          blur: !_isTransitioning,
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          child: _messages.isEmpty
+                              ? SingleChildScrollView(
+                                  physics: const BouncingScrollPhysics(),
+                                  padding: const EdgeInsets.only(top: 12, bottom: 48),
                                   child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      SuggestionPill(
-                                        text: 'Suggest healthy breakfast items to buy',
-                                        icon: Icons.shopping_basket_outlined,
-                                        onTap: () {
-                                          _controller.text = 'Suggest healthy breakfast items to buy';
-                                          _sendMessage();
-                                        },
+                                      const WelcomeCard(),
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                                        child: Text(
+                                          'Try asking me',
+                                          style: TextStyle(
+                                            fontFamily: 'ClashDisplay',
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                        ),
                                       ),
-                                      SuggestionPill(
-                                        text: 'Add milk, organic eggs and bread to my cart',
-                                        icon: Icons.add_shopping_cart_rounded,
-                                        onTap: () {
-                                          _controller.text = 'Add milk, organic eggs and bread to my cart';
-                                          _sendMessage();
-                                        },
-                                      ),
-                                      SuggestionPill(
-                                        text: 'Is organic milk healthier than regular milk?',
-                                        icon: Icons.help_outline_rounded,
-                                        onTap: () {
-                                          _controller.text = 'Is organic milk healthier than regular milk?';
-                                          _sendMessage();
-                                        },
-                                      ),
-                                      SuggestionPill(
-                                        text: 'Quick and easy dinner recipe ideas',
-                                        icon: Icons.restaurant_menu_rounded,
-                                        onTap: () {
-                                          _controller.text = 'Quick and easy dinner recipe ideas';
-                                          _sendMessage();
-                                        },
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            SuggestionPill(
+                                              text: 'Suggest healthy breakfast items to buy',
+                                              icon: Icons.shopping_basket_outlined,
+                                              onTap: () {
+                                                _controller.text = 'Suggest healthy breakfast items to buy';
+                                                _sendMessage();
+                                              },
+                                            ),
+                                            SuggestionPill(
+                                              text: 'Add milk, organic eggs and bread to my cart',
+                                              icon: Icons.add_shopping_cart_rounded,
+                                              onTap: () {
+                                                _controller.text = 'Add milk, organic eggs and bread to my cart';
+                                                _sendMessage();
+                                              },
+                                            ),
+                                            SuggestionPill(
+                                              text: 'Is organic milk healthier than regular milk?',
+                                              icon: Icons.help_outline_rounded,
+                                              onTap: () {
+                                                _controller.text = 'Is organic milk healthier than regular milk?';
+                                                _sendMessage();
+                                              },
+                                            ),
+                                            SuggestionPill(
+                                              text: 'Quick and easy dinner recipe ideas',
+                                              icon: Icons.restaurant_menu_rounded,
+                                              onTap: () {
+                                                _controller.text = 'Quick and easy dinner recipe ideas';
+                                                _sendMessage();
+                                              },
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
+                                )
+                              : ListView.builder(
+                                  controller: _scrollController,
+                                  padding: const EdgeInsets.only(top: 12, bottom: 48),
+                                  itemCount: _messages.length,
+                                  itemBuilder: (_, index) =>
+                                      MessageBubble(message: _messages[index]),
                                 ),
-                              ],
-                            ),
-                          )
-                        : ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.only(bottom: 8),
-                            itemCount: _messages.length,
-                            itemBuilder: (_, index) =>
-                                MessageBubble(message: _messages[index]),
-                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: GradualBlur(
+                          height: 32.0,
+                          strength: 8,
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: GradualBlur(
+                          height: 48.0,
+                          strength: 12,
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 if (_loading)
@@ -647,8 +676,15 @@ class ChatHeaderPill extends StatelessWidget {
   }
 }
 
-class WelcomeCard extends StatelessWidget {
+class WelcomeCard extends StatefulWidget {
   const WelcomeCard({super.key});
+
+  @override
+  State<WelcomeCard> createState() => _WelcomeCardState();
+}
+
+class _WelcomeCardState extends State<WelcomeCard> {
+  bool _startSecondSentence = false;
 
   @override
   Widget build(BuildContext context) {
@@ -692,17 +728,23 @@ class WelcomeCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'Hi there!',
+                    TypewriterText(
+                      text: 'Hi there!',
                       style: TextStyle(
                         fontFamily: 'ClashDisplay',
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.primary,
                       ),
+                      onComplete: () {
+                        setState(() {
+                          _startSecondSentence = true;
+                        });
+                      },
                     ),
-                    Text(
-                      'I\'m your Qless Assistant.',
+                    TypewriterText(
+                      text: "I'm your Qless Assistant.",
+                      startTyping: _startSecondSentence,
                       style: TextStyle(
                         fontFamily: 'ClashDisplay',
                         fontSize: 16,
@@ -724,6 +766,143 @@ class WelcomeCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
               color: theme.colorScheme.primary.withValues(alpha: 0.7),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TypewriterText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+  final Duration typingSpeed;
+  final Duration initialDelay;
+  final bool showCursor;
+  final String cursorCharacter;
+  final VoidCallback? onComplete;
+  final bool startTyping;
+
+  const TypewriterText({
+    super.key,
+    required this.text,
+    required this.style,
+    this.typingSpeed = const Duration(milliseconds: 60),
+    this.initialDelay = Duration.zero,
+    this.showCursor = true,
+    this.cursorCharacter = '|',
+    this.onComplete,
+    this.startTyping = true,
+  });
+
+  @override
+  State<TypewriterText> createState() => _TypewriterTextState();
+}
+
+class _TypewriterTextState extends State<TypewriterText> {
+  String _displayedText = '';
+  int _currentCharIndex = 0;
+  Timer? _typingTimer;
+  Timer? _cursorTimer;
+  bool _cursorVisible = true;
+  bool _isDone = false;
+  bool _hasStarted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showCursor) {
+      _cursorTimer = Timer.periodic(const Duration(milliseconds: 400), (timer) {
+        if (mounted) {
+          setState(() {
+            _cursorVisible = !_cursorVisible;
+          });
+        }
+      });
+    }
+    
+    if (widget.startTyping) {
+      _triggerStart();
+    }
+  }
+
+  @override
+  void didUpdateWidget(TypewriterText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.startTyping && !oldWidget.startTyping && !_hasStarted) {
+      _triggerStart();
+    }
+  }
+
+  void _triggerStart() {
+    _hasStarted = true;
+    if (widget.initialDelay > Duration.zero) {
+      Timer(widget.initialDelay, _startTyping);
+    } else {
+      _startTyping();
+    }
+  }
+
+  void _startTyping() {
+    if (!mounted) return;
+    _typingTimer = Timer.periodic(widget.typingSpeed, (timer) {
+      if (!mounted) return;
+      if (_currentCharIndex < widget.text.length) {
+        setState(() {
+          _displayedText += widget.text[_currentCharIndex];
+          _currentCharIndex++;
+        });
+      } else {
+        _typingTimer?.cancel();
+        setState(() {
+          _isDone = true;
+        });
+        _cursorTimer?.cancel();
+        if (widget.onComplete != null) {
+          widget.onComplete!();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _typingTimer?.cancel();
+    _cursorTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_hasStarted && _displayedText.isEmpty) {
+      return RichText(
+        text: TextSpan(
+          text: widget.text,
+          style: widget.style.copyWith(color: Colors.transparent),
+        ),
+      );
+    }
+
+    final typedPart = widget.text.substring(0, _currentCharIndex);
+    final remainingPart = widget.text.substring(_currentCharIndex);
+
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: typedPart,
+            style: widget.style,
+          ),
+          if (widget.showCursor && !_isDone && _cursorVisible)
+            TextSpan(
+              text: widget.cursorCharacter,
+              style: widget.style.copyWith(
+                color: widget.style.color?.withOpacity(0.8) ?? Colors.black54,
+              ),
+            ),
+          TextSpan(
+            text: remainingPart,
+            style: widget.style.copyWith(color: Colors.transparent),
           ),
         ],
       ),
@@ -901,3 +1080,67 @@ class _FadeContentState extends State<FadeContent> with SingleTickerProviderStat
     );
   }
 }
+
+class GradualBlur extends StatelessWidget {
+  final double strength;
+  final int divCount;
+  final double height;
+  final Alignment begin;
+  final Alignment end;
+
+  const GradualBlur({
+    super.key,
+    this.strength = 15.0,
+    this.divCount = 5,
+    this.height = 40.0,
+    this.begin = Alignment.topCenter,
+    this.end = Alignment.bottomCenter,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: SizedBox(
+        height: height,
+        child: Stack(
+          children: List.generate(divCount, (index) {
+            final double progress = (index + 1) / divCount;
+            final double blurValue = progress * strength;
+            
+            final double start = index / divCount;
+            final double endVal = progress;
+
+            return Positioned.fill(
+              child: ShaderMask(
+                shaderCallback: (rect) {
+                  return LinearGradient(
+                    begin: begin,
+                    end: end,
+                    colors: const [
+                      Colors.transparent,
+                      Colors.black,
+                    ],
+                    stops: [
+                      start,
+                      endVal,
+                    ],
+                  ).createShader(rect);
+                },
+                blendMode: BlendMode.dstIn,
+                child: ClipRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: blurValue, sigmaY: blurValue),
+                    child: Container(
+                      color: Colors.transparent,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+}
+
