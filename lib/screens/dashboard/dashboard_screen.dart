@@ -84,6 +84,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     try {
       await _cameraController!.initialize();
+      await _cameraController!.setFlashMode(FlashMode.off);
       if (mounted) {
         setState(() => _isCameraInitialized = true);
       }
