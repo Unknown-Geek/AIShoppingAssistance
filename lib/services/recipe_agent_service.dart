@@ -6,7 +6,11 @@ import 'cart_service.dart';
 
 class RecipeAgentService {
   final String backendUrl = (() {
-    final raw = dotenv.env['HF_SPACE_URL']?.trim() ?? '';
+    final raw = (dotenv.env['PRIMARY_DETECTION_URL'] ??
+                 dotenv.env['VM_DETECTION_URL'] ??
+                 dotenv.env['BACKUP_DETECTION_URL'] ??
+                 dotenv.env['HF_SPACE_URL'] ??
+                 '').trim();
     if (raw.isEmpty) return 'http://127.0.0.1:8000';
     var clean = raw.replaceAll(RegExp(r'/health$'), '');
     clean = clean.replaceAll(RegExp(r'/detect$'), '');
