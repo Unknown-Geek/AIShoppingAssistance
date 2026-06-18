@@ -111,6 +111,37 @@ class QuantityParserTool:
         return "", text
 
     @staticmethod
+    def _post_process(result: Dict[str, Any]) -> Dict[str, Any]:
+        """Clean up residual noise: trailing dashes on quantities and duplicate word leaks in names."""
+        # Clean trailing dashes from quantity strings (e.g. "1-" → "1")
+        qty = result.get("quantity", "")
+        if qty.endswith("-"):
+            qty = qty.rstrip("-").strip()
+        result["quantity"] = qty
+
+        # De-duplicate name words where one is a case-insensitive substring of another
+        # e.g. "onion Onions" → "Onions", "Salt salt" → "Salt"
+        name = result.get("name", "")
+        words = name.split()
+        if len(words) >= 2:
+            cleaned = []
+            for w in words:
+                wl = w.lower()
+                dup = False
+                for j, (existing, existing_lower) in enumerate(cleaned):
+                    if wl == existing_lower or wl in existing_lower or existing_lower in wl:
+                        if len(w) >= len(existing):
+                            cleaned[j] = (w, wl)
+                        dup = True
+                        break
+                if not dup:
+                    cleaned.append((w, wl))
+            name = " ".join(c[0] for c in cleaned)
+            result["name"] = name
+
+        return result
+
+    @staticmethod
     def execute(ingredient_string: str) -> Dict[str, Any]:
         """Parse an ingredient string and extract components"""
         ingredient = ingredient_string.strip()
@@ -124,7 +155,7 @@ class QuantityParserTool:
         # Handle conversational phrases before regex parsing
         conv_result = QuantityParserTool._handle_conversational_phrases(ingredient, ingredient_string)
         if conv_result:
-            return conv_result
+            return QuantityParserTool._post_process(conv_result)
         
         # Match ANY numeric quantity, unicode fraction, or fraction expression at the start
         num_match = re.match(r"^([\d½¼¾⅓⅔⅛\/\.\-\s]+)", ingredient)
@@ -149,27 +180,27 @@ class QuantityParserTool:
             # Clean up content in parentheses from the name
             name = re.sub(r"\([^)]*\)", "", name).strip()
             
-            return {
+            return QuantityParserTool._post_process({
                 "quantity": quantity,
                 "unit": unit_match.group(1) if unit_match else "",
                 "name": QuantityParserTool._strip_prep_words(name),
                 "raw_input": ingredient_string
-            }
+            })
         
         # Fallback: Check if it starts with a single digit or fraction symbol
         fallback_match = re.match(r"^([0-9½¼¾⅓⅔⅛])\s*(.*)$", ingredient)
         if fallback_match:
-            return {
+            return QuantityParserTool._post_process({
                 "quantity": fallback_match.group(1),
                 "unit": "",
                 "name": QuantityParserTool._strip_prep_words(fallback_match.group(2).strip()),
                 "raw_input": ingredient_string
-            }
+            })
         
         # No quantity found, assume ingredient name only
-        return {
+        return QuantityParserTool._post_process({
             "quantity": "",
             "unit": "",
             "name": QuantityParserTool._strip_prep_words(ingredient),
             "raw_input": ingredient_string
-        }
+        })
