@@ -417,7 +417,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   child: FadeContent(
                     key: ValueKey(_currentChatSessionId ?? (_messages.isEmpty ? 'welcome' : 'new_chat')),
                     blur: true,
-                    duration: const Duration(milliseconds: 500),
+                    duration: const Duration(milliseconds: 200),
                     curve: Curves.easeInOut,
                     child: _messages.isEmpty
                         ? SingleChildScrollView(
