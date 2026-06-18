@@ -12,6 +12,8 @@ import 'widgets/message_bubble.dart';
 import 'widgets/chat_input_field.dart';
 import 'widgets/history_drawer.dart';
 import 'widgets/animated_orb.dart';
+import '../../services/recipe_agent_service.dart';
+import '../../services/cart_service.dart';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
@@ -37,17 +39,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   bool _isTransitioning = true;
 
   static const String _storageKey = 'chat_history_v2'; // Changed key to differentiate updated model storage
-
-  static final String baseUrl = (() {
-    final raw = dotenv.env['HF_SPACE_URL']?.trim() ?? '';
-    if (raw.isEmpty) return 'http://127.0.0.1:8000';
-    var clean = raw.replaceAll(RegExp(r'/health$'), '');
-    clean = clean.replaceAll(RegExp(r'/detect$'), '');
-    clean = clean.replaceAll(RegExp(r'/embed$'), '');
-    clean = clean.replaceAll(RegExp(r'/recipe-agent$'), '');
-    clean = clean.replaceAll(RegExp(r'/$'), '');
-    return clean.isEmpty ? 'http://127.0.0.1:8000' : clean;
-  })();
 
   @override
   void initState() {
@@ -279,60 +270,41 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     _scrollToBottom();
 
     try {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/recipe-agent'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'dish': prompt, 'servings': 2}),
-          )
-          .timeout(const Duration(seconds: 10));
+      final cartSlugs = CartService().items.map((item) {
+        return item.name.toLowerCase().replaceAll(' ', '-');
+      }).toList();
 
-      dynamic data;
-      try {
-        data = jsonDecode(response.body);
-      } catch (_) {
-        data = null;
-      }
+      final data = await RecipeAgentService().analyzeAndGetMissing(
+        cartSlugs,
+        prompt,
+        2, // servings
+      );
 
-      if (response.statusCode == 200 && data is Map<String, dynamic>) {
-        if (data['status'] == 'success') {
-          setState(() {
-            _messages.add(ChatMessage(isUser: false, recipe: data));
-          });
-        } else {
-          setState(() {
-            _messages.add(
-              ChatMessage(
-                isUser: false,
-                text: data['message'] ?? 'Recipe not found',
-              ),
-            );
-          });
-        }
-      } else {
-        setState(() {
-          _messages.add(
-            ChatMessage(
-              isUser: false,
-              text: 'Server error: ${response.statusCode}',
-            ),
-          );
-        });
-      }
+      // Translate backend payload to keys expected by RecipeCard
+      final recipeData = {
+        'dish': data['dish'] ?? prompt,
+        'servings': data['servings'] ?? 2,
+        'ready_time': '20 min',
+        'summary': data['recipe_instructions'] != null && (data['recipe_instructions'] as List).isNotEmpty
+            ? 'A delicious ${data['dish'] ?? prompt} crafted by your AI Chef.'
+            : 'A custom recipe for ${data['dish'] ?? prompt}.',
+        'ingredients': (data['parsed_ingredients'] as List<dynamic>?)?.map((item) {
+          return {
+            'name': item['name'] ?? '',
+            'quantity': item['quantity'] ?? '1',
+          };
+        }).toList() ?? [],
+        'instructions': List<String>.from(data['recipe_instructions'] ?? []),
+        'missing_ingredients': data['missing_ingredients'],
+      };
 
-      _saveCurrentChat();
-    } on TimeoutException {
       setState(() {
-        _messages.add(
-          ChatMessage(
-            isUser: false,
-            text: 'Request timed out. Please try again.',
-          ),
-        );
+        _messages.add(ChatMessage(isUser: false, recipe: recipeData));
       });
 
       _saveCurrentChat();
     } catch (e) {
+      debugPrint('[ChatbotScreen] Send message error: $e');
       setState(() {
         _messages.add(
           ChatMessage(
@@ -341,13 +313,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           ),
         );
       });
-
       _saveCurrentChat();
     } finally {
       setState(() {
         _loading = false;
       });
-
       _scrollToBottom();
     }
   }
