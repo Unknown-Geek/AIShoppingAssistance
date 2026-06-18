@@ -334,7 +334,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     setState(() => _isCheckingOut = true);
 
     // Open the premium payment sheet
-    DashboardSheets.showPaymentSheet(
+    await DashboardSheets.showPaymentSheet(
       context,
       amount: total,
       onPaymentSuccess: () async {

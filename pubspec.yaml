@@ -21,6 +21,7 @@ dependencies:
   google_generative_ai: ^0.4.3 
   file_picker: ^8.0.0
   image_picker: ^1.1.2
+  razorpay_flutter: ^1.4.5
 
 dev_dependencies:
   flutter_test:
