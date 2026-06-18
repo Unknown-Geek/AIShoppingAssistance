@@ -1,11 +1,14 @@
+import asyncio
 import os
 import json
 from typing import Dict, Any, Optional
+import groq as groq_lib
 from groq import Groq
 from app.models.recipe import RecipeStructure
 from app.agents.tools.recipe_search_tool import RecipeSearchTool
 from app.agents.tools.quantity_parser_tool import QuantityParserTool
 from app.agents.tools.inventory_match_tool import InventoryMatchTool
+from app.agents.tools.web_search_recipe_tool import WebSearchRecipeTool
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,10 +28,12 @@ class RecipeAgent:
         self.recipe_search_tool = RecipeSearchTool()
         self.quantity_parser_tool = QuantityParserTool()
         self.inventory_match_tool = InventoryMatchTool()
+        self.web_search_tool = WebSearchRecipeTool()
         
         # Define available tools for the agent
         self.tools = [
             self.recipe_search_tool.get_tool_definition(),
+            self.web_search_tool.get_tool_definition(),
             self.quantity_parser_tool.get_tool_definition(),
             self.inventory_match_tool.get_tool_definition()
         ]
@@ -37,6 +42,8 @@ class RecipeAgent:
         """Process a tool call and return the result"""
         if tool_name == "search_recipe":
             result = await self.recipe_search_tool.execute(tool_input["dish_name"])
+        elif tool_name == "web_search_recipe":
+            result = await self.web_search_tool.execute(tool_input["dish_name"])
         elif tool_name == "parse_ingredient_quantity":
             result = self.quantity_parser_tool.execute(tool_input["ingredient_string"])
         elif tool_name == "match_ingredient_to_inventory":
@@ -55,21 +62,22 @@ class RecipeAgent:
             {
                 "role": "system",
                 "content": """You are an expert chef assistant with access to recipe databases and inventory systems.
-Your task is to:
-1. Search for a recipe using the search_recipe tool
-2. Parse each ingredient's quantity using parse_ingredient_quantity tool
-3. Match ingredients to the inventory using match_ingredient_to_inventory tool
-4. Return a comprehensive recipe with all details in JSON format.
 
-When you receive tool results, analyze them and either:
-- Call more tools if needed
-- Provide a final response with the complete recipe information
+WORKFLOW:
+1. First try: search_recipe tool to get recipe from MealDB
+2. If MealDB returns "no recipe found": use web_search_recipe tool as fallback
+3. For each ingredient: use parse_ingredient_quantity tool
+4. For each ingredient: use match_ingredient_to_inventory tool
+5. Return final recipe in JSON format
 
-IMPORTANT: Your final response MUST be valid JSON in this format:
+DO NOT call search_recipe multiple times. If it fails, move to web_search_recipe once.
+Keep responses concise - limit to 3 iterations maximum.
+
+FINAL RESPONSE FORMAT (REQUIRED - return this as valid JSON):
 {
   "dish": "dish name",
   "servings": number,
-  "instructions": ["step 1", "step 2"],
+  "instructions": ["step 1", "step 2", ...],
   "ingredients": [
     {"name": "ingredient", "quantity": "amount", "unit": "unit"}
   ]
@@ -77,12 +85,12 @@ IMPORTANT: Your final response MUST be valid JSON in this format:
             },
             {
                 "role": "user",
-                "content": f"Generate a detailed recipe for {dish_query} for {servings} servings. Use the search_recipe tool to find the recipe, then parse ingredients and match them to products."
+                "content": f"Generate a detailed recipe for {dish_query} for {servings} servings. First search MealDB, then use web search if needed. Parse ingredients and match to available products."
             }
         ]
 
-        # Agentic loop - continue until the agent stops requesting tools
-        max_iterations = 10
+        # Agentic loop - limited iterations to avoid token waste
+        max_iterations = 3
         iteration = 0
         
         while iteration < max_iterations:
@@ -90,18 +98,31 @@ IMPORTANT: Your final response MUST be valid JSON in this format:
             print(f"\n[RecipeAgent] Iteration {iteration}")
             print(f"[RecipeAgent] Message stack size: {len(messages)}")
             
-            try:
-                # Call Groq with tool definitions
-                response = self.client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
-                    messages=messages,
-                    tools=self.tools,
-                    tool_choice="auto",
-                    max_tokens=4096
-                )
-            except Exception as e:
-                print(f"[RecipeAgent] ❌ API Error on iteration {iteration}: {str(e)[:200]}")
-                raise
+            retry_attempt = 0
+            while True:
+                try:
+                    # Call Groq with tool definitions
+                    response = self.client.chat.completions.create(
+                        model="gemma2-9b-it",
+                        messages=messages,
+                        tools=self.tools,
+                        tool_choice="auto",
+                        max_tokens=1024,
+                        temperature=0.2
+                    )
+                    break
+                except groq_lib.RateLimitError as rate_error:
+                    retry_attempt += 1
+                    wait_seconds = min(10, 2 ** retry_attempt)
+                    print(f"[RecipeAgent] ⚠️ Rate limit hit on attempt {retry_attempt}: {rate_error}")
+                    if retry_attempt >= 3:
+                        print("[RecipeAgent] ❌ Rate limit retry limit reached")
+                        raise
+                    print(f"[RecipeAgent] Waiting {wait_seconds}s before retrying")
+                    await asyncio.sleep(wait_seconds)
+                except Exception as e:
+                    print(f"[RecipeAgent] ❌ API Error on iteration {iteration}: {str(e)[:200]}")
+                    raise
 
             assistant_message = {"role": "assistant", "content": response.choices[0].message.content or ""}
             

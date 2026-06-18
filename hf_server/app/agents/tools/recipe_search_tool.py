@@ -31,7 +31,19 @@ class RecipeSearchTool:
     @staticmethod
     async def execute(dish_name: str) -> Dict[str, Any]:
         """Execute the recipe search"""
-        url = f"{RecipeSearchTool.BASE_URL}{dish_name}"
+        if not isinstance(dish_name, str):
+            return {"error": "Invalid dish name type provided to search_recipe tool."}
+
+        query = dish_name.strip()
+        if not query:
+            return {"error": "Dish name cannot be empty."}
+
+        # Remove non-printable characters before encoding
+        query = ''.join(ch for ch in query if ch.isprintable())
+
+        from urllib.parse import quote_plus
+        encoded_query = quote_plus(query)
+        url = f"{RecipeSearchTool.BASE_URL}{encoded_query}"
 
         async with httpx.AsyncClient() as client:
             response = await client.get(url)
