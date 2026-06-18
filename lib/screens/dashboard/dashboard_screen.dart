@@ -766,7 +766,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         child: child,
                       );
                     },
-                    transitionDuration: const Duration(milliseconds: 350),
+                    transitionDuration: const Duration(milliseconds: 220),
                   ),
                 );
               },
