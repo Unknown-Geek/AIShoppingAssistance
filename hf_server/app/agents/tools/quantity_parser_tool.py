@@ -5,9 +5,14 @@ from typing import Dict, Any, Optional
 _PREP_WORDS = re.compile(
     r"^(chopped|minced|diced|grated|sliced|crushed|ground|peeled|toasted|roasted|"
     r"fresh|freshly|frozen|canned|organic|whole|small|large|medium|"
-    r"optional|divided|cloves?)\s+",
+    r"optional|divided|cloves?|"
+    r"cups?|tablespoons?|tbsp|teaspoons?|tsp|grams?|g|kg|ml|liters?|l|"
+    r"pinch|sprinkle|dash|drop|inches?|pieces?|sticks?|slices?)\s+",
     re.IGNORECASE
 )
+
+# Unit words that can follow conversational quantities ("to taste", "for garnish")
+_CONVERSATIONAL_UNITS = {"pinch", "dash", "drop", "sprinkle"}
 
 class QuantityParserTool:
     """Tool to parse ingredients and extract quantity information"""
@@ -51,9 +56,10 @@ class QuantityParserTool:
         # "to taste" — can appear at start or end ("to taste Pepper" / "Salt to taste")
         if "to taste" in ingredient_lower:
             name = re.sub(r"\bto taste\b", "", ingredient, flags=re.IGNORECASE).strip("-, ")
+            unit, name = QuantityParserTool._extract_conversational_unit(name)
             return {
                 "quantity": "to taste",
-                "unit": "",
+                "unit": unit,
                 "name": QuantityParserTool._strip_prep_words(name),
                 "raw_input": raw_input
             }
@@ -61,9 +67,10 @@ class QuantityParserTool:
         # "for garnish" → "Fresh Cilantro for garnish"
         if "for garnish" in ingredient_lower:
             name = re.sub(r"\bfor garnish\b", "", ingredient, flags=re.IGNORECASE).strip("-, ")
+            unit, name = QuantityParserTool._extract_conversational_unit(name)
             return {
                 "quantity": "for garnish",
-                "unit": "",
+                "unit": unit,
                 "name": QuantityParserTool._strip_prep_words(name),
                 "raw_input": raw_input
             }
@@ -81,6 +88,16 @@ class QuantityParserTool:
             }
 
         return None
+
+    @staticmethod
+    def _extract_conversational_unit(text: str) -> tuple:
+        """After stripping a conversational phrase, check if the remainder starts
+        with a known unit word (e.g. 'pinch', 'dash') and extract it."""
+        text = text.strip()
+        for word in sorted(_CONVERSATIONAL_UNITS, key=len, reverse=True):
+            if text.lower().startswith(word) and (len(text) == len(word) or not text[len(word)].isalpha()):
+                return word, text[len(word):].strip("-, ")
+        return "", text
 
     @staticmethod
     def execute(ingredient_string: str) -> Dict[str, Any]:
