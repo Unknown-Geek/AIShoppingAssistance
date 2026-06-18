@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:async';
@@ -497,7 +495,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                 ),
                         ),
                       ),
-                      Positioned(
+                      const Positioned(
                         top: 0,
                         left: 0,
                         right: 0,
@@ -508,7 +506,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           end: Alignment.topCenter,
                         ),
                       ),
-                      Positioned(
+                      const Positioned(
                         bottom: 0,
                         left: 0,
                         right: 0,
@@ -897,7 +895,7 @@ class _TypewriterTextState extends State<TypewriterText> {
             TextSpan(
               text: widget.cursorCharacter,
               style: widget.style.copyWith(
-                color: widget.style.color?.withOpacity(0.8) ?? Colors.black54,
+                color: widget.style.color?.withValues(alpha: 0.8) ?? Colors.black54,
               ),
             ),
           TextSpan(
