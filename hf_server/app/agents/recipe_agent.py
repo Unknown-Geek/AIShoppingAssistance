@@ -59,13 +59,25 @@ Your task is to:
 1. Search for a recipe using the search_recipe tool
 2. Parse each ingredient's quantity using parse_ingredient_quantity tool
 3. Match ingredients to the inventory using match_ingredient_to_inventory tool
-4. Return the final recipe in JSON format with all ingredient details and matched products.
+4. Return a comprehensive recipe with all details in JSON format.
 
-Always use the available tools to gather accurate information."""
+When you receive tool results, analyze them and either:
+- Call more tools if needed
+- Provide a final response with the complete recipe information
+
+IMPORTANT: Your final response MUST be valid JSON in this format:
+{
+  "dish": "dish name",
+  "servings": number,
+  "instructions": ["step 1", "step 2"],
+  "ingredients": [
+    {"name": "ingredient", "quantity": "amount", "unit": "unit"}
+  ]
+}"""
             },
             {
                 "role": "user",
-                "content": f"Generate a detailed recipe for {dish_query} for {servings} servings. Search for the recipe, parse all ingredients with quantities, and match them to available products."
+                "content": f"Generate a detailed recipe for {dish_query} for {servings} servings. Use the search_recipe tool to find the recipe, then parse ingredients and match them to products."
             }
         ]
 
@@ -76,17 +88,22 @@ Always use the available tools to gather accurate information."""
         while iteration < max_iterations:
             iteration += 1
             print(f"\n[RecipeAgent] Iteration {iteration}")
+            print(f"[RecipeAgent] Message stack size: {len(messages)}")
             
-            # Call Groq with tool definitions
-            response = self.client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=messages,
-                tools=self.tools,
-                tool_choice="auto",
-                max_tokens=4096
-            )
+            try:
+                # Call Groq with tool definitions
+                response = self.client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=messages,
+                    tools=self.tools,
+                    tool_choice="auto",
+                    max_tokens=4096
+                )
+            except Exception as e:
+                print(f"[RecipeAgent] ❌ API Error on iteration {iteration}: {str(e)[:200]}")
+                raise
 
-            assistant_message = {"role": "assistant", "content": response.choices[0].message.content}
+            assistant_message = {"role": "assistant", "content": response.choices[0].message.content or ""}
             
             # Add assistant message to conversation
             if response.choices[0].message.tool_calls:
@@ -106,29 +123,32 @@ Always use the available tools to gather accurate information."""
 
             # Check if we're done (no tool calls)
             if not response.choices[0].message.tool_calls:
-                print("[RecipeAgent] Agent completed - no more tool calls")
+                print("[RecipeAgent] ✓ Agent completed - no more tool calls")
                 break
 
             # Process tool calls
-            tool_results = []
+            tool_results_message = []
             for tool_call in response.choices[0].message.tool_calls:
                 tool_name = tool_call.function.name
                 tool_input = json.loads(tool_call.function.arguments)
                 
-                print(f"[RecipeAgent] Calling tool: {tool_name} with {tool_input}")
+                print(f"[RecipeAgent] 🔧 Calling tool: {tool_name}")
                 
                 result = await self._process_tool_call(tool_name, tool_input)
                 
-                tool_results.append({
-                    "type": "tool",
+                tool_results_message.append({
+                    "type": "tool_result",
                     "tool_use_id": tool_call.id,
                     "content": result
                 })
             
-            # Add tool results to messages
+            # Add tool results to messages as a text string
+            # This is the correct format for Groq - content must be a string
+            results_text = f"Tool execution results:\n{json.dumps(tool_results_message, indent=2)}"
+            
             messages.append({
                 "role": "user",
-                "content": tool_results
+                "content": results_text
             })
 
         # Extract the final response
