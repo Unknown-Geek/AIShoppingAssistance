@@ -13,6 +13,7 @@ class AnimatedOrb extends StatefulWidget {
 class _AnimatedOrbState extends State<AnimatedOrb>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  Animation<double>? _routeAnimation;
 
   @override
   void initState() {
@@ -21,11 +22,44 @@ class _AnimatedOrbState extends State<AnimatedOrb>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
-    )..repeat();
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _routeAnimation?.removeStatusListener(_handleRouteStatus);
+    
+    final route = ModalRoute.of(context);
+    if (route != null && route.animation != null) {
+      _routeAnimation = route.animation;
+      _routeAnimation!.addStatusListener(_handleRouteStatus);
+      
+      if (route.animation!.status != AnimationStatus.completed) {
+        _controller.stop();
+      } else if (!_controller.isAnimating) {
+        _controller.repeat();
+      }
+    } else {
+      _controller.repeat();
+    }
+  }
+
+  void _handleRouteStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      if (mounted && !_controller.isAnimating) {
+        _controller.repeat();
+      }
+    } else {
+      if (mounted && _controller.isAnimating) {
+        _controller.stop();
+      }
+    }
   }
 
   @override
   void dispose() {
+    _routeAnimation?.removeStatusListener(_handleRouteStatus);
     _controller.dispose();
     super.dispose();
   }
@@ -54,9 +88,6 @@ class _OrbPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // Use saveLayer to apply composite blending
-    canvas.saveLayer(Rect.fromLTWH(0, 0, size.width, size.height), Paint());
-
     final angle = progress * 2 * math.pi;
 
     // 1. Primary Base: Deep Qless Navy
@@ -84,7 +115,6 @@ class _OrbPainter extends CustomPainter {
     final rad2 = radius * (0.78 + math.cos(angle * 3.6) * 0.15);
 
     final paint2 = Paint()
-      ..blendMode = BlendMode.screen
       ..shader = RadialGradient(
         colors: [
           const Color(0xFF7C3AED), // Vibrant purple
@@ -102,7 +132,6 @@ class _OrbPainter extends CustomPainter {
     final rad3 = radius * (0.68 + math.sin(angle * 4.8) * 0.18);
 
     final paint3 = Paint()
-      ..blendMode = BlendMode.screen
       ..shader = RadialGradient(
         colors: [
           const Color(0xFFB3EFB2), // Mint Green
@@ -112,8 +141,6 @@ class _OrbPainter extends CustomPainter {
         stops: const [0.0, 0.35, 1.0],
       ).createShader(Rect.fromCircle(center: offset3, radius: rad3));
     canvas.drawCircle(offset3, rad3, paint3);
-
-    canvas.restore();
   }
 
   @override
