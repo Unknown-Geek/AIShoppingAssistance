@@ -12,6 +12,8 @@ import '../../services/cart_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/product_detection_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'widgets/dashboard_app_bar.dart';
 import 'widgets/camera_viewport.dart';
@@ -548,19 +550,65 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
+  Future<String> _checkBackendStatus() async {
+    final primary = dotenv.env['PRIMARY_DETECTION_URL']?.trim() ?? '';
+    final backup = dotenv.env['BACKUP_DETECTION_URL']?.trim() ?? '';
+    
+    if (primary.isEmpty && backup.isEmpty) {
+      return "Not Configured";
+    }
+
+    List<String> activeBackends = [];
+
+    // Clean and check primary
+    if (primary.isNotEmpty) {
+      final cleanPrimary = primary.replaceAll(RegExp(r'/health$'), '').replaceAll(RegExp(r'/$'), '');
+      try {
+        final response = await http.get(Uri.parse('$cleanPrimary/health')).timeout(const Duration(seconds: 2));
+        if (response.statusCode == 200) {
+          activeBackends.add("Colab (Active)");
+        }
+      } catch (_) {
+        // Silent fail for primary
+      }
+    }
+
+    // Clean and check backup
+    if (backup.isNotEmpty) {
+      final cleanBackup = backup.replaceAll(RegExp(r'/health$'), '').replaceAll(RegExp(r'/$'), '');
+      try {
+        final response = await http.get(Uri.parse('$cleanBackup/health')).timeout(const Duration(seconds: 2));
+        if (response.statusCode == 200) {
+          activeBackends.add("HF Space (Active)");
+        }
+      } catch (_) {
+        // Silent fail for backup
+      }
+    }
+
+    if (activeBackends.isNotEmpty) {
+      return activeBackends.join(", ");
+    } else {
+      return "Disconnected (All Offline)";
+    }
+  }
+
   /// Silent background check — updates the indicator, no snackbar.
   Future<void> _refreshDbStatus() async {
     final results = await Future.wait([
       _chromaClient.checkConnectivity(),
       InventoryService().checkConnectivity(),
+      _checkBackendStatus(),
     ]);
     final chromaStatus = results[0];
     final supabaseStatus = results[1];
+    final backendStatus = results[2];
 
     if (!mounted) return;
     final allOk =
         chromaStatus.startsWith('Connected') &&
-        supabaseStatus.startsWith('Connected');
+        supabaseStatus.startsWith('Connected') &&
+        !backendStatus.startsWith('Disconnected');
     setState(
       () => _dbStatus = allOk
           ? DbConnectionStatus.live
@@ -574,7 +622,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       const SnackBar(
         behavior: SnackBarBehavior.fixed,
         content: Text(
-          'Checking database connections...',
+          'Checking database and backend connections...',
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Color(0xFF001A23),
@@ -585,13 +633,16 @@ class _DashboardScreenState extends State<DashboardScreen>
     final results = await Future.wait([
       _chromaClient.checkConnectivity(),
       InventoryService().checkConnectivity(),
+      _checkBackendStatus(),
     ]);
     final chromaStatus = results[0];
     final supabaseStatus = results[1];
+    final backendStatus = results[2];
 
     if (mounted) {
       final isChromaOk = chromaStatus.startsWith("Connected");
       final isSupabaseOk = supabaseStatus.startsWith("Connected");
+      final isBackendOk = !backendStatus.startsWith("Disconnected");
 
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -616,9 +667,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 4),
+              Text(
+                'Backend: $backendStatus',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
-          backgroundColor: (isChromaOk && isSupabaseOk)
+          backgroundColor: (isChromaOk && isSupabaseOk && isBackendOk)
               ? Theme.of(context).colorScheme.primary
               : const Color(0xFFEF4444),
           duration: const Duration(seconds: 4),
@@ -626,7 +685,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
       // Also update the indicator
       setState(
-        () => _dbStatus = (isChromaOk && isSupabaseOk)
+        () => _dbStatus = (isChromaOk && isSupabaseOk && isBackendOk)
             ? DbConnectionStatus.live
             : DbConnectionStatus.error,
       );
