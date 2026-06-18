@@ -61,10 +61,10 @@ class _OrbPainter extends CustomPainter {
 
     // 1. Primary Base: Deep Qless Navy
     // Modulating with secondary harmonics for fluid/liquid motion
-    final x1 = math.sin(angle) * 0.08 + math.cos(angle * 2.3) * 0.03;
-    final y1 = math.cos(angle) * 0.08 + math.sin(angle * 1.7) * 0.03;
+    final x1 = math.sin(angle) * 0.10 + math.cos(angle * 2.3) * 0.05;
+    final y1 = math.cos(angle) * 0.10 + math.sin(angle * 1.7) * 0.05;
     final offset1 = Offset(center.dx + x1 * radius, center.dy + y1 * radius);
-    final rad1 = radius * (0.95 + math.sin(angle * 2.0) * 0.03);
+    final rad1 = radius * (0.88 + math.sin(angle * 2.5) * 0.10);
 
     final paint1 = Paint()
       ..shader = RadialGradient(
@@ -78,10 +78,10 @@ class _OrbPainter extends CustomPainter {
     canvas.drawCircle(offset1, rad1, paint1);
 
     // 2. SaaS Vibrant Purple (blending and breathing)
-    final x2 = math.cos(angle + math.pi / 2) * 0.14 + math.sin(angle * 2.9) * 0.04;
-    final y2 = math.sin(angle + math.pi / 2) * 0.14 + math.cos(angle * 2.1) * 0.04;
+    final x2 = math.cos(angle + math.pi / 2) * 0.18 + math.sin(angle * 2.9) * 0.07;
+    final y2 = math.sin(angle + math.pi / 2) * 0.18 + math.cos(angle * 2.1) * 0.07;
     final offset2 = Offset(center.dx + x2 * radius, center.dy + y2 * radius);
-    final rad2 = radius * (0.85 + math.cos(angle * 3.1) * 0.05);
+    final rad2 = radius * (0.78 + math.cos(angle * 3.6) * 0.15);
 
     final paint2 = Paint()
       ..blendMode = BlendMode.screen
@@ -96,10 +96,10 @@ class _OrbPainter extends CustomPainter {
     canvas.drawCircle(offset2, rad2, paint2);
 
     // 3. Secondary Mint Green Accent (wobbly overlay)
-    final x3 = math.sin(angle + math.pi) * 0.16 + math.cos(angle * 3.4) * 0.05;
-    final y3 = math.cos(angle + math.pi) * 0.16 + math.sin(angle * 2.6) * 0.05;
+    final x3 = math.sin(angle + math.pi) * 0.20 + math.cos(angle * 3.4) * 0.08;
+    final y3 = math.cos(angle + math.pi) * 0.20 + math.sin(angle * 2.6) * 0.08;
     final offset3 = Offset(center.dx + x3 * radius, center.dy + y3 * radius);
-    final rad3 = radius * (0.78 + math.sin(angle * 4.2) * 0.06);
+    final rad3 = radius * (0.68 + math.sin(angle * 4.8) * 0.18);
 
     final paint3 = Paint()
       ..blendMode = BlendMode.screen
