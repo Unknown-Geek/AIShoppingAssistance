@@ -89,7 +89,7 @@ class MessageBubble extends StatelessWidget {
           children: [
             // Animated Orb AI Avatar
             const Padding(
-              padding: EdgeInsets.only(top: 4),
+              padding: EdgeInsets.only(top: 12),
               child: SizedBox(
                 width: 50,
                 height: 50,
