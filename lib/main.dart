@@ -7,6 +7,8 @@ import 'screens/auth/auth_wrapper.dart';
 import 'services/cart_service.dart';
 import 'services/inventory_service.dart';
 import 'config/config.dart';
+import 'config/web_theme_listener_stub.dart'
+    if (dart.library.html) 'config/web_theme_listener_web.dart';
 
 List<CameraDescription> cameras = [];
 
@@ -51,18 +53,33 @@ Future<void> main() async {
   runApp(MainApp(cameras: cameras));
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatefulWidget {
   final List<CameraDescription> cameras;
 
   const MainApp({super.key, required this.cameras});
 
   @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  @override
+  void initState() {
+    super.initState();
+    initWebThemeListener(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: _activeBrand.identity.appName,
+      title: BrandConfig.active.identity.appName,
       debugShowCheckedModeBanner: false,
-      theme: _activeBrand.buildTheme(),
-      home: AuthWrapper(cameras: cameras),
+      theme: BrandConfig.active.buildTheme(),
+      home: AuthWrapper(cameras: widget.cameras),
     );
   }
 }
