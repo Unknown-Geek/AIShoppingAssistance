@@ -3,6 +3,9 @@ import re
 
 class QuantityEstimator:
 
+    def __init__(self):
+        pass
+
     def parse_ingredient(self, ingredient: str):
         ingredient = ingredient.strip()
         
@@ -12,17 +15,28 @@ class QuantityEstimator:
         # Remove numbered list markers (e.g., "3. ")
         ingredient = re.sub(r"^\d+\.\s*", "", ingredient).strip()
         
-        # Regex to match quantity with unit at the START only
-        match = re.match(
-            r"^([\d½¼¾⅓⅔⅛\/\.\-\s]+(?:cups?|tablespoons?|tbsp|teaspoons?|tsp|grams?|g|kg|ml|liters?|l))\s+(.*)$",
-            ingredient,
-            re.IGNORECASE
-        )
+        # 1. Match ANY numeric quantity, unicode fraction, or fraction expression at the start
+        # This explicitly ensures strings starting with simple digits or symbols get matched
+        num_match = re.match(r"^([\d½¼¾⅓⅔⅛\/\.\-\s]+)", ingredient)
         
-        if match:
-            quantity = match.group(1).strip()
-            name = match.group(2).strip()
-            # Remove content in parentheses (e.g., "(400 grams)")
+        if num_match and num_match.group(1).strip():
+            quantity_num = num_match.group(1).strip()
+            remainder = ingredient[num_match.end():].strip()
+            
+            # 2. Check if the remainder starts with a recognized unit
+            unit_pattern = r"^(cups?|tablespoons?|tbsp|teaspoons?|tsp|grams?|g|kg|ml|liters?|l)\b"
+            unit_match = re.match(unit_pattern, remainder, re.IGNORECASE)
+            
+            if unit_match:
+                unit = unit_match.group(1)
+                name = remainder[unit_match.end():].strip()
+                quantity = f"{quantity_num} {unit}"
+            else:
+                # No standard unit matched (e.g., "1 bay leaf" -> quantity: "1", name: "bay leaf")
+                quantity = quantity_num
+                name = remainder
+                
+            # Clean up content in parentheses from the name
             name = re.sub(r"\([^)]*\)", "", name).strip()
             
             return {
@@ -30,11 +44,19 @@ class QuantityEstimator:
                 "name": name
             }
         
+        # Fallback: Check if it starts with a single digit or fraction symbol that might have been skipped
+        fallback_match = re.match(r"^([0-9½¼¾⅓⅔⅛])\s*(.*)$", ingredient)
+        if fallback_match:
+            return {
+                "quantity": fallback_match.group(1).strip(),
+                "name": fallback_match.group(2).strip()
+            }
+        
+        # No numeric start found at all
         return {
             "quantity": "",
             "name": ingredient
         }
-
     def scale_quantity(self, quantity_string: str, factor: float):
         """
         Scale a quantity by a given factor.

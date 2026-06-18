@@ -1,9 +1,13 @@
 from pydantic import BaseModel
+from typing import List
 
-class RecipeRequest(BaseModel):
-
+class RecipeStructure(BaseModel):
     dish: str
     servings: int
+    ingredients: List[str]
+    instructions: List[str]
 
-    prompt: str
-
+class RecipeRequest(BaseModel):
+    current_cart_slugs: List[str]
+    dish_query: str
+    servings: int

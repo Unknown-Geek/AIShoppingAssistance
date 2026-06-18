@@ -19,6 +19,6 @@ print(
         "▢ 1 cup yogurt"
     )
 )
-print(q.parse_ingredient("green cardamom"))
-print(q.parse_ingredient("bay leaf"))
-print(q.parse_ingredient("green chili"))
+print(q.parse_ingredient("4 green cardamom"))
+print(q.parse_ingredient("1 bay leaf"))
+print(q.parse_ingredient("2 green chili"))
