@@ -57,8 +57,15 @@ class RecipeAgentService {
         ).timeout(const Duration(seconds: 8));
 
         if (response.statusCode == 200) {
-          debugPrint('[RecipeAgentService] Success using backend: $url');
-          return jsonDecode(response.body);
+          final Map<String, dynamic> data = jsonDecode(response.body);
+          if (data.containsKey('error') && data['error'] != null) {
+            final errorMsg = 'Server $url returned application error: ${data['error']}';
+            debugPrint('[RecipeAgentService] $errorMsg');
+            errors.add(errorMsg);
+          } else {
+            debugPrint('[RecipeAgentService] Success using backend: $url');
+            return data;
+          }
         } else {
           final errorMsg = 'Server $url returned status code: ${response.statusCode}';
           debugPrint('[RecipeAgentService] $errorMsg');
