@@ -20,12 +20,13 @@ class RecipeAgent:
 
         # Calling the live Groq API with structured output tool routing
 # Calling the live Groq API with an active model string
+# Calling the live Groq API with an updated system prompt containing the word 'json'
         completion = self.client.chat.completions.create(
-            model="llama-3.1-8b-instant",  # Updated to active Groq supported model
+            model="llama-3.1-8b-instant",  
             messages=[
                 {
                     "role": "system",
-                    "content": "You are an expert chef assistant. You must provide your output matching the structural schema requested."
+                    "content": "You are an expert chef assistant. You must provide your output strictly formatted as a json object matching the structural schema requested."
                 },
                 {
                     "role": "user",
