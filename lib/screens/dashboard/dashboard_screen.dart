@@ -164,8 +164,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     // 2. Cart must be collapsed (expanded controller value == 0)
     // 3. Shutter must NOT be actively searching/loading a manual scan
     // 4. Confirmation sheet must NOT be open
-    if (!_isCameraInitialized || _cameraController == null || _isCameraBusy)
+    if (!_isCameraInitialized || _cameraController == null || _isCameraBusy) {
       return;
+    }
     if (_cartExpandController.value > 0.0) return;
     if (_isSearchingImage) return;
     if (_isConfirmSheetOpen) return;
@@ -371,8 +372,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   bool _isCacheValid() {
-    if (_cachedDetectedItem == null || _cachedDetectionTime == null)
+    if (_cachedDetectedItem == null || _cachedDetectionTime == null) {
       return false;
+    }
     final age = DateTime.now().difference(_cachedDetectionTime!);
     return age < const Duration(seconds: 3);
   }
