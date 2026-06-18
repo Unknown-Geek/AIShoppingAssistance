@@ -1,5 +1,13 @@
 import re
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+
+# Words that describe preparation, not the ingredient itself — stripped from name
+_PREP_WORDS = re.compile(
+    r"^(chopped|minced|diced|grated|sliced|crushed|ground|peeled|toasted|roasted|"
+    r"fresh|freshly|frozen|canned|organic|whole|small|large|medium|"
+    r"optional|divided|cloves?)\s+",
+    re.IGNORECASE
+)
 
 class QuantityParserTool:
     """Tool to parse ingredients and extract quantity information"""
@@ -26,6 +34,55 @@ class QuantityParserTool:
         }
 
     @staticmethod
+    def _strip_prep_words(name: str) -> str:
+        """Remove leading preparation descriptors (chopped, fresh, etc.) from name"""
+        while True:
+            cleaned = _PREP_WORDS.sub("", name).strip()
+            if cleaned == name:
+                break
+            name = cleaned
+        return name.strip("-, ")
+
+    @staticmethod
+    def _handle_conversational_phrases(ingredient: str, raw_input: str) -> Optional[Dict[str, Any]]:
+        """Handle non-numeric conversational phrases like 'to taste', 'for garnish', 'pinch of'"""
+        ingredient_lower = ingredient.lower()
+
+        # "to taste" — can appear at start or end ("to taste Pepper" / "Salt to taste")
+        if "to taste" in ingredient_lower:
+            name = re.sub(r"\bto taste\b", "", ingredient, flags=re.IGNORECASE).strip("-, ")
+            return {
+                "quantity": "to taste",
+                "unit": "",
+                "name": QuantityParserTool._strip_prep_words(name),
+                "raw_input": raw_input
+            }
+
+        # "for garnish" → "Fresh Cilantro for garnish"
+        if "for garnish" in ingredient_lower:
+            name = re.sub(r"\bfor garnish\b", "", ingredient, flags=re.IGNORECASE).strip("-, ")
+            return {
+                "quantity": "for garnish",
+                "unit": "",
+                "name": QuantityParserTool._strip_prep_words(name),
+                "raw_input": raw_input
+            }
+
+        # "a pinch of ..." / "pinch of ..." / "1 pinch of ..." / "2 pinches of ..."
+        pinch_match = re.match(r"^(\d+\.?\d*)?\s*(a\s+)?pinch(?:es)?\s+of\s+(.+)", ingredient, re.IGNORECASE)
+        if pinch_match:
+            quantity = pinch_match.group(1) or "1"
+            name = pinch_match.group(3).strip()
+            return {
+                "quantity": quantity.strip(),
+                "unit": "pinch",
+                "name": QuantityParserTool._strip_prep_words(name),
+                "raw_input": raw_input
+            }
+
+        return None
+
+    @staticmethod
     def execute(ingredient_string: str) -> Dict[str, Any]:
         """Parse an ingredient string and extract components"""
         ingredient = ingredient_string.strip()
@@ -35,6 +92,11 @@ class QuantityParserTool:
         
         # Remove numbered list markers (e.g., "3. ")
         ingredient = re.sub(r"^\d+\.\s*", "", ingredient).strip()
+        
+        # Handle conversational phrases before regex parsing
+        conv_result = QuantityParserTool._handle_conversational_phrases(ingredient, ingredient_string)
+        if conv_result:
+            return conv_result
         
         # Match ANY numeric quantity, unicode fraction, or fraction expression at the start
         num_match = re.match(r"^([\d½¼¾⅓⅔⅛\/\.\-\s]+)", ingredient)
@@ -62,7 +124,7 @@ class QuantityParserTool:
             return {
                 "quantity": quantity,
                 "unit": unit_match.group(1) if unit_match else "",
-                "name": name,
+                "name": QuantityParserTool._strip_prep_words(name),
                 "raw_input": ingredient_string
             }
         
@@ -72,7 +134,7 @@ class QuantityParserTool:
             return {
                 "quantity": fallback_match.group(1),
                 "unit": "",
-                "name": fallback_match.group(2).strip(),
+                "name": QuantityParserTool._strip_prep_words(fallback_match.group(2).strip()),
                 "raw_input": ingredient_string
             }
         
@@ -80,6 +142,6 @@ class QuantityParserTool:
         return {
             "quantity": "",
             "unit": "",
-            "name": ingredient,
+            "name": QuantityParserTool._strip_prep_words(ingredient),
             "raw_input": ingredient_string
         }

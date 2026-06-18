@@ -15,10 +15,15 @@ class ShoppingAssistantAgent:
 
     def _load_inventory(self) -> List[Dict[str, Any]]:
         """Loads the master retail catalog to match ingredients against real products."""
-        inventory_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../inventory.json"))
+        inventory_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../inventory.json"))
         try:
             with open(inventory_path, "r") as f:
-                return json.load(f)
+                data = json.load(f)
+                if isinstance(data, dict) and "items" in data:
+                    return data["items"]
+                if isinstance(data, list):
+                    return data
+                return []
         except Exception as e:
             print(f"[ShoppingAssistantAgent] Inventory load fallback triggered: {e}")
             return []
@@ -75,14 +80,23 @@ class ShoppingAssistantAgent:
             cart_slugs_set = set(slug.lower() for slug in current_cart_slugs)
 
             # 2. Parse and match each ingredient
-            for ing_str in raw_ingredients:
-                if not isinstance(ing_str, str) or not ing_str.strip():
+            for ing in raw_ingredients:
+                if isinstance(ing, dict):
+                    name = ing.get("name", "").strip()
+                    quantity = ing.get("quantity", "").strip()
+                    ing_str = f"{quantity} {name}".strip() if quantity else name
+                elif isinstance(ing, str):
+                    ing_str = ing.strip()
+                else:
                     continue
-                
+
+                if not ing_str:
+                    continue
+
                 # Parse quantity
                 parsed = self.quantity_parser.execute(ing_str)
                 parsed_ingredients.append(parsed)
-                
+
                 # 3. Match to inventory
                 matched_product = self.inventory_matcher.execute(parsed["name"])
                 

@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 
 class InventoryMatchTool:
     """Tool to match ingredients against the inventory catalog"""
@@ -13,7 +13,12 @@ class InventoryMatchTool:
         inventory_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../inventory.json"))
         try:
             with open(inventory_path, "r") as f:
-                return json.load(f)
+                data = json.load(f)
+                if isinstance(data, dict) and "items" in data:
+                    return data["items"]
+                if isinstance(data, list):
+                    return data
+                return []
         except Exception as e:
             print(f"[InventoryMatchTool] Inventory load failed: {e}")
             return []
@@ -38,25 +43,61 @@ class InventoryMatchTool:
             }
         }
 
+    def _tokenize(self, text: str) -> set:
+        """Split text into significant word tokens (min 3 chars)"""
+        return set(w for w in text.lower().split() if len(w) >= 3)
+
     def execute(self, ingredient_name: str) -> Dict[str, Any]:
-        """Match ingredient against inventory"""
-        name_lower = ingredient_name.lower()
-        
-        # Try exact or partial match
+        """Match ingredient against inventory using token overlap scoring"""
+        name_lower = ingredient_name.lower().strip()
+        ing_tokens = self._tokenize(name_lower)
+
+        if not ing_tokens:
+            return {
+                "matched": False,
+                "sku": "UNKNOWN",
+                "slug": name_lower.replace(" ", "-"),
+                "name": ingredient_name,
+                "price_rupees": 0.0,
+                "thumbnail_url": "",
+                "original_ingredient": ingredient_name
+            }
+
+        best_match = None
+        best_score = 0.0
+        best_prod_len = 0
+
         for item in self.inventory:
             product_name = item.get("name", "").lower()
-            if product_name in name_lower or name_lower in product_name:
-                return {
-                    "matched": True,
-                    "sku": item.get("sku"),
-                    "slug": item.get("slug"),
-                    "name": item.get("name"),
-                    "price_rupees": item.get("price_rupees"),
-                    "thumbnail_url": item.get("thumbnail_url"),
-                    "original_ingredient": ingredient_name
-                }
-        
-        # No match found
+            prod_tokens = self._tokenize(product_name)
+
+            if not prod_tokens:
+                continue
+
+            common = ing_tokens & prod_tokens
+            if not common:
+                continue
+
+            score = len(common) / len(ing_tokens)
+
+            # Tiebreaker: prefer shorter product name (more specific/direct match)
+            if score > best_score or (score == best_score and len(product_name) < best_prod_len):
+                best_score = score
+                best_match = item
+                best_prod_len = len(product_name)
+
+        if best_match and best_score > 0.5:
+            return {
+                "matched": True,
+                "sku": best_match.get("sku"),
+                "slug": best_match.get("slug"),
+                "name": best_match.get("name"),
+                "price_rupees": best_match.get("price_rupees"),
+                "thumbnail_url": best_match.get("thumbnail_url"),
+                "original_ingredient": ingredient_name
+            }
+
+        # No good match found
         return {
             "matched": False,
             "sku": "UNKNOWN",
