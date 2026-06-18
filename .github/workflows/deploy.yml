@@ -28,6 +28,39 @@ jobs:
         run: |
           python -c "import os; from huggingface_hub import HfApi; api = HfApi(token=os.environ['HF_TOKEN']); api.upload_folder(folder_path='./hf_server', repo_id='Mojo-Maniac/AIShoppingAssistance_Server', repo_type='space', delete_patterns='*')"
 
+      - name: Wait for Hugging Face Space Deployment
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python -c "
+          import os, time, sys
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ.get('HF_TOKEN'))
+          repo_id = 'Mojo-Maniac/AIShoppingAssistance_Server'
+          print(f'Polling deployment status for space {repo_id}...')
+          time.sleep(15) # Wait for HF build to register
+          timeout = 600 # 10 minutes max
+          interval = 15
+          elapsed = 0
+          while elapsed < timeout:
+              try:
+                  runtime = api.get_space_runtime(repo_id=repo_id)
+                  stage = str(runtime.stage).upper()
+                  print(f'[{elapsed}s] Space stage: {stage}')
+                  if stage == 'RUNNING':
+                      print('Deployment successful! Space is RUNNING.')
+                      sys.exit(0)
+                  elif any(err in stage for err in ['ERROR', 'CRASHED', 'PAUSED', 'STOPPED']):
+                      print(f'Deployment failed! Space is in error/inactive state: {stage}')
+                      sys.exit(1)
+              except Exception as e:
+                  print(f'Error querying status: {e}')
+              time.sleep(interval)
+              elapsed += interval
+          print('Deployment polling timed out.')
+          sys.exit(1)
+          "
+
   deploy_primary_oracle:
     name: Deploy to Oracle VM (Primary Server)
     needs: deploy_backup_hf

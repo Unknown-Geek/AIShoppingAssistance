@@ -26,36 +26,36 @@ class GroqClient:
             dict: {"dish": "Veg Biryani", "servings": 5}
         """
         extraction_prompt = f"""Extract the COMPLETE dish name and number of servings from the user request.
-
+ 
 CRITICAL RULES:
 1. Extract the FULL dish name (e.g., "Chicken Curry", not just "Chicken")
 2. Do NOT return partial or incomplete dish names
 3. Extract servings from phrases like: "for X people", "serves X", "for X persons", "make enough for X"
 4. Default servings to 1 if not mentioned
 5. Return ONLY valid JSON - no extra text
-
+ 
 User request: "{prompt}"
-
+ 
 Examples:
 Input: "Make Chicken Curry for 4 people"
 Output: {{"dish": "Chicken Curry", "servings": 4}}
-
+ 
 Input: "I want Arrabiata for 2 people"
 Output: {{"dish": "Arrabiata", "servings": 2}}
-
+ 
 Input: "Prepare Veg Biryani for 5 persons"
 Output: {{"dish": "Veg Biryani", "servings": 5}}
-
+ 
 Input: "I need Spicy Arrabiata Penne"
 Output: {{"dish": "Spicy Arrabiata Penne", "servings": 1}}
-
+ 
 Input: "Make enough Butter Chicken for 3"
 Output: {{"dish": "Butter Chicken", "servings": 3}}
-
+ 
 Return JSON with fields:
 - "dish": the complete, exact name of the dish (string)
 - "servings": number of servings (integer)
-
+ 
 JSON response:"""
 
         response = self.client.chat.completions.create(
