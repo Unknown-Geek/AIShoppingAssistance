@@ -113,46 +113,6 @@ class BrandColors {
     required this.onError,
   });
 
-  factory BrandColors.fromJson(Map<String, dynamic> json) {
-    Color parseHex(String? hex, Color fallback) {
-      if (hex == null || hex.isEmpty) return fallback;
-      try {
-        String cleanHex = hex.replaceAll('#', '');
-        if (cleanHex.length == 6) {
-          cleanHex = 'FF$cleanHex';
-        }
-        return Color(int.parse(cleanHex, radix: 16));
-      } catch (e) {
-        return fallback;
-      }
-    }
-
-    final primary = parseHex(json['color_primary'], BrandColors.qless.primary);
-    final onPrimary = parseHex(json['color_on_primary'], BrandColors.qless.onPrimary);
-    final secondary = parseHex(json['color_secondary'], BrandColors.qless.secondary);
-    final onSecondary = parseHex(json['color_on_secondary'], BrandColors.qless.onSecondary);
-    final background = parseHex(json['color_background'], BrandColors.qless.background);
-    final surface = parseHex(json['color_surface'], BrandColors.qless.surface);
-    final surfaceContainer = parseHex(json['color_surface_container'], BrandColors.qless.surfaceContainer);
-    final onSurface = parseHex(json['color_on_surface'], BrandColors.qless.onSurface);
-    final onSurfaceVariant = parseHex(json['color_on_surface_variant'], BrandColors.qless.onSurfaceVariant);
-
-    return BrandColors(
-      primary: primary,
-      onPrimary: onPrimary,
-      secondary: secondary,
-      onSecondary: onSecondary,
-      background: background,
-      surface: surface,
-      surfaceContainer: surfaceContainer,
-      onBackground: onSurface,
-      onSurface: onSurface,
-      onSurfaceVariant: onSurfaceVariant,
-      error: BrandColors.qless.error,
-      onError: BrandColors.qless.onError,
-    );
-  }
-
   // ---------------------------------------------------------------------------
   // Built-in brand presets
   // ---------------------------------------------------------------------------
@@ -287,25 +247,6 @@ class BrandTypography {
     this.fontSizeScale = 1.0,
   });
 
-  factory BrandTypography.fromJson(Map<String, dynamic> json) {
-    final displayFamily = json['font_display'] as String? ?? 'ClashDisplay';
-    final bodyFamily = json['font_body'] as String? ?? 'ClashGrotesk';
-    final scale = (json['font_size_scale'] as num?)?.toDouble() ?? 1.0;
-
-    final displaySource = (displayFamily == 'ClashDisplay' || displayFamily == 'ClashGrotesk')
-        ? FontSource.asset
-        : FontSource.googleFont;
-    final bodySource = (bodyFamily == 'ClashDisplay' || bodyFamily == 'ClashGrotesk')
-        ? FontSource.asset
-        : FontSource.googleFont;
-
-    return BrandTypography(
-      displayFont: FontConfig(family: displayFamily, source: displaySource),
-      bodyFont: FontConfig(family: bodyFamily, source: bodySource),
-      fontSizeScale: scale,
-    );
-  }
-
   // Built-in typography presets ---------------------------------------------
 
   /// Default Qless typography (ClashDisplay / ClashGrotesk — both bundled).
@@ -393,15 +334,6 @@ class BrandIdentity {
     this.tagline,
   });
 
-  factory BrandIdentity.fromJson(Map<String, dynamic> json) {
-    return BrandIdentity(
-      appName: json['app_name'] as String? ?? 'Qless',
-      tenantId: json['tenant_id'] as String? ?? 'qless',
-      tagline: json['tagline'] as String? ?? 'Skip the queue.',
-      logoNetworkUrl: json['logo_url'] as String?,
-    );
-  }
-
   // Built-in identity presets -----------------------------------------------
 
   /// Default Qless identity (used during development / fallback).
@@ -468,14 +400,6 @@ class BrandConfig {
     required this.colors,
     required this.typography,
   });
-
-  factory BrandConfig.fromJson(Map<String, dynamic> json) {
-    return BrandConfig(
-      identity: BrandIdentity.fromJson(json),
-      colors: BrandColors.fromJson(json),
-      typography: BrandTypography.fromJson(json),
-    );
-  }
 
   // ---------------------------------------------------------------------------
   // Factory constructors — one per known preset combination
