@@ -35,7 +35,12 @@ class ShoppingAssistantAgent:
         Inventory/Cart -> Recipe Generation -> Parsing -> Missing Detection -> Payload Formulation
         """
         # 1. Generate the recipe structure via your existing Groq client setup
+# 1. Generate the recipe structure via your existing Groq client setup
         raw_recipe = self.recipe_agent.generate(dish_query, servings)
+        
+        print("\n===== DEBUG: LIVE GROQ OBJECT RECEIVED =====")
+        print(type(raw_recipe), raw_recipe)
+        print("============================================\n")
         
         raw_ingredients = []
         instructions_list = []
