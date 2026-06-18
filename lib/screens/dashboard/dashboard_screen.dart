@@ -759,22 +759,29 @@ class _DashboardScreenState extends State<DashboardScreen>
                   context,
                   PageRouteBuilder(
                     pageBuilder: (_, animation, __) => const ChatbotScreen(),
-                    transitionsBuilder: (_, animation, __, child) {
+                    transitionsBuilder: (_, animation, secondaryAnimation, child) {
+                      final slideAnimation = Tween<Offset>(
+                        begin: const Offset(-1.0, 0.0),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.fastOutSlowIn,
+                          reverseCurve: Curves.fastOutSlowIn.flipped,
+                        ),
+                      );
+
                       return SlideTransition(
-                        position:
-                            Tween<Offset>(
-                              begin: const Offset(-1, 0), // ← slide from left
-                              end: Offset.zero,
-                            ).animate(
-                              CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeOutCubic,
-                              ),
-                            ),
-                        child: child,
+                        position: slideAnimation,
+                        child: Material(
+                          elevation: 16,
+                          shadowColor: Colors.black38,
+                          child: child,
+                        ),
                       );
                     },
-                    transitionDuration: const Duration(milliseconds: 220),
+                    transitionDuration: const Duration(milliseconds: 300),
+                    reverseTransitionDuration: const Duration(milliseconds: 250),
                   ),
                 );
 
