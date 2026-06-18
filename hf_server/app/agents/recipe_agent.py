@@ -1,9 +1,15 @@
 import os
-from typing import Dict, Any
+import json
+from typing import Dict, Any, Optional
 from groq import Groq
 from app.models.recipe import RecipeStructure
+from app.agents.tools.recipe_search_tool import RecipeSearchTool
+from app.agents.tools.quantity_parser_tool import QuantityParserTool
+from app.agents.tools.inventory_match_tool import InventoryMatchTool
 from dotenv import load_dotenv
+
 load_dotenv()
+
 class RecipeAgent:
     def __init__(self):
         # Grabs your live environment variable key
@@ -16,28 +22,127 @@ class RecipeAgent:
             api_key = "gsk_mock_key_placeholder_for_verification_only"
             
         self.client = Groq(api_key=api_key)
+        self.recipe_search_tool = RecipeSearchTool()
+        self.quantity_parser_tool = QuantityParserTool()
+        self.inventory_match_tool = InventoryMatchTool()
+        
+        # Define available tools for the agent
+        self.tools = [
+            self.recipe_search_tool.get_tool_definition(),
+            self.quantity_parser_tool.get_tool_definition(),
+            self.inventory_match_tool.get_tool_definition()
+        ]
 
-    def generate(self, dish_query: str, servings: int) -> Dict[str, Any]:
-        """
-        Queries the live Groq LLM and forces a structured JSON dictionary output
-        """
-        prompt = f"Generate a detailed recipe for {dish_query} tailored for {servings} servings."
+    async def _process_tool_call(self, tool_name: str, tool_input: Dict[str, Any]) -> str:
+        """Process a tool call and return the result"""
+        if tool_name == "search_recipe":
+            result = await self.recipe_search_tool.execute(tool_input["dish_name"])
+        elif tool_name == "parse_ingredient_quantity":
+            result = self.quantity_parser_tool.execute(tool_input["ingredient_string"])
+        elif tool_name == "match_ingredient_to_inventory":
+            result = self.inventory_match_tool.execute(tool_input["ingredient_name"])
+        else:
+            result = {"error": f"Unknown tool: {tool_name}"}
+        
+        return json.dumps(result)
 
-        completion = self.client.chat.completions.create(
-            model="llama-3.1-8b-instant",  
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an expert chef assistant. You must provide your output strictly formatted as a json object matching the structural schema requested."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
+    async def generate(self, dish_query: str, servings: int) -> Dict[str, Any]:
+        """
+        Queries the Groq LLM with tool-calling capabilities to generate recipes
+        and process ingredients intelligently.
+        """
+        messages = [
+            {
+                "role": "system",
+                "content": """You are an expert chef assistant with access to recipe databases and inventory systems.
+Your task is to:
+1. Search for a recipe using the search_recipe tool
+2. Parse each ingredient's quantity using parse_ingredient_quantity tool
+3. Match ingredients to the inventory using match_ingredient_to_inventory tool
+4. Return the final recipe in JSON format with all ingredient details and matched products.
+
+Always use the available tools to gather accurate information."""
+            },
+            {
+                "role": "user",
+                "content": f"Generate a detailed recipe for {dish_query} for {servings} servings. Search for the recipe, parse all ingredients with quantities, and match them to available products."
+            }
+        ]
+
+        # Agentic loop - continue until the agent stops requesting tools
+        max_iterations = 10
+        iteration = 0
+        
+        while iteration < max_iterations:
+            iteration += 1
+            print(f"\n[RecipeAgent] Iteration {iteration}")
+            
+            # Call Groq with tool definitions
+            response = self.client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=messages,
+                tools=self.tools,
+                tool_choice="auto",
+                max_tokens=4096
+            )
+
+            assistant_message = {"role": "assistant", "content": response.choices[0].message.content}
+            
+            # Add assistant message to conversation
+            if response.choices[0].message.tool_calls:
+                assistant_message["tool_calls"] = [
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments
+                        }
+                    }
+                    for tc in response.choices[0].message.tool_calls
+                ]
+            
+            messages.append(assistant_message)
+
+            # Check if we're done (no tool calls)
+            if not response.choices[0].message.tool_calls:
+                print("[RecipeAgent] Agent completed - no more tool calls")
+                break
+
+            # Process tool calls
+            tool_results = []
+            for tool_call in response.choices[0].message.tool_calls:
+                tool_name = tool_call.function.name
+                tool_input = json.loads(tool_call.function.arguments)
+                
+                print(f"[RecipeAgent] Calling tool: {tool_name} with {tool_input}")
+                
+                result = await self._process_tool_call(tool_name, tool_input)
+                
+                tool_results.append({
+                    "type": "tool",
+                    "tool_use_id": tool_call.id,
+                    "content": result
+                })
+            
+            # Add tool results to messages
+            messages.append({
+                "role": "user",
+                "content": tool_results
+            })
+
+        # Extract the final response
+        final_response = messages[-1]["content"]
+        if isinstance(final_response, str):
+            try:
+                # Try to parse as JSON if it's a JSON string
+                return json.loads(final_response)
+            except json.JSONDecodeError:
+                # Return as structured dict if not valid JSON
+                return {
+                    "raw_response": final_response,
+                    "dish": dish_query,
+                    "servings": servings
                 }
-            ],
-            response_format={"type": "json_object", "schema": RecipeStructure.model_json_schema()}
-        )
-
-        response_content = completion.choices[0].message.content
-        import json
-        return json.loads(response_content)
+        
+        return final_response
