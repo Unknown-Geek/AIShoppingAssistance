@@ -1,4 +1,4 @@
-from recipe_parser import RecipeParser
+from app.agents.recipe_parser import RecipeParser
 
 parser = RecipeParser()
 
