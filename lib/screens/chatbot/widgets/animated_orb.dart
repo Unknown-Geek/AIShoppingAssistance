@@ -13,6 +13,7 @@ class AnimatedOrb extends StatefulWidget {
 class _AnimatedOrbState extends State<AnimatedOrb>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  Animation<double>? _routeAnimation;
 
   @override
   void initState() {
@@ -21,11 +22,44 @@ class _AnimatedOrbState extends State<AnimatedOrb>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
-    )..repeat();
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _routeAnimation?.removeStatusListener(_handleRouteStatus);
+    
+    final route = ModalRoute.of(context);
+    if (route != null && route.animation != null) {
+      _routeAnimation = route.animation;
+      _routeAnimation!.addStatusListener(_handleRouteStatus);
+      
+      if (route.animation!.status != AnimationStatus.completed) {
+        _controller.stop();
+      } else if (!_controller.isAnimating) {
+        _controller.repeat();
+      }
+    } else {
+      _controller.repeat();
+    }
+  }
+
+  void _handleRouteStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      if (mounted && !_controller.isAnimating) {
+        _controller.repeat();
+      }
+    } else {
+      if (mounted && _controller.isAnimating) {
+        _controller.stop();
+      }
+    }
   }
 
   @override
   void dispose() {
+    _routeAnimation?.removeStatusListener(_handleRouteStatus);
     _controller.dispose();
     super.dispose();
   }
