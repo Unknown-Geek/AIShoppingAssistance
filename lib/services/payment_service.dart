@@ -1,15 +1,10 @@
 import 'dart:async';
-import 'dart:js_interop';
-import 'dart:js_interop_unsafe';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
-@JS('Razorpay')
-extension type RazorpayJS._(JSObject _) implements JSObject {
-  external RazorpayJS(JSObject options);
-  external void open();
-}
+import 'razorpay_checkout_non_web.dart'
+    if (dart.library.js_interop) 'razorpay_checkout_web.dart' as rzp;
 
 enum PaymentMethodType { card, upi, googlePay, razorpay }
 
@@ -33,8 +28,10 @@ class PaymentService {
   Completer<PaymentResult>? _razorpayCompleter;
   double? _razorpayAmount;
 
-  PaymentService._internal() {
-    if (!kIsWeb) {
+  PaymentService._internal();
+
+  void _initRazorpayIfNeeded() {
+    if (!kIsWeb && _razorpay == null) {
       _razorpay = Razorpay();
       _razorpay!.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
       _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
@@ -81,94 +78,58 @@ class PaymentService {
     required String appName,
     String? contact,
   }) {
-    if (kIsWeb) {
-      final completer = Completer<PaymentResult>();
-      final keyId = dotenv.env['RAZORPAY_KEY_ID'] ?? 'rzp_test_mockKey123';
+    return rzp.startRazorpayCheckoutPlatform(
+      service: this,
+      amount: amount,
+      email: email,
+      appName: appName,
+      contact: contact,
+    );
+  }
 
-      final handler = ((JSObject response) {
-        final paymentId = response['razorpay_payment_id']?.toString() ?? 
-            'RZP-${DateTime.now().millisecondsSinceEpoch}';
-        completer.complete(PaymentResult(
-          success: true,
-          transactionId: paymentId,
-          message: 'Payment of ₹${amount.toStringAsFixed(2)} completed via Razorpay Web.',
-        ));
-      }).toJS;
+  Future<PaymentResult> startRazorpayCheckoutMobile({
+    required double amount,
+    required String email,
+    required String appName,
+    String? contact,
+  }) {
+    // Native Mobile SDK Flow
+    _initRazorpayIfNeeded();
+    _razorpayCompleter = Completer<PaymentResult>();
+    _razorpayAmount = amount;
 
-      final onDismiss = (() {
-        completer.complete(PaymentResult(
+    final keyId = dotenv.env['RAZORPAY_KEY_ID']?.trim() ?? 'rzp_test_mockKey123';
+
+    final options = {
+      'key': keyId,
+      'amount': (amount * 100).toInt(),
+      'currency': 'INR',
+      'name': appName.isNotEmpty ? appName : 'Qless',
+      'description': 'Shopping Cart Checkout',
+      'prefill': {
+        'contact': (contact != null && contact.trim().isNotEmpty) ? contact.trim() : '9999999999',
+        'email': email.trim().isNotEmpty ? email.trim() : 'guest@example.com',
+        'name': email.trim().isNotEmpty ? email.trim().split('@')[0] : 'Guest User',
+      },
+      'theme': {
+        'color': '#001A23',
+      },
+      'timeout': 300,
+    };
+
+    try {
+      _razorpay!.open(options);
+    } catch (e) {
+      if (_razorpayCompleter != null && !_razorpayCompleter!.isCompleted) {
+        _razorpayCompleter!.complete(PaymentResult(
           success: false,
           transactionId: '',
-          message: 'Razorpay Web Checkout dismissed by user.',
-        ));
-      }).toJS;
-
-      final options = {
-        'key': keyId,
-        'amount': (amount * 100).toInt(), // in paise
-        'name': appName,
-        'description': 'Shopping Cart Checkout',
-        'prefill': {
-          'contact': contact ?? '9999999999',
-          'email': email,
-        },
-        'theme': {
-          'color': '#001A23',
-        },
-        'handler': handler,
-        'modal': {
-          'ondismiss': onDismiss,
-        }
-      }.jsify() as JSObject;
-
-      try {
-        final rzp = RazorpayJS(options);
-        rzp.open();
-      } catch (e) {
-        completer.complete(PaymentResult(
-          success: false,
-          transactionId: '',
-          message: 'Failed to initialize Razorpay Web JS SDK: $e',
+          message: 'Failed to launch Razorpay SDK: $e. Make sure you are testing on Android/iOS.',
         ));
       }
-
-      return completer.future;
-    } else {
-      // Native Mobile SDK Flow
-      _razorpayCompleter = Completer<PaymentResult>();
-      _razorpayAmount = amount;
-
-      final keyId = dotenv.env['RAZORPAY_KEY_ID'] ?? 'rzp_test_mockKey123';
-
-      final options = {
-        'key': keyId,
-        'amount': (amount * 100).toInt(),
-        'name': appName,
-        'description': 'Shopping Cart Checkout',
-        'prefill': {
-          'contact': contact ?? '9999999999',
-          'email': email,
-        },
-        'theme': {
-          'color': '#001A23',
-        },
-        'timeout': 300,
-      };
-
-      try {
-        _razorpay!.open(options);
-      } catch (e) {
-        if (_razorpayCompleter != null && !_razorpayCompleter!.isCompleted) {
-          _razorpayCompleter!.complete(PaymentResult(
-            success: false,
-            transactionId: '',
-            message: 'Failed to launch Razorpay SDK: $e. Make sure you are testing on Android/iOS.',
-          ));
-        }
-      }
-
-      return _razorpayCompleter!.future;
     }
+
+    return _razorpayCompleter!.future;
   }
 
   /// Simulates payment processing with realistic API latency and validation.
