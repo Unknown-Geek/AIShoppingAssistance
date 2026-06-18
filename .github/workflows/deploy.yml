@@ -80,3 +80,27 @@ jobs:
             git reset --hard origin/main
             chmod +x run_local.sh
             ./run_local.sh
+            
+            echo "[*] Waiting for VM server to start and become healthy..."
+            TIMEOUT=120
+            INTERVAL=5
+            ELAPSED=0
+            HEALTHY=false
+
+            while [ $ELAPSED -lt $TIMEOUT ]; do
+              RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:6082/health || true)
+              if [ "$RESPONSE" = "200" ]; then
+                echo "[*] Deployment successful! VM server is healthy on port 6082."
+                HEALTHY=true
+                break
+              fi
+              echo "[*] Server not ready yet (status: $RESPONSE). Waiting $INTERVAL seconds... ($ELAPSED/$TIMEOUT)"
+              sleep $INTERVAL
+              ELAPSED=$((ELAPSED + INTERVAL))
+            done
+
+            if [ "$HEALTHY" = "false" ]; then
+              echo "[ERROR] VM deployment failed! Server did not become healthy within $TIMEOUT seconds."
+              docker logs ai-shopping-assistance-server --tail 50
+              exit 1
+            fi
