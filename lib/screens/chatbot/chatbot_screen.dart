@@ -846,17 +846,22 @@ class _TypewriterTextState extends State<TypewriterText> {
   @override
   Widget build(BuildContext context) {
     if (!_hasStarted && _displayedText.isEmpty) {
-      return Text(
-        '',
-        style: widget.style,
+      return RichText(
+        text: TextSpan(
+          text: widget.text,
+          style: widget.style.copyWith(color: Colors.transparent),
+        ),
       );
     }
+
+    final typedPart = widget.text.substring(0, _currentCharIndex);
+    final remainingPart = widget.text.substring(_currentCharIndex);
 
     return RichText(
       text: TextSpan(
         children: [
           TextSpan(
-            text: _displayedText,
+            text: typedPart,
             style: widget.style,
           ),
           if (widget.showCursor && !_isDone && _cursorVisible)
@@ -866,6 +871,10 @@ class _TypewriterTextState extends State<TypewriterText> {
                 color: widget.style.color?.withOpacity(0.8) ?? Colors.black54,
               ),
             ),
+          TextSpan(
+            text: remainingPart,
+            style: widget.style.copyWith(color: Colors.transparent),
+          ),
         ],
       ),
     );
