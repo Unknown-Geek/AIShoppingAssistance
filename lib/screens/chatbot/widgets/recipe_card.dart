@@ -102,23 +102,12 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Rating Row
-          Row(
-            children: List.generate(5, (index) {
-              return const Icon(
-                Icons.star_rounded,
-                color: Color(0xFFFFB300), // Gold Star
-                size: 20,
-              );
-            }),
-          ),
-          const SizedBox(height: 10),
           // Title
           Text(
             dishName,
             style: TextStyle(
               fontFamily: 'ClashDisplay',
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,
             ),
@@ -129,9 +118,9 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
             'Ready in $readyTime • Serves $servings',
             style: TextStyle(
               fontFamily: 'ClashGrotesk',
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: theme.colorScheme.primary.withValues(alpha: 0.6),
+              color: theme.colorScheme.primary.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 12),
@@ -140,10 +129,10 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
             summary,
             style: TextStyle(
               fontFamily: 'ClashGrotesk',
-              fontSize: 15,
-              height: 1.4,
+              fontSize: 14,
+              height: 1.5,
               fontWeight: FontWeight.w500,
-              color: theme.colorScheme.primary.withValues(alpha: 0.8),
+              color: theme.colorScheme.primary.withValues(alpha: 0.7),
             ),
           ),
           // Expandable Ingredients & Instructions
@@ -162,7 +151,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                         'Ingredients',
                         style: TextStyle(
                           fontFamily: 'ClashDisplay',
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,
                         ),
@@ -189,7 +178,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                   '${item['quantity'] ?? ''} ${item['name'] ?? ''}',
                                   style: TextStyle(
                                     fontFamily: 'ClashGrotesk',
-                                    fontSize: 15,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     color: theme.colorScheme.primary,
                                   ),
@@ -205,7 +194,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                           'Instructions',
                           style: TextStyle(
                             fontFamily: 'ClashDisplay',
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
                           ),
@@ -221,7 +210,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                   '${entry.key + 1}.',
                                   style: TextStyle(
                                     fontFamily: 'ClashDisplay',
-                                    fontSize: 15,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.bold,
                                     color: theme.colorScheme.primary,
                                   ),
@@ -232,7 +221,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                     entry.value,
                                     style: TextStyle(
                                       fontFamily: 'ClashGrotesk',
-                                      fontSize: 15,
+                                      fontSize: 14,
                                       height: 1.4,
                                       fontWeight: FontWeight.w500,
                                       color: theme.colorScheme.primary,
@@ -288,13 +277,13 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
     final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
           boxShadow: [
             BoxShadow(
@@ -309,16 +298,16 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
           children: [
             Icon(
               icon,
-              size: 18,
+              size: 16,
               color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
                 fontFamily: 'ClashGrotesk',
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
                 color: theme.colorScheme.primary,
               ),
             ),
