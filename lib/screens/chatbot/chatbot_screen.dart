@@ -427,7 +427,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                               children: [
                                 const WelcomeCard(),
                                 Padding(
-                                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
+                                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                                   child: Text(
                                     'Try asking me',
                                     style: TextStyle(
@@ -440,7 +440,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
+                                    horizontal: 16,
                                   ),
                                   child: Column(
                                     children: [
@@ -551,9 +551,9 @@ class ChatHeaderPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      height: 72,
+      height: 64,
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(32),
@@ -597,7 +597,7 @@ class ChatHeaderPill extends StatelessWidget {
           ),
           // Center Title
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 104),
+            padding: const EdgeInsets.symmetric(horizontal: 56),
             child: Text(
               'Qless Assistant',
               maxLines: 1,
@@ -652,7 +652,7 @@ class WelcomeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: Colors.white,
