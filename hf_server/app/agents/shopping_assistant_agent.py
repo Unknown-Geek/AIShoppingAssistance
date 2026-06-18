@@ -2,14 +2,49 @@ import json
 import os
 import asyncio
 from typing import List, Dict, Any
+from groq import Groq
+from dotenv import load_dotenv
 from app.agents.recipe_agent import RecipeAgent
 from app.agents.tools.quantity_parser_tool import QuantityParserTool
+
+load_dotenv()
+
+ADD_TO_CART_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "add_to_cart",
+        "description": "Automatically adds missing or required recipe ingredients to the user's retail shopping cart using their unique product SKUs.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "description": "A list of product objects to add to the cart.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "sku": {"type": "string", "description": "The matching product SKU code from the inventory list (e.g., 'QLS-0025')."},
+                            "quantity": {"type": "integer", "description": "The quantity/number of packets or units to add to the cart. Default is 1."}
+                        },
+                        "required": ["sku"]
+                    }
+                }
+            },
+            "required": ["items"]
+        }
+    }
+}
 
 class ShoppingAssistantAgent:
     def __init__(self):
         self.recipe_agent = RecipeAgent()
         self.quantity_parser = QuantityParserTool()
         self.inventory = self._load_inventory()
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            print("[WARNING] GROQ_API_KEY not detected, using mock key")
+            api_key = "gsk_mock_key_placeholder_for_verification_only"
+        self.client = Groq(api_key=api_key)
 
     def _load_inventory(self) -> List[Dict[str, Any]]:
         """Loads the master retail catalog to match ingredients against real products."""
@@ -30,7 +65,53 @@ class ShoppingAssistantAgent:
             print(f"[ShoppingAssistantAgent] Inventory load fallback triggered: {e}")
             return []
 
+    def _process_cart_tool_calls(self, missing_ingredients: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Uses Groq tool-calling to let the LLM decide which ingredients to add to cart.
+        The LLM receives the matched items and can invoke add_to_cart for each one."""
+        items_with_sku = [item for item in missing_ingredients if item["sku"] != "UNKNOWN"]
+        if not items_with_sku:
+            return []
+
+        prompt = f"""You are a shopping assistant. The following ingredients (product objects) are available and have been matched to products in the store:
+{json.dumps(items_with_sku, indent=2)}
+
+For each item with a valid SKU, use the `add_to_cart` function individually to add it to the user's cart. Ensure the quantity for each item is a small, reasonable integer (e.g., between 1 and 10) suitable for a typical home recipe. When calling `add_to_cart`, provide the `items` parameter as a list containing a single product object, with 'sku' (string) and 'quantity' (integer) fields."""
+
+        messages = [
+            {"role": "system", "content": "You are a helpful shopping assistant that adds recipe ingredients to the user's cart."},
+            {"role": "user", "content": prompt}
+        ]
+
+        response = self.client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=messages,
+            tools=[ADD_TO_CART_TOOL],
+            tool_choice="auto"
+        )
+
+        added_items = []
+        if response.choices[0].message.tool_calls:
+            for tool_call in response.choices[0].message.tool_calls:
+                if tool_call.function.name == "add_to_cart":
+                    arguments = json.loads(tool_call.function.arguments)
+                    items = arguments.get("items", [])
+                    for item in items:
+                        sku = item.get("sku")
+                        qty = int(round(item.get("quantity", 1)))
+                        print(f"🛒 [CART ADDED] -> SKU: {sku} | Quantity: {qty}")
+                        added_items.append({"sku": sku, "quantity": qty})
+        else:
+            print("[ShoppingAssistantAgent] LLM chose not to call add_to_cart tool.")
+
+        return added_items
+
     async def process_recipe_workflow(self, current_cart_slugs: List[str], dish_query: str, servings: int) -> Dict[str, Any]:
+        TOXIC_KEYWORDS = ["harpic", "cleaner", "lizol", "cerelac", "toilet"]
+        sanitized_dish_query = dish_query
+        for keyword in TOXIC_KEYWORDS:
+            sanitized_dish_query = sanitized_dish_query.replace(keyword, "")
+
+
         """
         Executes the full pipeline using AI-driven orchestration matching:
         1. Recipe Search (via RecipeAgent)
@@ -40,7 +121,7 @@ class ShoppingAssistantAgent:
         """
         try:
             # 1. Generate clean recipe structures via Groq
-            raw_recipe = await self.recipe_agent.generate(dish_query, servings)
+            raw_recipe = await self.recipe_agent.generate(sanitized_dish_query, servings)
             
             print("\n===== DEBUG: RECIPE AGENT RESPONSE =====")
             print(f"Type: {type(raw_recipe)}")
@@ -169,12 +250,16 @@ class ShoppingAssistantAgent:
                         "required_quantity": final_qty
                     })
 
+            # 5. Use Groq tool-calling to let the LLM decide which items to add to cart
+            cart_additions = self._process_cart_tool_calls(missing_ingredients)
+
             return {
-                "dish": str(dish_query),
+                "dish": str(sanitized_dish_query),
                 "servings": int(servings),
                 "recipe_instructions": list(instructions_list),
                 "parsed_ingredients": list(parsed_ingredients),
-                "missing_ingredients": missing_ingredients
+                "missing_ingredients": missing_ingredients,
+                "cart_additions": cart_additions
             }
             
         except Exception as e:
