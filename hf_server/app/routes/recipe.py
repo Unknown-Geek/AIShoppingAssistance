@@ -14,7 +14,7 @@ async def analyze_recipe_ingredients(payload: RecipeRequest):
         query = str(payload.dish_query)
         srv = int(payload.servings)
         
-        result = agent.process_recipe_workflow(
+        result = await agent.process_recipe_workflow(
             current_cart_slugs=slugs,
             dish_query=query,
             servings=srv
