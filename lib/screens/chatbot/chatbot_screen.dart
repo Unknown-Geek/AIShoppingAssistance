@@ -33,6 +33,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   String _currentChatTitle = 'New Chat';
   String? _currentChatSessionId;
 
+  Animation<double>? _routeAnimation;
+  bool _isTransitioning = true;
+
   static const String _storageKey = 'chat_history_v2'; // Changed key to differentiate updated model storage
 
   static final String baseUrl = (() {
@@ -51,6 +54,33 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     super.initState();
     _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
     _loadChatHistory();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null && route.animation != null) {
+      if (_routeAnimation != route.animation) {
+        _routeAnimation?.removeStatusListener(_handleRouteStatus);
+        _routeAnimation = route.animation;
+        _routeAnimation!.addStatusListener(_handleRouteStatus);
+      }
+      _isTransitioning = _routeAnimation!.status != AnimationStatus.completed;
+    } else {
+      _isTransitioning = false;
+    }
+  }
+
+  void _handleRouteStatus(AnimationStatus status) {
+    final transitioning = status != AnimationStatus.completed;
+    if (transitioning != _isTransitioning) {
+      if (mounted) {
+        setState(() {
+          _isTransitioning = transitioning;
+        });
+      }
+    }
   }
 
   Future<void> _loadChatHistory() async {
@@ -336,6 +366,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   @override
   void dispose() {
+    _routeAnimation?.removeStatusListener(_handleRouteStatus);
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -392,12 +423,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               ),
             ),
           ),
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-              child: Container(color: Colors.transparent),
+          if (!_isTransitioning)
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                child: Container(color: Colors.transparent),
+              ),
             ),
-          ),
           // Main content
           SafeArea(
             bottom: false,
@@ -416,7 +448,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 Expanded(
                   child: FadeContent(
                     key: ValueKey(_currentChatSessionId ?? (_messages.isEmpty ? 'welcome' : 'new_chat')),
-                    blur: true,
+                    blur: !_isTransitioning,
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeInOut,
                     child: _messages.isEmpty
