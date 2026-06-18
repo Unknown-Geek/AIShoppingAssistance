@@ -43,7 +43,9 @@ Return ONLY valid JSON in this exact format (no markdown strings, no code fences
   "ingredients": [
     {{"name": "Ingredient Name", "quantity": "amount", "unit": "unit"}}
   ]
-}}"""
+}}
+
+CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own independent dictionary entry in the "ingredients" list. NEVER group multiple items together in a single line like "Spices (Turmeric, Salt, Chili Powder)". Break them down into separate entries: {{"name": "Turmeric Powder", "quantity": "1/2", "unit": "teaspoon"}}, {{"name": "Red Chili Powder", ...}}, and {{"name": "Salt", ...}}."""
 
         messages = [
             {
@@ -86,27 +88,34 @@ Return ONLY valid JSON in this exact format (no markdown strings, no code fences
         Then apply Category Guardrail to drop non-cooking items entirely.
         This prevents the LLM from seeing completely unrelated items (e.g. toilet cleaner
         alongside spices) and hallucinating matches."""
-        ingredient_tokens = set()
-        for ing in parsed_ingredients:
-            for word in ing.get("name", "").lower().split():
-                if len(word) >= 3:
-                    ingredient_tokens.add(word)
-
-        if not ingredient_tokens:
-            return [item for item in inventory_catalog if not self._is_non_food(item)]
-
         candidates = []
         seen = set()
-        for item in inventory_catalog:
-            # Category Guardrail: skip non-food items entirely
-            if self._is_non_food(item):
+
+        for ing in parsed_ingredients:
+            ing_name = ing.get("name", "").lower().strip()
+            # Clean out common leakage remnants that survived parsing
+            ing_name = re.sub(r"\bas needed\b|\binch piece\b", "", ing_name).strip()
+
+            # Split into tokens: keep 3+ char words, plus short staples like "ghee"
+            ing_tokens = [t for t in ing_name.split() if len(t) >= 3 or t == "ghee"]
+
+            if not ing_tokens and not ing_name:
                 continue
-            text = (item.get("name", "") + " " + item.get("slug", "")).lower()
-            if any(token in text for token in ingredient_tokens):
-                key = item.get("sku") or item.get("slug", "")
-                if key not in seen:
-                    seen.add(key)
-                    candidates.append(item)
+
+            for item in inventory_catalog:
+                # Category Guardrail: skip non-food items entirely
+                if self._is_non_food(item):
+                    continue
+
+                item_name = item.get("name", "").lower()
+                item_slug = item.get("slug", "").lower()
+
+                # Broad containment matching: token in name/slug, or full name in item name
+                if any(token in item_name or token in item_slug for token in ing_tokens) or ing_name in item_name:
+                    key = item.get("sku") or item.get("slug", "")
+                    if key not in seen:
+                        seen.add(key)
+                        candidates.append(item)
 
         # If filtering removed everything, return a small reasonable subset
         if len(candidates) < 3:

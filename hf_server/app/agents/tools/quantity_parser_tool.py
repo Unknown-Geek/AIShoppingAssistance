@@ -7,7 +7,7 @@ _PREP_WORDS = re.compile(
     r"fresh|freshly|frozen|canned|organic|whole|small|large|medium|"
     r"optional|divided|cloves?|"
     r"cups?|tablespoons?|tbsp|teaspoons?|tsp|grams?|g|kg|ml|liters?|l|"
-    r"pinch|sprinkle|dash|drop|inches?|pieces?|sticks?|slices?)\s+",
+    r"pinch|sprinkle|dash|drop|inch(?:es)?|pieces?|sticks?|slices?)\s+",
     re.IGNORECASE
 )
 
@@ -59,6 +59,17 @@ class QuantityParserTool:
             unit, name = QuantityParserTool._extract_conversational_unit(name)
             return {
                 "quantity": "to taste",
+                "unit": unit,
+                "name": QuantityParserTool._strip_prep_words(name),
+                "raw_input": raw_input
+            }
+
+        # "as needed" — "as needed Spices", "as needed Salt"
+        if "as needed" in ingredient_lower[:20]:
+            name = re.sub(r"\bas needed\b", "", ingredient, flags=re.IGNORECASE).strip("-, ")
+            unit, name = QuantityParserTool._extract_conversational_unit(name)
+            return {
+                "quantity": "as needed",
                 "unit": unit,
                 "name": QuantityParserTool._strip_prep_words(name),
                 "raw_input": raw_input
