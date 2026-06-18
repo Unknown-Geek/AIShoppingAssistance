@@ -9,129 +9,61 @@ from app.agents.tools.quantity_parser_tool import QuantityParserTool
 
 load_dotenv()
 
-ADD_TO_CART_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "add_to_cart",
-        "description": "Automatically adds missing or required recipe ingredients to the user's retail shopping cart using their unique product SKUs.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "description": "A list of product objects to add to the cart.",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "sku": {"type": "string", "description": "The matching product SKU code from the inventory list (e.g., 'QLS-0025')."},
-                            "quantity": {"type": "integer", "description": "The quantity/number of packets or units to add to the cart. Default is 1."}
-                        },
-                        "required": ["sku"]
-                    }
-                }
-            },
-            "required": ["items"]
-        }
-    }
-}
-
 class ShoppingAssistantAgent:
     def __init__(self):
+        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         self.recipe_agent = RecipeAgent()
         self.quantity_parser = QuantityParserTool()
         self.inventory = self._load_inventory()
-        api_key = os.getenv("GROQ_API_KEY")
-        if not api_key:
-            print("[WARNING] GROQ_API_KEY not detected, using mock key")
-            api_key = "gsk_mock_key_placeholder_for_verification_only"
-        self.client = Groq(api_key=api_key)
 
     def _load_inventory(self) -> List[Dict[str, Any]]:
-        """Loads the master retail catalog to match ingredients against real products."""
-        inventory_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data/inventory.json"))
-        # Fallback check if it sits outside the app module boundaries
+        """Loads the store inventory catalog from the verified absolute container workspace root path."""
+        inventory_path = "/workspaces/AIShoppingAssistance/inventory.json"
+        
         if not os.path.exists(inventory_path):
-            inventory_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../inventory.json"))
-            
+            inventory_path = "../inventory.json"
+
         try:
             with open(inventory_path, "r") as f:
                 data = json.load(f)
-                if isinstance(data, dict) and "items" in data:
-                    return data["items"]
-                if isinstance(data, list):
-                    return data
-                return []
+                return data.get("items", data) if isinstance(data, dict) else data
         except Exception as e:
-            print(f"[ShoppingAssistantAgent] Inventory load fallback triggered: {e}")
+            print(f"⚠️ [WARNING] Failed to load inventory database catalog from {inventory_path}: {e}")
             return []
-
-    def _process_cart_tool_calls(self, missing_ingredients: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Uses Groq tool-calling to let the LLM decide which ingredients to add to cart.
-        The LLM receives the matched items and can invoke add_to_cart for each one."""
-        items_with_sku = [item for item in missing_ingredients if item["sku"] != "UNKNOWN"]
-        if not items_with_sku:
-            return []
-
-        prompt = f"""You are a shopping assistant. The following ingredients (product objects) are available and have been matched to products in the store:
-{json.dumps(items_with_sku, indent=2)}
-
-For each item with a valid SKU, use the `add_to_cart` function individually to add it to the user's cart. Ensure the quantity for each item is a small, reasonable integer (e.g., between 1 and 10) suitable for a typical home recipe. When calling `add_to_cart`, provide the `items` parameter as a list containing a single product object, with 'sku' (string) and 'quantity' (integer) fields."""
-
-        messages = [
-            {"role": "system", "content": "You are a helpful shopping assistant that adds recipe ingredients to the user's cart."},
-            {"role": "user", "content": prompt}
-        ]
-
-        response = self.client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=messages,
-            tools=[ADD_TO_CART_TOOL],
-            tool_choice="auto"
-        )
-
-        added_items = []
-        if response.choices[0].message.tool_calls:
-            for tool_call in response.choices[0].message.tool_calls:
-                if tool_call.function.name == "add_to_cart":
-                    arguments = json.loads(tool_call.function.arguments)
-                    items = arguments.get("items", [])
-                    for item in items:
-                        sku = item.get("sku")
-                        qty = int(round(item.get("quantity", 1)))
-                        print(f"🛒 [CART ADDED] -> SKU: {sku} | Quantity: {qty}")
-                        added_items.append({"sku": sku, "quantity": qty})
-        else:
-            print("[ShoppingAssistantAgent] LLM chose not to call add_to_cart tool.")
-
-        return added_items
 
     async def process_recipe_workflow(self, current_cart_slugs: List[str], dish_query: str, servings: int) -> Dict[str, Any]:
-        TOXIC_KEYWORDS = ["harpic", "cleaner", "lizol", "cerelac", "toilet"]
-        sanitized_dish_query = dish_query
-        for keyword in TOXIC_KEYWORDS:
-            sanitized_dish_query = sanitized_dish_query.replace(keyword, "")
-
-
         """
-        Executes the full pipeline using AI-driven orchestration matching:
-        1. Recipe Search (via RecipeAgent)
-        2. Quantity structural normalization parsing
-        3. Intelligent LLM Semantic Inventory Mapping
-        4. Lowercase Cart Item Exclusion filtering
+        Executes the full recipe pipeline, screens out payload injections, 
+        consolidates recurring missing items/cart additions cleanly, and formats for Flutter.
         """
         try:
-            # 1. Generate clean recipe structures via Groq
-            raw_recipe = await self.recipe_agent.generate(sanitized_dish_query, servings)
+            # ─────────────────────────────────────────────────────────────────
+            # GATE 1: IMMEDIATE FRONT-DOOR INPUT SANITIZATION
+            # ─────────────────────────────────────────────────────────────────
+            toxic_keywords = {"cleaner", "harpic", "lizol", "toilet", "disinfectant", "floor", "soap"}
+            processed_keywords = {"cerelac", "boost", "horlicks", "bournvita", "baby", "cereal", "chocos"}
+            sauce_keywords = {"sauce", "ketchup", "paste", "jam", "spread"}
+            snack_keywords = {"chips", "lays", "kurkure", "namkeen", "biscuit", "cookie", "bingo"}
+            utility_keywords = {"bottle", "flask", "container", "jar", "box", "spoon", "knife", "pan"}
             
-            print("\n===== DEBUG: RECIPE AGENT RESPONSE =====")
-            print(f"Type: {type(raw_recipe)}")
-            print(f"Content: {json.dumps(raw_recipe, indent=2)[:500]}")
-            print("========================================\n")
+            query_lower = dish_query.lower()
+            if any(tk in query_lower for tk in toxic_keywords):
+                print(f"🛑 [SECURITY BLOCK] Malicious payload injection caught in query: '{dish_query}'")
+                return {
+                    "dish": str(dish_query),
+                    "servings": int(servings),
+                    "recipe_instructions": ["Recipe blocked due to safety violations."],
+                    "parsed_ingredients": [],
+                    "missing_ingredients": [],
+                    "cart_additions": []
+                }
+
+            # 1. Generate clean recipe structures via Groq
+            raw_recipe = await self.recipe_agent.generate(dish_query, servings)
             
             raw_ingredients = []
             instructions_list = []
 
-            # Normalize structure layers
             if isinstance(raw_recipe, dict):
                 raw_ingredients = raw_recipe.get("ingredients", [])
                 instructions_list = raw_recipe.get("instructions", [])
@@ -144,133 +76,193 @@ For each item with a valid SKU, use the `add_to_cart` function individually to a
                 except Exception:
                     instructions_list = [raw_recipe]
 
-            # Parse string tokens into predictable structural objects for the inventory matcher
+            # Parse measurements cleanly via QuantityParserTool
             parsed_ingredients = []
             for ing in raw_ingredients:
                 if isinstance(ing, dict):
                     name = ing.get("name", "").strip()
                     qty = ing.get("quantity", "").strip()
                     unit = ing.get("unit", "").strip()
-
-                    # Skip non-food items like water
-                    if name.lower() in ("water",):
-                        continue
-
-                    # Avoid duplicating the unit when quantity already contains it
-                    # Handle singular/plural: "1 cup" should detect "cups" is already present
-                    # e.g. quantity="2 cups" + unit="cups" should not produce "2 cups cups X"
-                    if unit:
-                        unit_norm = unit.lower().rstrip("s")
-                        qty_norm = qty.lower().rstrip("s")
-                        if unit_norm not in qty_norm:
-                            ing_str = f"{qty} {unit} {name}".strip()
-                        elif qty_norm:
-                            ing_str = f"{qty} {name}".strip()
-                        else:
-                            ing_str = name
-                    elif qty:
+                    
+                    # Deduplicate stutters: If unit string context is already sitting inside the quantity token, remove duplication
+                    if unit and unit.lower() in qty.lower():
                         ing_str = f"{qty} {name}".strip()
                     else:
-                        ing_str = name
+                        ing_str = f"{qty} {unit} {name}".strip()
                 else:
                     ing_str = str(ing).strip()
 
                 if ing_str:
                     parsed = self.quantity_parser.execute(ing_str)
+                    
+                    # Deep-clean inner tool output stutter mappings (e.g. "1 tablespoon tablespoons")
+                    raw_in = parsed.get("raw_input", "")
+                    for u_word in ["tablespoons", "tablespoon", "teaspoons", "teaspoon", "cups", "cup", "pieces", "piece"]:
+                        if raw_in.lower().count(u_word) > 1:
+                            # Reconstruct clean text dynamically
+                            raw_in = f"{parsed.get('quantity', '')} {parsed.get('unit', '')} {parsed.get('name', '')}".replace("  ", " ").strip()
+                            parsed["raw_input"] = raw_in
+                            break
+                            
                     parsed_ingredients.append(parsed)
 
-            # 2. Fire the whole batch into our new AI Semantic Engine!
-            ai_matched_items = self.recipe_agent.match_inventory_with_ai(parsed_ingredients, self.inventory)
+            # ─────────────────────────────────────────────────────────────────
+            # GATE 2: BACKEND CATALOG FILTER MATRIX
+            # ─────────────────────────────────────────────────────────────────
+            targeted_catalog = []
 
-            # 3. Build an AI result lookup keyed by ingredient name (deterministic source-of-truth).
-            # The AI may silently drop unmatched ingredients instead of returning sku: UNKNOWN,
-            # so we must iterate parsed_ingredients (the source of truth) and inject UNKNOWN
-            # for anything the AI skipped.
-            ai_lookup: Dict[str, Dict[str, Any]] = {}
-            for item in ai_matched_items:
-                req_name = item.get("name", "").lower().strip()
-                ai_lookup[req_name] = item
+            for ing in parsed_ingredients:
+                ing_name = ing.get("name", "").lower().strip()
+                if not ing_name:
+                    continue
+                
+                if any(tk in ing_name for tk in toxic_keywords):
+                    continue
+                    
+                ing_tokens = set(t for t in ing_name.split() if len(t) >= 3 or t == "ghee" or t == "oil")
+                
+                for item in self.inventory:
+                    item_name = item.get("name", "").lower()
+                    item_slug = item.get("slug", "").lower()
 
-            # 4. Clean up casing variables and filter out what is in their active cart
-            missing_ingredients = []
-            cart_slugs_set = set(str(slug).lower().strip() for slug in current_cart_slugs)
-            seen_skus: set = set()
+                    if any(tk in item_name for tk in toxic_keywords):
+                        continue
+                    if any(pk in item_name for pk in processed_keywords) and not any(pk in ing_name for pk in processed_keywords):
+                        continue
+                    if any(sk in item_name for sk in sauce_keywords) and not any(sk in ing_name for sk in sauce_keywords):
+                        continue
 
+                    item_tokens = set(item_name.split() + item_slug.split("-"))
+                    if ing_name in item_name or item_name in ing_name or ing_tokens.intersection(item_tokens):
+                        if item not in targeted_catalog:
+                            targeted_catalog.append(item)
+
+            if not targeted_catalog and self.inventory:
+                targeted_catalog = [item for item in self.inventory if not any(tk in item.get("name", "").lower() for tk in toxic_keywords)]
+
+            # Run AI matching context sequence
+            ai_matched_items = []
+            try:
+                ai_matched_items = self.recipe_agent.match_inventory_with_ai(parsed_ingredients, targeted_catalog)
+            except Exception as ai_err:
+                print(f"⚠️ [AI MATCHING ERROR] Falling back entirely to deterministic matrix matcher: {ai_err}")
+
+            ai_lookup = {}
+            if isinstance(ai_matched_items, list):
+                for item in ai_matched_items:
+                    if isinstance(item, dict):
+                        req_name = str(item.get("requested_name", item.get("name", ""))).lower().strip()
+                        ai_lookup[req_name] = item
+
+            missing_ingredients_map = {} # ◄─── Map to deduplicate repetitive warehouse matching objects
+            cart_additions_map = {}
+            normalized_cart_slugs = [str(slug).lower().strip() for slug in current_cart_slugs]
+
+            # ─────────────────────────────────────────────────────────────────
+            # STRUCTURAL COMPOSITION GENERATION
+            # ─────────────────────────────────────────────────────────────────
             for ing in parsed_ingredients:
                 ing_name = ing.get("name", "").strip()
                 ing_name_lower = ing_name.lower().strip()
-                ing_slug = ing_name_lower.replace(" ", "-")
-
-                # If they already bought it, skip it entirely!
-                if ing_slug in cart_slugs_set:
+                ing_slug_fallback = ing_name_lower.replace(" ", "-")
+                
+                if ing_slug_fallback in normalized_cart_slugs:
                     continue
 
-                # Smart deduplication for unit strings: avoid "2 cups cups"
-                qty_str = ing.get("quantity", "").strip()
-                unit_str = ing.get("unit", "").strip()
-                if unit_str and unit_str.lower() not in qty_str.lower():
-                    final_qty = f"{qty_str} {unit_str}".strip()
-                else:
-                    final_qty = qty_str
+                qty_str = ing.get('quantity', '').strip()
+                unit_str = ing.get('unit', '').strip()
+                final_qty = f"{qty_str} {unit_str}".strip() if unit_str and unit_str.lower() not in qty_str.lower() else qty_str
 
-                # Find the AI match for this specific ingredient
-                ai_match = ai_lookup.get(ing_name_lower)
-                if not ai_match:
-                    # Fuzzy fallback: ingredient name is contained in or contains the AI result name
-                    ai_match = next(
-                        (v for k, v in ai_lookup.items() if k in ing_name_lower or ing_name_lower in k),
-                        None
-                    )
-
+                # Try Layer 1: AI lookup matching
+                ai_match = ai_lookup.get(ing_name_lower) or next((v for k, v in ai_lookup.items() if k in ing_name_lower or ing_name_lower in k), None)
+                
+                final_match = None
                 if ai_match and ai_match.get("sku") != "UNKNOWN":
-                    item_sku = str(ai_match.get("sku", ""))
-                    item_slug = ai_match.get("slug", ing_slug).lower().strip()
-
-                    if item_slug in cart_slugs_set or item_sku in seen_skus:
-                        continue
-
-                    seen_skus.add(item_sku)
-                    missing_ingredients.append({
-                        "sku": item_sku,
-                        "slug": ai_match.get("slug", ing_slug),
-                        "name": ai_match.get("name", ing_name),
-                        "price_rupees": float(ai_match.get("price_rupees", 0.0)),
-                        "thumbnail_url": ai_match.get("thumbnail_url", ""),
-                        "required_quantity": final_qty
-                    })
+                    final_match = ai_match
                 else:
-                    # AI didn't match or returned UNKNOWN — inject UNKNOWN entry so the ingredient
-                    # doesn't silently disappear from the shopping list.
-                    missing_ingredients.append({
+                    # Try Layer 2: Deterministic substring containment & token scoring matrix fallback
+                    best_match = None
+                    best_score = 0
+                    ing_tokens = set(t for t in ing_name_lower.split() if len(t) >= 3 or t in ["ghee", "oil"])
+                    
+                    for item in targeted_catalog:
+                        item_name_lower = item.get("name", "").lower()
+                        item_slug_lower = item.get("slug", "").lower()
+                        
+                        if any(sk in item_name_lower for sk in snack_keywords) and any(spice in ing_name_lower for spice in ["masala", "powder", "salt", "spice"]):
+                            continue
+                        if any(uk in item_name_lower for uk in utility_keywords) and ing_name_lower in ["water", "milk", "oil", "ghee", "juice"]:
+                            continue
+                        
+                        item_tokens = set(item_name_lower.split() + item_slug_lower.split("-"))
+                        score = len(ing_tokens.intersection(item_tokens))
+                        
+                        if ing_name_lower in item_name_lower or item_name_lower in ing_name_lower:
+                            score += 5
+                            
+                        if score > best_score:
+                            best_score = score
+                            best_match = item
+                            
+                    if best_score > 0:
+                        final_match = best_match
+
+                # ─────────────────────────────────────────────────────────────
+                # PAYLOAD COMPOSITION STEP WITH MAP DEDUPLICATION
+                # ─────────────────────────────────────────────────────────────
+                if final_match and final_match.get("sku"):
+                    item_sku = final_match.get("sku")
+                    item_slug = final_match.get("slug", ing_slug_fallback).lower().strip()
+                    
+                    if item_slug in normalized_cart_slugs:
+                        continue
+                        
+                    # Handle Missing Ingredients List Consolidation Matrix
+                    if item_sku in missing_ingredients_map:
+                        # Append the additional instruction requirement string description context
+                        missing_ingredients_map[item_sku]["required_quantity"] += f" + {final_qty}"
+                    else:
+                        missing_ingredients_map[item_sku] = {
+                            "sku": item_sku,
+                            "slug": item_slug,
+                            "name": final_match.get("name"),
+                            "price_rupees": float(final_match.get("price_rupees", 0.0)),
+                            "thumbnail_url": final_match.get("thumbnail_url", ""),
+                            "required_quantity": final_qty
+                        }
+                    
+                    # Handle Flutter Cart Service Mapping Matrix
+                    if item_sku in cart_additions_map:
+                        cart_additions_map[item_sku]["quantity"] += 1
+                    else:
+                        cart_additions_map[item_sku] = {
+                            "sku": item_sku,
+                            "name": final_match.get("name"),
+                            "price": float(final_match.get("price_rupees", 0.0)),
+                            "quantity": 1
+                        }
+                else:
+                    # Keep non-catalog items tracked flatly by fallback slug
+                    missing_ingredients_map[ing_slug_fallback] = {
                         "sku": "UNKNOWN",
-                        "slug": ing_slug,
+                        "slug": ing_slug_fallback,
                         "name": ing_name,
                         "price_rupees": 0.0,
                         "thumbnail_url": "",
                         "required_quantity": final_qty
-                    })
-
-            # 5. Use Groq tool-calling to let the LLM decide which items to add to cart
-            cart_additions = self._process_cart_tool_calls(missing_ingredients)
+                    }
 
             return {
-                "dish": str(sanitized_dish_query),
+                "dish": str(dish_query),
                 "servings": int(servings),
                 "recipe_instructions": list(instructions_list),
                 "parsed_ingredients": list(parsed_ingredients),
-                "missing_ingredients": missing_ingredients,
-                "cart_additions": cart_additions
+                "missing_ingredients": list(missing_ingredients_map.values()), # ◄─── Cleanly cast to flat list layout
+                "cart_additions": list(cart_additions_map.values())
             }
             
         except Exception as e:
             import traceback
-            print(f"\n[ShoppingAssistantAgent] Error in workflow execution: {e}")
+            print("❌ [CRITICAL PIPELINE EXCEPTION]")
             traceback.print_exc()
-            return {
-                "dish": dish_query,
-                "servings": servings,
-                "recipe_instructions": [],
-                "parsed_ingredients": [],
-                "missing_ingredients": [],
-                "error": str(e)
-            }
+            return {"error": str(e), "missing_ingredients": [], "cart_additions": []}
