@@ -57,14 +57,49 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
 
   void _shareRecipe(BuildContext context) {
     final dish = widget.recipe['dish'] ?? 'Recipe';
-    Clipboard.setData(ClipboardData(text: 'Check out this recipe: $dish!'));
+    final servings = widget.recipe['servings'] ?? 2;
+    final readyTime = widget.recipe['ready_time'] ?? '20 min';
+    final summary = widget.recipe['summary'] ?? 'A delicious dish crafted by your AI Chef.';
+    final ingredients = List<Map<String, dynamic>>.from(widget.recipe['ingredients'] ?? []);
+    final instructions = List<String>.from(widget.recipe['instructions'] ?? []);
+
+    final buffer = StringBuffer();
+    buffer.writeln('🍳 Recipe: $dish');
+    buffer.writeln('Servings: $servings | Ready in: $readyTime');
+    buffer.writeln();
+    buffer.writeln('Summary:');
+    buffer.writeln(summary);
+    buffer.writeln();
+
+    if (ingredients.isNotEmpty) {
+      buffer.writeln('🛒 Ingredients:');
+      for (final item in ingredients) {
+        final name = item['name'] ?? '';
+        final quantity = item['quantity'] ?? '';
+        if (quantity.isNotEmpty) {
+          buffer.writeln('• $quantity $name');
+        } else {
+          buffer.writeln('• $name');
+        }
+      }
+      buffer.writeln();
+    }
+
+    if (instructions.isNotEmpty) {
+      buffer.writeln('📖 Instructions:');
+      for (int i = 0; i < instructions.length; i++) {
+        buffer.writeln('${i + 1}. ${instructions[i]}');
+      }
+    }
+
+    Clipboard.setData(ClipboardData(text: buffer.toString().trim()));
 
     final theme = Theme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Copied recipe link for "$dish" to clipboard!',
-          style: const TextStyle(fontFamily: 'ClashGrotesk', fontWeight: FontWeight.w500),
+        content: const Text(
+          'Copied complete recipe to clipboard!',
+          style: TextStyle(fontFamily: 'ClashGrotesk', fontWeight: FontWeight.w500),
         ),
         backgroundColor: theme.colorScheme.primary,
         behavior: SnackBarBehavior.floating,
