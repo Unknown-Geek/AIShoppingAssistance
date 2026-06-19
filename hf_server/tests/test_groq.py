@@ -1,4 +1,4 @@
-from groq_client import GroqClient
+from app.services.groq_client import GroqClient
 
 client = GroqClient()
 

@@ -28,7 +28,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Container(
           height: 72,
           margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: const Color(0xFFFFFFFF),
             borderRadius: BorderRadius.circular(32),

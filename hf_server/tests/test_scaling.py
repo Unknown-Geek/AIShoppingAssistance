@@ -1,4 +1,4 @@
-from quantity_estimator import QuantityEstimator
+from app.services.quantity_estimator import QuantityEstimator
 
 q = QuantityEstimator()
 

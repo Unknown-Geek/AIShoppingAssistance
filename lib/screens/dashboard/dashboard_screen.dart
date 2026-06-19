@@ -12,6 +12,8 @@ import '../../services/cart_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/product_detection_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'widgets/dashboard_app_bar.dart';
 import 'widgets/camera_viewport.dart';
@@ -51,10 +53,16 @@ class _DashboardScreenState extends State<DashboardScreen>
   CartItemModel? _cachedDetectedItem;
   DateTime? _cachedDetectionTime;
   bool _isConfirmSheetOpen = false;
+  bool _isDashboardActive = true;
+
+  // Timestamp tracking to prevent stale background scan race conditions
+  DateTime? _lastActionTime;
+  DateTime? _backgroundScanPauseUntil;
 
   @override
   void initState() {
     super.initState();
+    _lastActionTime = DateTime.now();
     WidgetsBinding.instance.addObserver(this);
     _cursorController = AnimationController(
       vsync: this,
@@ -74,6 +82,16 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _initializeCamera() async {
     if (widget.cameras.isEmpty) return;
 
+    // Clean up any existing controller to prevent leaks and camera locking
+    if (_cameraController != null) {
+      try {
+        await _cameraController!.dispose();
+      } catch (e) {
+        debugPrint("Error disposing camera controller: $e");
+      }
+      _cameraController = null;
+    }
+
     const resolution = kIsWeb ? ResolutionPreset.medium : ResolutionPreset.low;
     _cameraController = CameraController(
       widget.cameras[0],
@@ -84,7 +102,20 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     try {
       await _cameraController!.initialize();
-      await _cameraController!.setFlashMode(FlashMode.off);
+
+      // Laptop webcams or web/desktop platforms generally don't support torch/flash.
+      // We check if we are on a mobile platform (Android or iOS) first.
+      final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+      if (isMobile) {
+        try {
+          await _cameraController!.setFlashMode(FlashMode.off);
+        } catch (flashError) {
+          debugPrint(
+            "Failed to set flash mode to off (not supported): $flashError",
+          );
+        }
+      }
+
       if (mounted) {
         setState(() => _isCameraInitialized = true);
       }
@@ -105,14 +136,24 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _startBackgroundScanning();
-    } else {
+    final CameraController? cameraController = _cameraController;
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
       _stopBackgroundScanning();
+      if (cameraController != null) {
+        setState(() => _isCameraInitialized = false);
+        cameraController.dispose();
+        _cameraController = null;
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      _initializeCamera();
+      _startBackgroundScanning();
     }
   }
 
   void _startBackgroundScanning() {
+    if (!_isDashboardActive) return;
     _backgroundScanTimer?.cancel();
     _backgroundScanTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _performBackgroundScan();
@@ -132,23 +173,43 @@ class _DashboardScreenState extends State<DashboardScreen>
     // 2. Cart must be collapsed (expanded controller value == 0)
     // 3. Shutter must NOT be actively searching/loading a manual scan
     // 4. Confirmation sheet must NOT be open
-    if (!_isCameraInitialized || _cameraController == null || _isCameraBusy) return;
+    // 5. Background scanning must not be paused
+    if (_backgroundScanPauseUntil != null &&
+        DateTime.now().isBefore(_backgroundScanPauseUntil!)) {
+      return;
+    }
+    if (!_isCameraInitialized || _cameraController == null || _isCameraBusy) {
+      return;
+    }
     if (_cartExpandController.value > 0.0) return;
     if (_isSearchingImage) return;
     if (_isConfirmSheetOpen) return;
 
     _isCameraBusy = true;
 
+    final DateTime captureTime = DateTime.now();
     XFile? capturedPhoto;
     try {
-      capturedPhoto = await _cameraController!.takePicture().timeout(const Duration(seconds: 2));
-      
+      capturedPhoto = await _cameraController!.takePicture().timeout(
+        const Duration(seconds: 2),
+      );
+
       // Release camera lock early so manual shutter is not blocked by backend API latency
       _isCameraBusy = false;
 
-      final CartItemModel? item = await _detectionService.detectItem(capturedPhoto);
+      final CartItemModel? item = await _detectionService.detectItem(
+        capturedPhoto,
+      );
 
       if (item != null && mounted) {
+        // Discard background scan if the photo was captured before the last user interaction/action
+        if (_lastActionTime != null && captureTime.isBefore(_lastActionTime!)) {
+          debugPrint(
+            "[DashboardScreen] Discarding stale background scan result (captured before last action).",
+          );
+          return;
+        }
+
         setState(() {
           _cachedDetectedItem = item;
           _cachedDetectionTime = DateTime.now();
@@ -164,10 +225,14 @@ class _DashboardScreenState extends State<DashboardScreen>
           final file = File(capturedPhoto.path);
           if (await file.exists()) {
             await file.delete();
-            debugPrint("[DashboardScreen] Cleaned up background temporary file: ${capturedPhoto.path}");
+            debugPrint(
+              "[DashboardScreen] Cleaned up background temporary file: ${capturedPhoto.path}",
+            );
           }
         } catch (e) {
-          debugPrint("[DashboardScreen] Failed to delete temp background file: $e");
+          debugPrint(
+            "[DashboardScreen] Failed to delete temp background file: $e",
+          );
         }
       }
     }
@@ -288,7 +353,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     setState(() => _isCheckingOut = true);
 
     // Open the premium payment sheet
-    DashboardSheets.showPaymentSheet(
+    await DashboardSheets.showPaymentSheet(
       context,
       amount: total,
       onPaymentSuccess: () async {
@@ -322,7 +387,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         }
       },
     );
-    
+
     // Reset checking out state if they cancel or close the sheet
     if (mounted) {
       setState(() => _isCheckingOut = false);
@@ -330,7 +395,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   bool _isCacheValid() {
-    if (_cachedDetectedItem == null || _cachedDetectionTime == null) return false;
+    if (_cachedDetectedItem == null || _cachedDetectionTime == null) {
+      return false;
+    }
     final age = DateTime.now().difference(_cachedDetectionTime!);
     return age < const Duration(seconds: 3);
   }
@@ -339,9 +406,11 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (_isSearchingImage) return;
 
     if (_isCacheValid()) {
-      debugPrint("[DashboardScreen] Using valid pre-emptive scan cache for instant confirm sheet.");
+      debugPrint(
+        "[DashboardScreen] Using valid pre-emptive scan cache for instant confirm sheet.",
+      );
       final item = _cachedDetectedItem!;
-      
+
       // Clear the cache after consuming it to prevent double actions
       setState(() {
         _cachedDetectedItem = null;
@@ -349,10 +418,19 @@ class _DashboardScreenState extends State<DashboardScreen>
         _isConfirmSheetOpen = true;
       });
 
-      final confirmed = await DashboardSheets.showItemConfirmSheet(context, item: item);
-      
+      final confirmed = await DashboardSheets.showItemConfirmSheet(
+        context,
+        item: item,
+      );
+
       if (mounted) {
-        setState(() => _isConfirmSheetOpen = false);
+        setState(() {
+          _isConfirmSheetOpen = false;
+          _lastActionTime = DateTime.now();
+          _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
+          _cachedDetectedItem = null;
+          _cachedDetectionTime = null;
+        });
         if (confirmed == true) {
           _cartService.addItem(item);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -378,7 +456,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (!mounted) return;
 
     if (_isSearchingImage || _isCameraBusy) {
-      debugPrint("[DashboardScreen] Shutter click dropped: camera remains busy.");
+      debugPrint(
+        "[DashboardScreen] Shutter click dropped: camera remains busy.",
+      );
       return;
     }
 
@@ -394,12 +474,18 @@ class _DashboardScreenState extends State<DashboardScreen>
       return;
     }
 
-    setState(() => _isSearchingImage = true);
+    setState(() {
+      _isSearchingImage = true;
+      _lastActionTime = DateTime.now();
+      _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
+    });
     _isCameraBusy = true;
 
     XFile? capturedPhoto;
     try {
-      capturedPhoto = await _cameraController!.takePicture().timeout(const Duration(seconds: 2));
+      capturedPhoto = await _cameraController!.takePicture().timeout(
+        const Duration(seconds: 2),
+      );
       _isCameraBusy = false; // Release lock early once capture succeeds
 
       final CartItemModel? item = await _detectionService.detectItem(
@@ -410,10 +496,18 @@ class _DashboardScreenState extends State<DashboardScreen>
         // Show confirmation sheet — CLIP can confuse similar-looking products
         // (e.g. different Lays flavours). User verifies before cart is updated.
         setState(() => _isConfirmSheetOpen = true);
-        final confirmed =
-            await DashboardSheets.showItemConfirmSheet(context, item: item);
+        final confirmed = await DashboardSheets.showItemConfirmSheet(
+          context,
+          item: item,
+        );
         if (mounted) {
-          setState(() => _isConfirmSheetOpen = false);
+          setState(() {
+            _isConfirmSheetOpen = false;
+            _lastActionTime = DateTime.now();
+            _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
+            _cachedDetectedItem = null;
+            _cachedDetectionTime = null;
+          });
         }
         if (confirmed == true && mounted) {
           _cartService.addItem(item);
@@ -461,7 +555,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           final file = File(capturedPhoto.path);
           if (await file.exists()) {
             await file.delete();
-            debugPrint("[DashboardScreen] Cleaned up temporary photo file: ${capturedPhoto.path}");
+            debugPrint(
+              "[DashboardScreen] Cleaned up temporary photo file: ${capturedPhoto.path}",
+            );
           }
         } catch (e) {
           debugPrint("[DashboardScreen] Failed to delete temp photo file: $e");
@@ -471,12 +567,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
-
   void _showRagSheet() {
-    DashboardSheets.showRagSheet(
-      context,
-      onSubmitted: _askChefRag,
-    );
+    DashboardSheets.showRagSheet(context, onSubmitted: _askChefRag);
   }
 
   Future<void> _askChefRag(String prompt) async {
@@ -493,21 +585,70 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
+  Future<String> _checkBackendStatus() async {
+    final primary = dotenv.env['PRIMARY_DETECTION_URL']?.trim() ?? '';
+    final backup = dotenv.env['BACKUP_DETECTION_URL']?.trim() ?? '';
+    
+    if (primary.isEmpty && backup.isEmpty) {
+      return "Not Configured";
+    }
+
+    List<String> activeBackends = [];
+
+    // Clean and check primary
+    if (primary.isNotEmpty) {
+      final cleanPrimary = primary.replaceAll(RegExp(r'/health$'), '').replaceAll(RegExp(r'/$'), '');
+      try {
+        final response = await http.get(Uri.parse('$cleanPrimary/health')).timeout(const Duration(seconds: 2));
+        if (response.statusCode == 200) {
+          activeBackends.add("Oracle (Active)");
+        }
+      } catch (_) {
+        // Silent fail for primary
+      }
+    }
+
+    // Clean and check backup
+    if (backup.isNotEmpty) {
+      final cleanBackup = backup.replaceAll(RegExp(r'/health$'), '').replaceAll(RegExp(r'/$'), '');
+      try {
+        final response = await http.get(Uri.parse('$cleanBackup/health')).timeout(const Duration(seconds: 2));
+        if (response.statusCode == 200) {
+          activeBackends.add("HF Space (Active)");
+        }
+      } catch (_) {
+        // Silent fail for backup
+      }
+    }
+
+    if (activeBackends.isNotEmpty) {
+      return activeBackends.join(", ");
+    } else {
+      return "Disconnected (All Offline)";
+    }
+  }
+
   /// Silent background check — updates the indicator, no snackbar.
   Future<void> _refreshDbStatus() async {
     final results = await Future.wait([
       _chromaClient.checkConnectivity(),
       InventoryService().checkConnectivity(),
+      _checkBackendStatus(),
     ]);
     final chromaStatus = results[0];
     final supabaseStatus = results[1];
+    final backendStatus = results[2];
 
     if (!mounted) return;
     final allOk =
         chromaStatus.startsWith('Connected') &&
-        supabaseStatus.startsWith('Connected');
-    setState(() => _dbStatus =
-        allOk ? DbConnectionStatus.live : DbConnectionStatus.error);
+        supabaseStatus.startsWith('Connected') &&
+        !backendStatus.startsWith('Disconnected');
+    setState(
+      () => _dbStatus = allOk
+          ? DbConnectionStatus.live
+          : DbConnectionStatus.error,
+    );
   }
 
   Future<void> _checkDbStatus() async {
@@ -516,7 +657,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       const SnackBar(
         behavior: SnackBarBehavior.fixed,
         content: Text(
-          'Checking database connections...',
+          'Checking database and backend connections...',
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Color(0xFF001A23),
@@ -527,13 +668,16 @@ class _DashboardScreenState extends State<DashboardScreen>
     final results = await Future.wait([
       _chromaClient.checkConnectivity(),
       InventoryService().checkConnectivity(),
+      _checkBackendStatus(),
     ]);
     final chromaStatus = results[0];
     final supabaseStatus = results[1];
+    final backendStatus = results[2];
 
     if (mounted) {
       final isChromaOk = chromaStatus.startsWith("Connected");
       final isSupabaseOk = supabaseStatus.startsWith("Connected");
+      final isBackendOk = !backendStatus.startsWith("Disconnected");
 
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -558,9 +702,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 4),
+              Text(
+                'Backend: $backendStatus',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
-          backgroundColor: (isChromaOk && isSupabaseOk)
+          backgroundColor: (isChromaOk && isSupabaseOk && isBackendOk)
               ? Theme.of(context).colorScheme.primary
               : const Color(0xFFEF4444),
           duration: const Duration(seconds: 4),
@@ -568,7 +720,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
       // Also update the indicator
       setState(
-        () => _dbStatus = (isChromaOk && isSupabaseOk)
+        () => _dbStatus = (isChromaOk && isSupabaseOk && isBackendOk)
             ? DbConnectionStatus.live
             : DbConnectionStatus.error,
       );
@@ -604,7 +756,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                 gradient: LinearGradient(
                   colors: [
                     theme.scaffoldBackgroundColor,
-                    Color.lerp(theme.scaffoldBackgroundColor, Colors.white, 0.5) ?? Colors.white,
+                    Color.lerp(
+                          theme.scaffoldBackgroundColor,
+                          Colors.white,
+                          0.5,
+                        ) ??
+                        Colors.white,
                     theme.scaffoldBackgroundColor,
                   ],
                   begin: Alignment.topLeft,
@@ -648,12 +805,13 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
           ),
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-              child: Container(color: Colors.transparent),
+          if (_isDashboardActive)
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                child: Container(color: Colors.transparent),
+              ),
             ),
-          ),
           // AnimatedBuilder isolates redraws to only the camera+cart layout
           // on each animation frame instead of rebuilding the entire screen.
           AnimatedBuilder(
@@ -678,8 +836,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               final progress = _cartExpandController.value;
               return Positioned(
                 bottom: 20 - (120 * progress),
-                left: MediaQuery.of(context).size.width * 0.05,
-                right: MediaQuery.of(context).size.width * 0.05,
+                left: 16,
+                right: 16,
                 child: Opacity(
                   opacity: (1.0 - progress).clamp(0.0, 1.0),
                   child: IgnorePointer(ignoring: progress > 0.5, child: child!),
@@ -687,27 +845,69 @@ class _DashboardScreenState extends State<DashboardScreen>
               );
             },
             child: BottomNavBar(
-              onChatTap: () {
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    pageBuilder: (_, animation, __) => const ChatbotScreen(),
-                    transitionsBuilder: (_, animation, __, child) {
-                      return SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(-1, 0), // ← slide from left
-                            end: Offset.zero,
-                          ).animate(CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutCubic,
-                          )),
-                          child: child,
-                        );
-                      },
-                      transitionDuration: const Duration(milliseconds: 350),
-                    ),
-                  );
-                },
+              onChatTap: () async {
+                setState(() => _isDashboardActive = false);
+                _stopBackgroundScanning();
+
+                final route = PageRouteBuilder(
+                  pageBuilder: (_, animation, __) => const ChatbotScreen(),
+                  transitionsBuilder: (_, animation, secondaryAnimation, child) {
+                    final slideAnimation = Tween<Offset>(
+                      begin: const Offset(-1.0, 0.0),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.fastOutSlowIn,
+                        reverseCurve: Curves.fastOutSlowIn.flipped,
+                      ),
+                    );
+
+                    return SlideTransition(
+                      position: slideAnimation,
+                      child: Material(
+                        elevation: 16,
+                        shadowColor: Colors.black38,
+                        child: child,
+                      ),
+                    );
+                  },
+                  transitionDuration: const Duration(milliseconds: 300),
+                  reverseTransitionDuration: const Duration(milliseconds: 250),
+                );
+
+                final pushFuture = Navigator.push(context, route);
+
+                route.animation?.addStatusListener((status) async {
+                  if (status == AnimationStatus.completed) {
+                    if (_cameraController != null && _cameraController!.value.isInitialized) {
+                      try {
+                        await _cameraController!.pausePreview();
+                        debugPrint("[DashboardScreen] Paused camera preview.");
+                      } catch (e) {
+                        debugPrint("Error pausing camera: $e");
+                      }
+                    }
+                  } else if (status == AnimationStatus.reverse) {
+                    if (_cameraController != null && _cameraController!.value.isInitialized) {
+                      try {
+                        await _cameraController!.resumePreview();
+                        debugPrint("[DashboardScreen] Resumed camera preview.");
+                      } catch (e) {
+                        debugPrint("Error resuming camera: $e");
+                      }
+                    }
+                  }
+                });
+
+                await pushFuture;
+
+                setState(() => _isDashboardActive = true);
+                if (_cameraController == null || !_cameraController!.value.isInitialized) {
+                  await _initializeCamera();
+                }
+                _startBackgroundScanning();
+              },
               onVoiceTap: _showRagSheet,
               isSearchingImage: _isSearchingImage,
               onShutterTap: _takePictureAndSearch,
@@ -750,11 +950,14 @@ class _DashboardScreenState extends State<DashboardScreen>
               GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onVerticalDragUpdate: (details) {
-                  final cameraViewportHeight = MediaQuery.of(context).size.height * 0.33;
+                  final cameraViewportHeight =
+                      MediaQuery.of(context).size.height * 0.33;
                   if (cameraViewportHeight > 0) {
-                    _cartExpandController.value = (_cartExpandController.value -
-                            (details.primaryDelta ?? 0) / cameraViewportHeight)
-                        .clamp(0.0, 1.0);
+                    _cartExpandController.value =
+                        (_cartExpandController.value -
+                                (details.primaryDelta ?? 0) /
+                                    cameraViewportHeight)
+                            .clamp(0.0, 1.0);
                   }
                 },
                 onVerticalDragEnd: (details) {
@@ -838,7 +1041,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.secondary.withValues(alpha: 0.3),
+                                  color: theme.colorScheme.secondary.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -902,7 +1107,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         height: 72,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                                          color: theme.colorScheme.primary
+                                              .withValues(alpha: 0.05),
                                         ),
                                         child: Icon(
                                           Icons.shopping_cart_outlined,
@@ -935,7 +1141,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 RepaintBoundary(
                                   child: ListView.builder(
                                     shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
                                     itemCount: _cartService.items.length,
                                     itemBuilder: (context, index) {
                                       final item = _cartService.items[index];
@@ -943,12 +1150,18 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         key: Key(item.id),
                                         direction: DismissDirection.endToStart,
                                         background: Container(
-                                          margin: const EdgeInsets.only(bottom: 12),
+                                          margin: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
                                           alignment: Alignment.centerRight,
-                                          padding: const EdgeInsets.only(right: 20),
+                                          padding: const EdgeInsets.only(
+                                            right: 20,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFEF4444),
-                                            borderRadius: BorderRadius.circular(18),
+                                            borderRadius: BorderRadius.circular(
+                                              18,
+                                            ),
                                           ),
                                           child: const Icon(
                                             Icons.delete_outline,
@@ -963,8 +1176,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                                           details:
                                               "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
                                           quantity: item.quantity,
-                                          onIncrement: () => _incrementQuantity(index),
-                                          onDecrement: () => _decrementQuantity(index),
+                                          onIncrement: () =>
+                                              _incrementQuantity(index),
+                                          onDecrement: () =>
+                                              _decrementQuantity(index),
                                           onRemove: () => _removeItem(index),
                                         ),
                                       );

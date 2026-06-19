@@ -1,49 +1,101 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'cart_service.dart';
 import '../models/cart_item_model.dart';
+import 'cart_service.dart';
 
 class RecipeAgentService {
-  final String backendUrl =
-      dotenv.env['PRIMARY_DETECTION_URL'] ?? 'http://127.0.0.1:8000';
-
   /// Resolves the active user's ID from Supabase auth.
   /// Falls back to "anonymous_user" when no session is present.
   String get _resolvedUserId =>
       Supabase.instance.client.auth.currentUser?.id ?? 'anonymous_user';
 
-  /// Sends the dish + cart context to the recipe agent pipeline.
-  ///
-  /// Returns the full agent response including [recipe_instructions],
-  /// [parsed_ingredients], [missing_ingredients], and [cart_additions].
-  ///
-  /// [user_id] is resolved internally from Supabase auth so callers do not
-  /// need to supply it — keeping the method signature stable.
+  // Getter for backendUrl used by other methods like fetchAgentCart
+  String get backendUrl {
+    final urls = backendUrls;
+    return urls.isNotEmpty ? urls.first : 'http://127.0.0.1:8000';
+  }
+
+  List<String> get backendUrls {
+    final urls = <String>[];
+    
+    // Add primary URL if configured
+    final primary = dotenv.env['PRIMARY_DETECTION_URL']?.trim() ?? '';
+    if (primary.isNotEmpty) urls.add(primary);
+    
+    // Add VM URL if configured
+    final vm = dotenv.env['VM_DETECTION_URL']?.trim() ?? '';
+    if (vm.isNotEmpty) urls.add(vm);
+    
+    // Add backup HF Space URL if configured
+    final backup = dotenv.env['BACKUP_DETECTION_URL']?.trim() ?? '';
+    if (backup.isNotEmpty) urls.add(backup);
+    
+    // Add HF Space URL if configured
+    final hfSpace = dotenv.env['HF_SPACE_URL']?.trim() ?? '';
+    if (hfSpace.isNotEmpty) urls.add(hfSpace);
+    
+    // Add fallback local URL
+    urls.add('http://127.0.0.1:8000');
+    
+    // Clean URLs by removing sub-endpoints (e.g. /health, /detect, /embed)
+    return urls.map((url) {
+      var clean = url.replaceAll(RegExp(r'/health$'), '');
+      clean = clean.replaceAll(RegExp(r'/detect$'), '');
+      clean = clean.replaceAll(RegExp(r'/embed$'), '');
+      clean = clean.replaceAll(RegExp(r'/recipe-agent$'), '');
+      clean = clean.replaceAll(RegExp(r'/$'), '');
+      return clean;
+    }).where((url) => url.isNotEmpty).toList();
+  }
+
   Future<Map<String, dynamic>> analyzeAndGetMissing(
     List<String> cartSlugs,
     String dish,
     int servings,
   ) async {
-    final response = await http.post(
-      Uri.parse('$backendUrl/recipe/analyze-ingredients'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'user_id': _resolvedUserId, // Fix: was missing, caused 422 Unprocessable Entity
-        'current_cart_slugs': cartSlugs,
-        'dish_query': dish,
-        'servings': servings,
-      }),
-    );
+    final urls = backendUrls;
+    List<String> errors = [];
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    } else {
-      throw Exception(
-        'Recipe agent pipeline failed: ${response.statusCode} — ${response.body}',
-      );
+    for (final url in urls) {
+      try {
+        debugPrint('[RecipeAgentService] Attempting request to backend: $url/recipe/analyze-ingredients');
+        final response = await http.post(
+          Uri.parse('$url/recipe/analyze-ingredients'),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({
+            "user_id": _resolvedUserId, // Preserved from abhinav's branch
+            "current_cart_slugs": cartSlugs,
+            "dish_query": dish,
+            "servings": servings,
+          }),
+        ).timeout(const Duration(seconds: 8));
+
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> data = jsonDecode(response.body);
+          if (data.containsKey('error') && data['error'] != null) {
+            final errorMsg = 'Server $url returned application error: ${data['error']}';
+            debugPrint('[RecipeAgentService] $errorMsg');
+            errors.add(errorMsg);
+          } else {
+            debugPrint('[RecipeAgentService] Success using backend: $url');
+            return data;
+          }
+        } else {
+          final errorMsg = 'Server $url returned status code: ${response.statusCode}';
+          debugPrint('[RecipeAgentService] $errorMsg');
+          errors.add(errorMsg);
+        }
+      } catch (e) {
+        final errorMsg = 'Failed to connect to $url: $e';
+        debugPrint('[RecipeAgentService] $errorMsg');
+        errors.add(errorMsg);
+      }
     }
+
+    throw Exception("Failed to process recipe orchestration layer. Errors: ${errors.join(', ')}");
   }
 
   /// Fetches the agent-committed cart state from the backend in-memory store.
@@ -84,13 +136,14 @@ class RecipeAgentService {
   ) {
     for (final item in missingIngredients) {
       if (item['sku'] != 'UNKNOWN') {
-        final missingItem = CartItemModel(
-          id: item['sku'] as String? ?? '',
-          name: item['name'] as String? ?? '',
-          details: 'Recipe Ingredient',
-          imageUrl: item['thumbnail_url'] as String? ?? '',
+        // Instantiate using your model mappings
+        CartItemModel missingItem = CartItemModel(
+          id: 'recipe_${DateTime.now().millisecondsSinceEpoch}_${(item['slug'] ?? item['name'] ?? 'item').hashCode}',
+          name: item['name'] ?? 'Unknown Item',
+          details: 'SKU: ${item['sku'] ?? 'UNKNOWN'} • Price: ₹${(item['price_rupees'] ?? 0.0).toStringAsFixed(2)}',
+          imageUrl: item['thumbnail_url'] ?? '',
           price: (item['price_rupees'] as num?)?.toDouble() ?? 0.0,
-          quantity: 1,
+          quantity: 1, // Add default increment unit
         );
         cartService.addItem(missingItem);
       }

@@ -28,6 +28,39 @@ jobs:
         run: |
           python -c "import os; from huggingface_hub import HfApi; api = HfApi(token=os.environ['HF_TOKEN']); api.upload_folder(folder_path='./hf_server', repo_id='Mojo-Maniac/AIShoppingAssistance_Server', repo_type='space', delete_patterns='*')"
 
+      - name: Wait for Hugging Face Space Deployment
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python -c "
+          import os, time, sys
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ.get('HF_TOKEN'))
+          repo_id = 'Mojo-Maniac/AIShoppingAssistance_Server'
+          print(f'Polling deployment status for space {repo_id}...')
+          time.sleep(15) # Wait for HF build to register
+          timeout = 600 # 10 minutes max
+          interval = 15
+          elapsed = 0
+          while elapsed < timeout:
+              try:
+                  runtime = api.get_space_runtime(repo_id=repo_id)
+                  stage = str(runtime.stage).upper()
+                  print(f'[{elapsed}s] Space stage: {stage}')
+                  if stage == 'RUNNING':
+                      print('Deployment successful! Space is RUNNING.')
+                      sys.exit(0)
+                  elif any(err in stage for err in ['ERROR', 'CRASHED', 'PAUSED', 'STOPPED']):
+                      print(f'Deployment failed! Space is in error/inactive state: {stage}')
+                      sys.exit(1)
+              except Exception as e:
+                  print(f'Error querying status: {e}')
+              time.sleep(interval)
+              elapsed += interval
+          print('Deployment polling timed out.')
+          sys.exit(1)
+          "
+
   deploy_primary_oracle:
     name: Deploy to Oracle VM (Primary Server)
     needs: deploy_backup_hf
@@ -40,8 +73,34 @@ jobs:
           username: ${{ secrets.ORACLE_VM_USER }}
           key: ${{ secrets.ORACLE_VM_SSH_KEY }}
           script: |
+            # Source bashrc to load environment variables (like GROQ_API_KEY) in non-interactive SSH shell
+            if [ -f ~/.bashrc ]; then source ~/.bashrc; fi
             cd ${{ secrets.ORACLE_VM_REPO_PATH }}
             git fetch origin main
             git reset --hard origin/main
             chmod +x run_local.sh
             ./run_local.sh
+            
+            echo "[*] Waiting for VM server to start and become healthy..."
+            TIMEOUT=120
+            INTERVAL=5
+            ELAPSED=0
+            HEALTHY=false
+
+            while [ $ELAPSED -lt $TIMEOUT ]; do
+              RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:6082/health || true)
+              if [ "$RESPONSE" = "200" ]; then
+                echo "[*] Deployment successful! VM server is healthy on port 6082."
+                HEALTHY=true
+                break
+              fi
+              echo "[*] Server not ready yet (status: $RESPONSE). Waiting $INTERVAL seconds... ($ELAPSED/$TIMEOUT)"
+              sleep $INTERVAL
+              ELAPSED=$((ELAPSED + INTERVAL))
+            done
+
+            if [ "$HEALTHY" = "false" ]; then
+              echo "[ERROR] VM deployment failed! Server did not become healthy within $TIMEOUT seconds."
+              docker logs ai-shopping-assistance-server --tail 50
+              exit 1
+            fi

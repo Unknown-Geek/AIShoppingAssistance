@@ -52,8 +52,8 @@ class ChatInputField extends StatelessWidget {
           if (selectedImage != null || selectedFileName != null)
             Padding(
               padding: const EdgeInsets.only(
-                left: 28.0,
-                right: 28.0,
+                left: 20.0,
+                right: 20.0,
                 bottom: 8.0,
               ),
               child: Wrap(
@@ -105,8 +105,8 @@ class ChatInputField extends StatelessWidget {
           Container(
             height: 84,
             margin: EdgeInsets.only(
-              left: 24,
-              right: 24,
+              left: 16,
+              right: 16,
               top: topGap,
               bottom: bottomGap,
             ),

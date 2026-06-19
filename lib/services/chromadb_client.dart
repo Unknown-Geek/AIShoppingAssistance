@@ -103,45 +103,61 @@ class ChromaDbClient {
     final url = Uri.parse('https://api.trychroma.com/api/v2/tenants/$_tenant/databases/$_database/collections/$collectionId/query');
     debugPrint('Request URL: $url');
     
-    List<double> queryEmbedding;
+    List<double> queryEmbedding = [];
+    bool embeddingSuccess = false;
 
-    try {
-      debugPrint('Uploading image directly to custom Hugging Face Space & generating CLIP embedding...');
-      String spaceUrl = dotenv.env['PRIMARY_DETECTION_URL'] ?? dotenv.env['VM_DETECTION_URL'] ?? dotenv.env['BACKUP_DETECTION_URL'] ?? dotenv.env['HF_SPACE_URL'] ?? '';
-      if (spaceUrl.isEmpty) {
-        throw Exception('Neither PRIMARY_DETECTION_URL nor BACKUP_DETECTION_URL is configured in .env');
-      }
-      // Ensure the URL correctly points to the /embed endpoint
-      spaceUrl = spaceUrl.replaceAll('/health', '').replaceAll('/detect', '').replaceAll('/embed', '').replaceAll(RegExp(r'/$'), '');
-      spaceUrl = '$spaceUrl/embed';
+    final urls = <String>[];
+    final primary = dotenv.env['PRIMARY_DETECTION_URL']?.trim() ?? '';
+    if (primary.isNotEmpty) urls.add(primary);
+    final vm = dotenv.env['VM_DETECTION_URL']?.trim() ?? '';
+    if (vm.isNotEmpty) urls.add(vm);
+    final backup = dotenv.env['BACKUP_DETECTION_URL']?.trim() ?? '';
+    if (backup.isNotEmpty) urls.add(backup);
+    final hfSpace = dotenv.env['HF_SPACE_URL']?.trim() ?? '';
+    if (hfSpace.isNotEmpty) urls.add(hfSpace);
+    
+    final cleanedUrls = urls.map((url) {
+      var clean = url.replaceAll('/health', '').replaceAll('/detect', '').replaceAll('/embed', '').replaceAll(RegExp(r'/$'), '');
+      return '$clean/embed';
+    }).where((url) => url.isNotEmpty).toList();
 
-      final request = http.MultipartRequest('POST', Uri.parse(spaceUrl));
-      final bytes = await photo.readAsBytes();
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: 'image.jpg',
-          contentType: MediaType('image', 'jpeg'),
-        ),
-      );
+    for (final spaceUrl in cleanedUrls) {
+      try {
+        debugPrint('Uploading image to: $spaceUrl...');
+        final request = http.MultipartRequest('POST', Uri.parse(spaceUrl));
+        final bytes = await photo.readAsBytes();
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            bytes,
+            filename: 'image.jpg',
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+        final streamedResponse = await request.send().timeout(const Duration(seconds: 8));
+        final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['status'] == 'success') {
-          queryEmbedding = List<double>.from(data['embedding']);
-          debugPrint('Successfully received CLIP embedding from HF Space (dimension: ${queryEmbedding.length})');
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          if (data['status'] == 'success') {
+            queryEmbedding = List<double>.from(data['embedding']);
+            debugPrint('Successfully received CLIP embedding from: $spaceUrl');
+            embeddingSuccess = true;
+            break;
+          } else {
+            debugPrint('Server $spaceUrl error: ${data['message']}');
+          }
         } else {
-          throw Exception('HF Space error: ${data['message']}');
+          debugPrint('Server $spaceUrl returned status code: ${response.statusCode}');
         }
-      } else {
-        throw Exception('Failed to connect to HF Space: Status ${response.statusCode}');
+      } catch (e) {
+        debugPrint('Failed to generate embedding from $spaceUrl: $e');
       }
-    } catch (e) {
-      debugPrint('Error generating CLIP embedding: $e. Falling back to mock.');
+    }
+
+    if (!embeddingSuccess) {
+      debugPrint('All embedding backends failed. Falling back to mock embedding.');
       queryEmbedding = _generateMockEmbedding();
     }
 
