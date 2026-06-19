@@ -331,6 +331,22 @@ Future<Map<String, dynamic>?> analyzeAndInjectRecipeIngredients({
     notifyListeners();
   }
 
+  void clearCart() {
+    _items.clear();
+    _persist();
+    final user = _supabase.auth.currentUser;
+    if (user != null) {
+      _syncTimer?.cancel();
+      _supabase
+          .from('user_carts')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
+    }
+    notifyListeners();
+  }
+
   // ─────────────────────────── Checkout ──────────────────────────────────────
 
   /// Completes the checkout: marks the active cart as processed in Supabase,
