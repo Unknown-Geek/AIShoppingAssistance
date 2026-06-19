@@ -313,6 +313,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               );
             } else if (action == 'remove') {
               CartService().removeOrDecrementItemBySkuOrName(sku ?? '', name, quantity);
+            } else if (action == 'clear') {
+              CartService().clearCart();
             }
           } catch (ex_mut) {
             debugPrint('[ChatbotScreen] Mutation error: $ex_mut');

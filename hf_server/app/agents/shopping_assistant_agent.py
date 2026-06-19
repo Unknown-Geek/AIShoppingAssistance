@@ -187,6 +187,14 @@ Return ONLY a valid JSON object in this format:
             })
         return f"Successfully removed/decremented {quantity} x '{item.get('name')}' (SKU: {sku}) from the cart."
 
+    def tool_clear_cart(self, user_id: str, mutations: List[Dict[str, Any]] = None) -> str:
+        live_cart_memory.clear_cart(user_id)
+        if mutations is not None:
+            mutations.append({
+                "action": "clear"
+            })
+        return "Successfully cleared all items from the cart."
+
     async def _generate_and_match_recipe_internal(self, user_id: str, current_cart_slugs: List[str], dish_query: str, servings: int) -> Dict[str, Any]:
         """
         Generates the recipe and runs matching against catalog.
@@ -526,6 +534,17 @@ Return ONLY a valid JSON object in this format:
                         "required": ["dish_name"]
                     }
                 }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "clear_cart",
+                    "description": "Clear all items from the user's shopping cart.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
             }
         ]
 
@@ -624,6 +643,9 @@ Current Cart Items:
                     result_str = res
                 elif tool_name == "remove_from_cart":
                     res = await loop.run_in_executor(None, lambda: self.tool_remove_from_cart(user_id, arguments.get("sku"), arguments.get("quantity", 1), mutations))
+                    result_str = res
+                elif tool_name == "clear_cart":
+                    res = await loop.run_in_executor(None, lambda: self.tool_clear_cart(user_id, mutations))
                     result_str = res
                 elif tool_name == "generate_and_match_recipe":
                     recipe_data = await self._generate_and_match_recipe_internal(
