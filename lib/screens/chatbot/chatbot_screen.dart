@@ -273,8 +273,17 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         return item.name.toLowerCase().replaceAll(' ', '-');
       }).toList();
 
+      final currentCart = CartService().items.map((item) {
+        return {
+          "sku": item.id,
+          "name": item.name,
+          "quantity": item.quantity,
+        };
+      }).toList();
+
       final data = await RecipeAgentService().analyzeAndGetMissing(
         cartSlugs,
+        currentCart,
         prompt,
         2, // servings
         _messages,

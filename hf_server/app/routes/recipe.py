@@ -26,12 +26,17 @@ async def analyze_recipe_ingredients(payload: RecipeRequest):
         if payload.chat_history:
             history = [{"is_user": h.is_user, "text": h.text} for h in payload.chat_history]
 
+        current_cart = []
+        if payload.current_cart:
+            current_cart = [{"sku": c.sku, "name": c.name, "quantity": c.quantity} for c in payload.current_cart]
+
         result = await agent.process_recipe_workflow(
             user_id=user,
             current_cart_slugs=slugs,
             dish_query=query,
             servings=srv,
-            chat_history=history
+            chat_history=history,
+            current_cart=current_cart
         )
         return result
     except Exception as e:
