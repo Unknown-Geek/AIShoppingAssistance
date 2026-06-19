@@ -54,6 +54,7 @@ class RecipeAgentService {
 
   Future<Map<String, dynamic>> analyzeAndGetMissing(
     List<String> cartSlugs,
+    List<Map<String, dynamic>> currentCart,
     String dish,
     int servings,
     List<ChatMessage> chatHistory,
@@ -80,6 +81,7 @@ class RecipeAgentService {
             "dish_query": dish,
             "servings": servings,
             "chat_history": historyList,
+            "current_cart": currentCart,
           }),
         ).timeout(const Duration(seconds: 8));
 

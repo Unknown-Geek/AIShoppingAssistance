@@ -417,9 +417,30 @@ Return ONLY a valid JSON object in this format:
             traceback.print_exc()
             return {"error": str(e), "missing_ingredients": [], "cart_additions": []}
 
-    async def process_recipe_workflow(self, user_id: str, current_cart_slugs: List[str], dish_query: str, servings: int, chat_history: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def process_recipe_workflow(
+        self,
+        user_id: str = "anonymous_user",
+        current_cart_slugs: List[str] = None,
+        dish_query: str = "",
+        servings: int = 2,
+        chat_history: List[Dict[str, Any]] = None,
+        current_cart: List[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         mutations = []
         recipe_data = None
+        
+        # Format the current cart details
+        cart_details_str = "No items in cart."
+        if current_cart:
+            cart_details_str = "\n".join([
+                f"- {item.get('name', 'Unknown')} (Quantity: {item.get('quantity', 1)}, SKU: {item.get('sku', 'UNKNOWN')})"
+                for item in current_cart
+            ])
+        elif current_cart_slugs:
+            cart_details_str = "\n".join([
+                f"- {slug} (Quantity: 1)"
+                for slug in current_cart_slugs
+            ])
         
         tools_definitions = [
             {
@@ -514,13 +535,16 @@ Return ONLY a valid JSON object in this format:
 You help users with shopping suggestions, chitchat, cooking recipe inquiries, and real-time cart modifications.
 
 Active User ID: {user_id}
-Current Cart Slugs: {current_cart_slugs}
+
+Current Cart Items:
+{cart_details_str}
 
 ### Guidelines:
 1. **Conversational Responses**: Be extremely friendly, natural, and helpful.
 2. **Tool Usage**: Use the tool-calling interface to search inventory, add/remove items, or match recipes.
 3. **No Raw Tool Tags**: Do NOT write tool calls as raw text, XML, or `<function>` tags in your response content. Only use the official API tool-calling mechanism.
 4. **No Hallucinations**: Only use the exact SKUs found in the inventory search.
+5. **Displaying Cart**: When asked to show, display, or list the cart, list each item in the cart along with its correct quantity as specified in the "Current Cart Items" section. Do not call any tools to list the cart; rely strictly on the "Current Cart Items" provided above.
 """
             }
         ]
