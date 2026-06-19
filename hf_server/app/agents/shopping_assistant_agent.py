@@ -529,7 +529,8 @@ Your final output MUST be a JSON object containing:
             }
         ]
 
-        for loop_iter in range(5):
+        executed_tool_calls = set()
+        for loop_iter in range(3):
             try:
                 loop = asyncio.get_event_loop()
                 completion = await loop.run_in_executor(
@@ -554,9 +555,20 @@ Your final output MUST be a JSON object containing:
                 break
 
             # Execute tool calls
+            should_break = False
             for tool_call in msg.tool_calls:
                 tool_name = tool_call.function.name
-                arguments = json.loads(tool_call.function.arguments)
+                tool_args_str = tool_call.function.arguments
+
+                # Check for loop/duplication
+                call_signature = (tool_name, tool_args_str)
+                if call_signature in executed_tool_calls:
+                    print(f"🔁 [LOOP PREVENTED] Agent attempted to call tool '{tool_name}' with identical arguments {tool_args_str} again. Breaking loop.")
+                    should_break = True
+                    break
+                executed_tool_calls.add(call_signature)
+
+                arguments = json.loads(tool_args_str)
                 print(f"🛠️ [TOOL CALL] {tool_name} with args {arguments}")
 
                 result_str = ""
@@ -586,6 +598,9 @@ Your final output MUST be a JSON object containing:
                     "name": tool_name,
                     "content": result_str
                 })
+
+            if should_break:
+                break
 
         messages.append({
             "role": "user",
