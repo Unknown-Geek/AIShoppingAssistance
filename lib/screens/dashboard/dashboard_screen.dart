@@ -1149,18 +1149,24 @@ class _DashboardScreenState extends State<DashboardScreen>
                                           ),
                                         ),
                                         onDismissed: (_) => _removeItem(index),
-                                        child: CartItem(
-                                          imageUrl: item.imageUrl,
-                                          name: item.name,
-                                          details:
-                                              "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
-                                          quantity: item.quantity,
-                                          onIncrement: () =>
-                                              _incrementQuantity(index),
-                                          onDecrement: () =>
-                                              _decrementQuantity(index),
-                                          onRemove: () => _removeItem(index),
-                                        ),
+                                        child: () {
+                                          final slug = InventoryService().getSlugByName(item.name);
+                                          final displayImageUrl = (item.imageUrl.startsWith('http') && !item.imageUrl.contains('string'))
+                                              ? item.imageUrl
+                                              : (slug != null ? InventoryService().getImageUrl(slug) : item.imageUrl);
+                                          return CartItem(
+                                            imageUrl: displayImageUrl,
+                                            name: item.name,
+                                            details:
+                                                "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
+                                            quantity: item.quantity,
+                                            onIncrement: () =>
+                                                _incrementQuantity(index),
+                                            onDecrement: () =>
+                                                _decrementQuantity(index),
+                                            onRemove: () => _removeItem(index),
+                                          );
+                                        }(),
                                       );
                                     },
                                   ),

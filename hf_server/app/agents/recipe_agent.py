@@ -5,7 +5,10 @@ from typing import Dict, Any, List
 from groq import Groq
 from dotenv import load_dotenv
 
-load_dotenv()
+# Explicitly load .env file from the hf_server directory
+base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+dotenv_path = os.path.join(base_dir, ".env")
+load_dotenv(dotenv_path=dotenv_path, override=True)
 
 # Hard Category Guardrail: substrings that identify non-cooking items
 # (household cleaners, air fresheners, baby formulas, health drinks, etc.)
@@ -56,7 +59,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
         ]
 
         response = self.client.chat.completions.create(
-            model="mixtral-8x7b-32768",
+            model="llama-3.3-70b-versatile",
             messages=messages,
             max_tokens=1024,
             temperature=0.2,
@@ -188,7 +191,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
         """
 
         completion = self.client.chat.completions.create(
-            model="mixtral-8x7b-32768",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {
                     "role": "system",

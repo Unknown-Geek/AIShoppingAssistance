@@ -1,12 +1,15 @@
 import os
+from dotenv import load_dotenv
+
+# Explicitly load .env file from the hf_server directory
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+dotenv_path = os.path.join(base_dir, ".env")
+load_dotenv(dotenv_path=dotenv_path, override=True)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .config import IMAGES_DIR
 from .routes import health, detection, recipe
 from .services.http_client import init_http_client, close_http_client
-
-# Ensure captured_images directory exists
-os.makedirs(IMAGES_DIR, exist_ok=True)
 
 app = FastAPI()
 

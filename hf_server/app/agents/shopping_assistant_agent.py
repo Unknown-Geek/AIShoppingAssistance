@@ -7,10 +7,12 @@ from dotenv import load_dotenv
 from app.agents.recipe_agent import RecipeAgent
 from app.agents.tools.quantity_parser_tool import QuantityParserTool
 
-# ─── NEW IMPORT ADDED HERE ───
-from app.utils.cart_state import live_cart_memory
+# Explicitly load .env file from the hf_server directory
+base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+dotenv_path = os.path.join(base_dir, ".env")
+load_dotenv(dotenv_path=dotenv_path, override=True)
 
-load_dotenv()
+from app.utils.cart_state import live_cart_memory
 
 # ─── UPDATED REAL TOOL FUNCTION ───
 def execute_database_cart_addition(user_id: str, sku: str, quantity: int) -> bool:
@@ -113,7 +115,7 @@ Return ONLY a valid JSON object in this format:
             response = await loop.run_in_executor(
                 None,
                 lambda: self.client.chat.completions.create(
-                    model="mixtral-8x7b-32768",
+                    model="llama-3.3-70b-versatile",
                     messages=messages,
                     max_tokens=256,
                     temperature=0.3,
@@ -516,15 +518,9 @@ Current Cart Slugs: {current_cart_slugs}
 
 ### Guidelines:
 1. **Conversational Responses**: Be extremely friendly, natural, and helpful.
-2. **Recipe Requests**: If the user asks for a recipe or meal idea, ALWAYS call the `generate_and_match_recipe` tool.
-3. **Cart Mutations**: If the user asks to add/remove/delete items from their cart, search the inventory first using `search_inventory` to find the correct SKU, then call `add_to_cart` or `remove_from_cart`.
-4. **Validation**: Check if recommended items or requested items are in the inventory. If not in the inventory, politely inform the user.
-5. **No Hallucinations**: Only use the exact SKUs found in the inventory search.
-
-Your final output MUST be a JSON object containing:
-- "response_text": Your conversational response to the user.
-- "recipe": The recipe payload dictionary returned by the `generate_and_match_recipe` tool (if called), or null.
-- "cart_mutations": The list of cart mutations performed (automatically tracked by your tool calls), or null.
+2. **Tool Usage**: Use the tool-calling interface to search inventory, add/remove items, or match recipes.
+3. **No Raw Tool Tags**: Do NOT write tool calls as raw text, XML, or `<function>` tags in your response content. Only use the official API tool-calling mechanism.
+4. **No Hallucinations**: Only use the exact SKUs found in the inventory search.
 """
             }
         ]
@@ -550,7 +546,7 @@ Your final output MUST be a JSON object containing:
                 completion = await loop.run_in_executor(
                     None,
                     lambda: self.client.chat.completions.create(
-                        model="mixtral-8x7b-32768",
+                        model="llama-3.3-70b-versatile",
                         messages=messages,
                         tools=tools_definitions,
                         tool_choice="auto",
@@ -640,7 +636,7 @@ Return ONLY this JSON object. No markdown formatting, no code fences, no extra t
             final_completion = await loop.run_in_executor(
                 None,
                 lambda: self.client.chat.completions.create(
-                    model="mixtral-8x7b-32768",
+                    model="llama-3.3-70b-versatile",
                     messages=messages,
                     max_tokens=1024,
                     temperature=0.2,
