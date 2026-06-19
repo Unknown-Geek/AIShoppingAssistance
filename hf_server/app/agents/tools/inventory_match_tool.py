@@ -9,8 +9,28 @@ class InventoryMatchTool:
         self.inventory = self._load_inventory()
 
     def _load_inventory(self) -> List[Dict[str, Any]]:
-        """Load the master retail catalog"""
-        inventory_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../inventory.json"))
+        """Load the master retail catalog from candidates list"""
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        candidates = [
+            "/workspaces/AIShoppingAssistance/inventory.json",
+            os.path.abspath(os.path.join(base_dir, "inventory.json")),
+            os.path.abspath(os.path.join(base_dir, "..", "inventory.json")),
+            os.path.abspath(os.path.join(base_dir, "..", "..", "inventory.json")),
+            os.path.abspath(os.path.join(base_dir, "..", "..", "..", "inventory.json")),
+            os.path.abspath(os.path.join(base_dir, "..", "..", "..", "..", "inventory.json")),
+            os.path.abspath("inventory.json"),
+            os.path.abspath("../inventory.json"),
+        ]
+        
+        inventory_path = None
+        for path in candidates:
+            if os.path.exists(path):
+                inventory_path = path
+                break
+                
+        if not inventory_path:
+            inventory_path = os.path.abspath(os.path.join(base_dir, "..", "..", "..", "..", "inventory.json"))
+
         try:
             with open(inventory_path, "r") as f:
                 data = json.load(f)

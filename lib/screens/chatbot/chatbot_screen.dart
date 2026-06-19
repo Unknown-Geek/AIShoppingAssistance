@@ -278,27 +278,38 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         2, // servings
       );
 
-      // Translate backend payload to keys expected by RecipeCard
-      final recipeData = {
-        'dish': data['dish'] ?? prompt,
-        'servings': data['servings'] ?? 2,
-        'ready_time': '20 min',
-        'summary': data['recipe_instructions'] != null && (data['recipe_instructions'] as List).isNotEmpty
-            ? 'A delicious ${data['dish'] ?? prompt} crafted by your AI Chef.'
-            : 'A custom recipe for ${data['dish'] ?? prompt}.',
-        'ingredients': (data['parsed_ingredients'] as List<dynamic>?)?.map((item) {
-          return {
-            'name': item['name'] ?? '',
-            'quantity': item['quantity'] ?? '1',
-          };
-        }).toList() ?? [],
-        'instructions': List<String>.from(data['recipe_instructions'] ?? []),
-        'missing_ingredients': data['missing_ingredients'],
-      };
+      if (data['is_conversational'] == true) {
+        setState(() {
+          _messages.add(
+            ChatMessage(
+              isUser: false,
+              text: data['response_text'] ?? 'How can I assist you today?',
+            ),
+          );
+        });
+      } else {
+        // Translate backend payload to keys expected by RecipeCard
+        final recipeData = {
+          'dish': data['dish'] ?? prompt,
+          'servings': data['servings'] ?? 2,
+          'ready_time': '20 min',
+          'summary': data['recipe_instructions'] != null && (data['recipe_instructions'] as List).isNotEmpty
+              ? 'A delicious ${data['dish'] ?? prompt} crafted by your AI Chef.'
+              : 'A custom recipe for ${data['dish'] ?? prompt}.',
+          'ingredients': (data['parsed_ingredients'] as List<dynamic>?)?.map((item) {
+            return {
+              'name': item['name'] ?? '',
+              'quantity': item['quantity'] ?? '1',
+            };
+          }).toList() ?? [],
+          'instructions': List<String>.from(data['recipe_instructions'] ?? []),
+          'missing_ingredients': data['missing_ingredients'],
+        };
 
-      setState(() {
-        _messages.add(ChatMessage(isUser: false, recipe: recipeData));
-      });
+        setState(() {
+          _messages.add(ChatMessage(isUser: false, recipe: recipeData));
+        });
+      }
 
       _saveCurrentChat();
     } catch (e) {
