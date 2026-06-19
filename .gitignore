@@ -59,3 +59,9 @@ devtools_options.yaml
 
 # Android build outputs
 /android/build/
+
+# Node.js / opencode tooling
+node_modules/
+opencode.json
+package.json
+package-lock.json
