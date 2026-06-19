@@ -55,9 +55,14 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool _isConfirmSheetOpen = false;
   bool _isDashboardActive = true;
 
+  // Timestamp tracking to prevent stale background scan race conditions
+  DateTime? _lastActionTime;
+  DateTime? _backgroundScanPauseUntil;
+
   @override
   void initState() {
     super.initState();
+    _lastActionTime = DateTime.now();
     WidgetsBinding.instance.addObserver(this);
     _cursorController = AnimationController(
       vsync: this,
@@ -168,6 +173,11 @@ class _DashboardScreenState extends State<DashboardScreen>
     // 2. Cart must be collapsed (expanded controller value == 0)
     // 3. Shutter must NOT be actively searching/loading a manual scan
     // 4. Confirmation sheet must NOT be open
+    // 5. Background scanning must not be paused
+    if (_backgroundScanPauseUntil != null &&
+        DateTime.now().isBefore(_backgroundScanPauseUntil!)) {
+      return;
+    }
     if (!_isCameraInitialized || _cameraController == null || _isCameraBusy) {
       return;
     }
@@ -177,6 +187,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     _isCameraBusy = true;
 
+    final DateTime captureTime = DateTime.now();
     XFile? capturedPhoto;
     try {
       capturedPhoto = await _cameraController!.takePicture().timeout(
@@ -191,6 +202,14 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
 
       if (item != null && mounted) {
+        // Discard background scan if the photo was captured before the last user interaction/action
+        if (_lastActionTime != null && captureTime.isBefore(_lastActionTime!)) {
+          debugPrint(
+            "[DashboardScreen] Discarding stale background scan result (captured before last action).",
+          );
+          return;
+        }
+
         setState(() {
           _cachedDetectedItem = item;
           _cachedDetectionTime = DateTime.now();
@@ -405,7 +424,13 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
 
       if (mounted) {
-        setState(() => _isConfirmSheetOpen = false);
+        setState(() {
+          _isConfirmSheetOpen = false;
+          _lastActionTime = DateTime.now();
+          _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
+          _cachedDetectedItem = null;
+          _cachedDetectionTime = null;
+        });
         if (confirmed == true) {
           _cartService.addItem(item);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -449,7 +474,11 @@ class _DashboardScreenState extends State<DashboardScreen>
       return;
     }
 
-    setState(() => _isSearchingImage = true);
+    setState(() {
+      _isSearchingImage = true;
+      _lastActionTime = DateTime.now();
+      _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
+    });
     _isCameraBusy = true;
 
     XFile? capturedPhoto;
@@ -472,7 +501,13 @@ class _DashboardScreenState extends State<DashboardScreen>
           item: item,
         );
         if (mounted) {
-          setState(() => _isConfirmSheetOpen = false);
+          setState(() {
+            _isConfirmSheetOpen = false;
+            _lastActionTime = DateTime.now();
+            _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
+            _cachedDetectedItem = null;
+            _cachedDetectionTime = null;
+          });
         }
         if (confirmed == true && mounted) {
           _cartService.addItem(item);
