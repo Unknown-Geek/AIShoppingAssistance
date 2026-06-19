@@ -73,8 +73,8 @@ jobs:
           username: ${{ secrets.ORACLE_VM_USER }}
           key: ${{ secrets.ORACLE_VM_SSH_KEY }}
           script: |
-            # Source bashrc to load environment variables (like GROQ_API_KEY) in non-interactive SSH shell
-            if [ -f ~/.bashrc ]; then source ~/.bashrc; fi
+            # Sourcing .bashrc in non-interactive shell exits early. We manually extract exports instead.
+            if [ -f ~/.bashrc ]; then eval "$(grep '^export ' ~/.bashrc)"; fi
             cd ${{ secrets.ORACLE_VM_REPO_PATH }}
             git fetch origin main
             git reset --hard origin/main

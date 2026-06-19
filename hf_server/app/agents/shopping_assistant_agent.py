@@ -40,11 +40,27 @@ class ShoppingAssistantAgent:
         self.inventory = self._load_inventory()
 
     def _load_inventory(self) -> List[Dict[str, Any]]:
-        """Loads the store inventory catalog from the verified absolute container workspace root path."""
-        inventory_path = "/workspaces/AIShoppingAssistance/inventory.json"
+        """Loads the store inventory catalog from candidate locations."""
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        candidates = [
+            "/workspaces/AIShoppingAssistance/inventory.json",
+            os.path.abspath(os.path.join(base_dir, "inventory.json")),
+            os.path.abspath(os.path.join(base_dir, "..", "inventory.json")),
+            os.path.abspath(os.path.join(base_dir, "..", "..", "inventory.json")),
+            os.path.abspath(os.path.join(base_dir, "..", "..", "..", "inventory.json")),
+            os.path.abspath(os.path.join(base_dir, "..", "..", "..", "..", "inventory.json")),
+            os.path.abspath("inventory.json"),
+            os.path.abspath("../inventory.json"),
+        ]
         
-        if not os.path.exists(inventory_path):
-            inventory_path = "../inventory.json"
+        inventory_path = None
+        for path in candidates:
+            if os.path.exists(path):
+                inventory_path = path
+                break
+                
+        if not inventory_path:
+            inventory_path = os.path.abspath(os.path.join(base_dir, "..", "..", "inventory.json"))
 
         try:
             with open(inventory_path, "r") as f:
@@ -54,12 +70,69 @@ class ShoppingAssistantAgent:
             print(f"⚠️ [WARNING] Failed to load inventory database catalog from {inventory_path}: {e}")
             return []
 
+    async def _classify_query(self, query: str) -> Dict[str, Any]:
+        """
+        Classifies user query into 'recipe' or 'conversational'.
+        If conversational, generates response text.
+        """
+        prompt = f"""Analyze the following user query:
+"{query}"
+
+Classify this query as one of:
+- "recipe": the user is explicitly asking for a recipe, cooking steps, or instructions to prepare a specific dish/meal (e.g. "how to cook pasta", "veg biryani recipe", "how do I bake a cake").
+- "conversational": the user is greeting, chitchatting, asking generic questions about the store/app, asking for shopping recommendations/suggestions, or asking for general advice (e.g., "hi", "who are you?", "suggest some healthy snacks", "do you sell milk?", "is organic food healthy?").
+
+If classified as "conversational", also generate a helpful, natural, friendly response as the AI retail assistant. Do not try to generate a structured recipe for conversational queries.
+
+Return ONLY a valid JSON object in this format:
+{{
+  "classification": "recipe" or "conversational",
+  "response_text": "your friendly chatbot response goes here if conversational, otherwise null"
+}}"""
+
+        messages = [
+            {
+                "role": "system",
+                "content": "You are a helpful retail and cooking assistant for the Qless self-checkout store. You must categorize queries and provide chat responses when appropriate, formatted strictly as a json object matching the requested schema."
+            },
+            {"role": "user", "content": prompt}
+        ]
+
+        try:
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=messages,
+                    max_tokens=256,
+                    temperature=0.3,
+                    response_format={"type": "json_object"}
+                )
+            )
+            content = response.choices[0].message.content or ""
+            content = content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+            return json.loads(content)
+        except Exception as e:
+            print(f"⚠️ [WARNING] Query classification failed: {e}")
+            return {"classification": "recipe", "response_text": None}
+
     async def process_recipe_workflow(self, user_id: str, current_cart_slugs: List[str], dish_query: str, servings: int) -> Dict[str, Any]:
         """
         Executes the full recipe pipeline, screens out payload injections, 
         consolidates recurring missing items/cart additions cleanly, and formats for Flutter.
         """
         try:
+            # ─────────────────────────────────────────────────────────────────
+            # GATE 0: QUERY CLASSIFICATION (RECIPE vs CONVERSATIONAL)
+            # ─────────────────────────────────────────────────────────────────
+            classification_result = await self._classify_query(dish_query)
+            if classification_result.get("classification") == "conversational":
+                return {
+                    "is_conversational": True,
+                    "response_text": classification_result.get("response_text") or "Hello! How can I assist you today?"
+                }
+
             # ─────────────────────────────────────────────────────────────────
             # GATE 1: IMMEDIATE FRONT-DOOR INPUT SANITIZATION
             # ─────────────────────────────────────────────────────────────────

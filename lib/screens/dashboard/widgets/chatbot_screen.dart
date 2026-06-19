@@ -200,7 +200,16 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     }
 
     if (response.statusCode == 200 && data is Map<String, dynamic>) {
-      if (data['status'] == 'success') {
+      if (data['is_conversational'] == true) {
+        setState(() {
+          _messages.add(
+            ChatMessage(
+              isUser: false,
+              text: data['response_text'] ?? 'How can I assist you today?',
+            ),
+          );
+        });
+      } else if (data['status'] == 'success' || data.containsKey('dish')) {
         setState(() {
           _messages.add(
             ChatMessage(isUser: false, recipe: data),
