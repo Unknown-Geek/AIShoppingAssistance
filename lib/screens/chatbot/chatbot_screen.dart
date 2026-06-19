@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import '../../models/chatbot_models.dart';
+import '../../models/cart_item_model.dart';
 import 'widgets/message_bubble.dart';
 import 'widgets/chat_input_field.dart';
 import 'widgets/history_drawer.dart';
@@ -278,7 +279,61 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         2, // servings
       );
 
-      if (data['is_conversational'] == true) {
+      // Process cart mutations if present
+      if (data['cart_mutations'] != null && data['cart_mutations'] is List) {
+        final mutations = List<dynamic>.from(data['cart_mutations']);
+        for (final mutation in mutations) {
+          try {
+            final action = mutation['action'];
+            final sku = mutation['sku'];
+            final name = mutation['name'] ?? 'Unknown Item';
+            final price = (mutation['price'] as num?)?.toDouble() ?? 50.0;
+            final quantity = (mutation['quantity'] as num?)?.toInt() ?? 1;
+
+            if (action == 'add') {
+              CartService().addItem(
+                CartItemModel(
+                  id: sku ?? 'unknown_sku_${DateTime.now().millisecondsSinceEpoch}',
+                  name: name,
+                  price: price,
+                  quantity: quantity,
+                  details: 'Added by Qless Assistant',
+                  imageUrl: mutation['thumbnail_url'] ?? '',
+                ),
+              );
+            } else if (action == 'remove') {
+              CartService().removeOrDecrementItemBySkuOrName(sku ?? '', name, quantity);
+            }
+          } catch (ex_mut) {
+            debugPrint('[ChatbotScreen] Mutation error: $ex_mut');
+          }
+        }
+      }
+
+      if (data['recipe'] != null) {
+        final recipePayload = Map<String, dynamic>.from(data['recipe'] as Map);
+        // Translate backend payload to keys expected by RecipeCard
+        final recipeData = {
+          'dish': recipePayload['dish'] ?? prompt,
+          'servings': recipePayload['servings'] ?? 2,
+          'ready_time': '20 min',
+          'summary': recipePayload['recipe_instructions'] != null && (recipePayload['recipe_instructions'] as List).isNotEmpty
+              ? 'A delicious ${recipePayload['dish'] ?? prompt} crafted by your AI Chef.'
+              : 'A custom recipe for ${recipePayload['dish'] ?? prompt}.',
+          'ingredients': (recipePayload['parsed_ingredients'] as List<dynamic>?)?.map((item) {
+            return {
+              'name': item['name'] ?? '',
+              'quantity': item['quantity'] ?? '1',
+            };
+          }).toList() ?? [],
+          'instructions': List<String>.from(recipePayload['recipe_instructions'] ?? []),
+          'missing_ingredients': recipePayload['missing_ingredients'],
+        };
+
+        setState(() {
+          _messages.add(ChatMessage(isUser: false, recipe: recipeData));
+        });
+      } else {
         setState(() {
           _messages.add(
             ChatMessage(
@@ -286,28 +341,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               text: data['response_text'] ?? 'How can I assist you today?',
             ),
           );
-        });
-      } else {
-        // Translate backend payload to keys expected by RecipeCard
-        final recipeData = {
-          'dish': data['dish'] ?? prompt,
-          'servings': data['servings'] ?? 2,
-          'ready_time': '20 min',
-          'summary': data['recipe_instructions'] != null && (data['recipe_instructions'] as List).isNotEmpty
-              ? 'A delicious ${data['dish'] ?? prompt} crafted by your AI Chef.'
-              : 'A custom recipe for ${data['dish'] ?? prompt}.',
-          'ingredients': (data['parsed_ingredients'] as List<dynamic>?)?.map((item) {
-            return {
-              'name': item['name'] ?? '',
-              'quantity': item['quantity'] ?? '1',
-            };
-          }).toList() ?? [],
-          'instructions': List<String>.from(data['recipe_instructions'] ?? []),
-          'missing_ingredients': data['missing_ingredients'],
-        };
-
-        setState(() {
-          _messages.add(ChatMessage(isUser: false, recipe: recipeData));
         });
       }
 

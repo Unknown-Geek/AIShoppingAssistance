@@ -30,5 +30,18 @@ class InMemoryCartStateManager:
             if user_id in self._carts:
                 self._carts[user_id] = {}
 
+    def remove_item(self, user_id: str, sku: str, quantity: int = 1) -> bool:
+        """Thread-safe write operation to remove or decrement a SKU in a user's cart."""
+        with self._lock:
+            if user_id not in self._carts or sku not in self._carts[user_id]:
+                return False
+            
+            current_qty = self._carts[user_id][sku]
+            if current_qty > quantity:
+                self._carts[user_id][sku] = current_qty - quantity
+            else:
+                del self._carts[user_id][sku]
+            return True
+
 # Instantiate a single global singleton instance to be imported across modules
 live_cart_memory = InMemoryCartStateManager()
