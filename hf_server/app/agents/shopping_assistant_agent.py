@@ -113,7 +113,7 @@ Return ONLY a valid JSON object in this format:
             response = await loop.run_in_executor(
                 None,
                 lambda: self.client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
+                    model="mixtral-8x7b-32768",
                     messages=messages,
                     max_tokens=256,
                     temperature=0.3,
@@ -535,7 +535,7 @@ Your final output MUST be a JSON object containing:
                 completion = await loop.run_in_executor(
                     None,
                     lambda: self.client.chat.completions.create(
-                        model="llama-3.1-8b-instant",
+                        model="mixtral-8x7b-32768",
                         messages=messages,
                         tools=tools_definitions,
                         tool_choice="auto",
@@ -604,7 +604,7 @@ Return ONLY this JSON object. No markdown formatting, no code fences, no extra t
             final_completion = await loop.run_in_executor(
                 None,
                 lambda: self.client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
+                    model="mixtral-8x7b-32768",
                     messages=messages,
                     max_tokens=1024,
                     temperature=0.2,
