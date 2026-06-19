@@ -36,6 +36,34 @@ graph TD
     I -.->|8. Async persistent sync| K[("Supabase Table: user_carts")]
 ```
 
+### Conversational Shopping Assistant Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client as Flutter App
+    participant Route as FastAPI Route
+    participant Agent as ShoppingAssistantAgent
+    participant LLM as Groq (Mixtral 8x7B)
+
+    Client->>Route: POST /analyze-ingredients (query, history, cart_slugs)
+    Route->>Agent: process_recipe_workflow()
+    Note over Agent: Reconstructs chat history transcript
+    
+    loop Agentic Tool Loop (Max 3 turns)
+        Agent->>LLM: Chat completion request with tools
+        LLM-->>Agent: Returns tool calls (e.g. search_inventory, add_to_cart)
+        Note over Agent: Prevents duplicate/circular tool loops
+        Note over Agent: Executes all tool calls in parallel (asyncio.gather)
+        Agent->>LLM: Returns tool execution results
+    end
+    
+    LLM-->>Agent: Returns final conversational response
+    Agent->>Route: Returns structured envelope (response, recipe, mutations)
+    Route-->>Client: Returns JSON payload
+    Note over Client: Syncs cart state & renders recipe cards with substitute buttons
+```
+
 ### Flow Breakdown
 
 1. **Mobile Capture (`lib/screens/dashboard/dashboard_screen.dart`):** Utilizes `CameraController` at low resolution to reduce upload payloads.
