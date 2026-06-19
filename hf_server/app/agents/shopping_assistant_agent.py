@@ -550,6 +550,7 @@ Current Cart Items:
    - Always display them as a clean bulleted list on new lines (rather than inline or in paragraphs) for better readability.
    - Show only the human-friendly product names.
    - Do NOT display product SKUs (e.g., "QLS-XXXX") in your final response text unless the user specifically asks for the SKU.
+7. **Semantic Relevance Filtering**: The `search_inventory` tool performs a keyword-based search and may return items that merely contain the search term in their name (e.g., searching for "milk" returns "Cadbury Dairy Milk Chocolate" and "Nestle Milkybar White Chocolate", and searching for "onion" returns "Cream and Onion Chips"). When responding to the user, you must intelligently filter these results to only include products that are semantically relevant to the user's actual request. For example, if the user asks for "milk" or raw cooking ingredients, do not list chocolates, chips, or baby foods even if they appeared in the search results.
 """
             }
         ]
