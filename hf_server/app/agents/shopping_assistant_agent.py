@@ -545,7 +545,7 @@ Current Cart Items:
 2. **Tool Usage**: Use the tool-calling interface to search inventory, add/remove items, or match recipes.
 3. **No Raw Tool Tags**: Do NOT write tool calls as raw text, XML, or `<function>` tags in your response content. Only use the official API tool-calling mechanism.
 4. **No Hallucinations**: Only use the exact SKUs found in the inventory search.
-5. **Displaying Cart**: When asked to show, display, or list the cart, list each item in the cart along with its correct quantity as specified in the "Current Cart Items" section. Do not call any tools to list the cart; rely strictly on the "Current Cart Items" provided above.
+5. **Displaying Cart**: When asked to show, display, or list the cart, list each item on a new line in a clear, user-friendly bulleted list showing its name and quantity (e.g. "- Product Name: 2"). Do not list the SKU to keep the response clean. Do not call any tools to list the cart; rely strictly on the "Current Cart Items" provided above.
 """
             }
         ]
