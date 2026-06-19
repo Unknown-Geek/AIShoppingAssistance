@@ -626,11 +626,10 @@ Your final output MUST be a JSON object containing:
 
         messages.append({
             "role": "user",
-            "content": """Provide your final response as a JSON object matching this schema:
+            "content": """Provide your final response as a JSON object containing only a single key "response_text" with your friendly chatbot response to the user.
+Example:
 {
-  "response_text": "your friendly chatbot response here",
-  "recipe": <the recipe JSON dictionary returned by generate_and_match_recipe, or null>,
-  "cart_mutations": <the list of cart mutations performed, or null>
+  "response_text": "I have added 2 Snickers to your cart."
 }
 
 Return ONLY this JSON object. No markdown formatting, no code fences, no extra text."""
@@ -652,16 +651,18 @@ Return ONLY this JSON object. No markdown formatting, no code fences, no extra t
             final_content = final_content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
             final_json = json.loads(final_content)
             
-            if mutations:
-                final_json["cart_mutations"] = mutations
-            if recipe_data:
-                final_json["recipe"] = recipe_data
+            # Safeguard "response_text" key
+            if not isinstance(final_json, dict) or "response_text" not in final_json:
+                final_json = {"response_text": str(final_json)}
+                
+            final_json["cart_mutations"] = mutations if mutations else None
+            final_json["recipe"] = recipe_data if recipe_data else None
                 
             return final_json
         except Exception as e:
             print(f"⚠️ [FINAL FORMAT FAULT] {e}")
             return {
-                "response_text": "I encountered an error formatting my response, but the operation was processed.",
+                "response_text": "I processed your request, but had trouble formatting the response.",
                 "recipe": recipe_data,
                 "cart_mutations": mutations
             }
