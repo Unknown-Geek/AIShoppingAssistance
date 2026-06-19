@@ -546,6 +546,11 @@ Current Cart Items:
 3. **No Raw Tool Tags**: Do NOT write tool calls as raw text, XML, or `<function>` tags in your response content. Only use the official API tool-calling mechanism.
 4. **No Hallucinations**: Only use the exact SKUs found in the inventory search.
 5. **Displaying Cart**: When asked to show, display, or list the cart, list each item on a new line in a clear, user-friendly bulleted list showing its name and quantity (e.g. "- Product Name: 2"). Do not list the SKU to keep the response clean. Do not call any tools to list the cart; rely strictly on the "Current Cart Items" provided above.
+6. **Displaying Search Results / Products**: When listing products from inventory searches or queries:
+   - Always display them as a clean bulleted list on new lines (rather than inline or in paragraphs) for better readability.
+   - Show only the human-friendly product names.
+   - Do NOT display product SKUs (e.g., "QLS-XXXX") in your final response text unless the user specifically asks for the SKU.
+7. **Semantic Relevance Filtering**: The `search_inventory` tool performs a keyword-based search and may return items that merely contain the search term in their name (e.g., searching for "milk" returns "Cadbury Dairy Milk Chocolate" and "Nestle Milkybar White Chocolate", and searching for "onion" returns "Cream and Onion Chips"). When responding to the user, you must intelligently filter these results to only include products that are semantically relevant to the user's actual request. For example, if the user asks for "milk" or raw cooking ingredients, do not list chocolates, chips, or baby foods even if they appeared in the search results.
 """
             }
         ]
