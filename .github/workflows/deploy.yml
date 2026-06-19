@@ -26,7 +26,23 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          python -c "import os; from huggingface_hub import HfApi; api = HfApi(token=os.environ['HF_TOKEN']); api.upload_folder(folder_path='./hf_server', repo_id='Mojo-Maniac/AIShoppingAssistance_Server', repo_type='space', delete_patterns='*')"
+          python -c "
+          import os, time
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ['HF_TOKEN'])
+          for i in range(5):
+              try:
+                  api.upload_folder(folder_path='./hf_server', repo_id='Mojo-Maniac/AIShoppingAssistance_Server', repo_type='space', delete_patterns='*')
+                  print('Upload completed successfully!')
+                  break
+              except Exception as e:
+                  if hasattr(e, 'response') and e.response is not None and e.response.status_code == 429:
+                      wait_time = (i + 1) * 30
+                      print(f'Rate limited (429). Retrying in {wait_time}s... (Attempt {i+1}/5)')
+                      time.sleep(wait_time)
+                  else:
+                      raise e
+          "
 
       - name: Wait for Hugging Face Space Deployment
         env:
