@@ -22,35 +22,62 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
   }
 
   void _addIngredientsToCart(BuildContext context) {
-    final ingredients = List<Map<String, dynamic>>.from(widget.recipe['ingredients'] ?? []);
-    if (ingredients.isEmpty) return;
+    final missingIngredients = List<dynamic>.from(widget.recipe['missing_ingredients'] ?? []);
+    final addedItems = <String>[];
+    final missingItems = <String>[];
 
-    for (final item in ingredients) {
-      final name = item['name'] ?? '';
-      final quantity = item['quantity'] ?? '1';
+    for (final item in missingIngredients) {
+      if (item is Map) {
+        final sku = item['sku'] as String? ?? 'UNKNOWN';
+        final name = item['name'] as String? ?? '';
+        final price = (item['price_rupees'] as num?)?.toDouble() ?? 0.0;
+        final thumbnail = item['thumbnail_url'] as String? ?? '';
+        final reqQty = item['required_quantity'] as String? ?? '1';
 
-      CartService().addItem(
-        CartItemModel(
-          id: 'recipe_${widget.recipe['dish']}_${name.hashCode}',
-          name: name,
-          details: 'Recipe Ingredient: $quantity',
-          imageUrl: '', // default fallback
-          price: 50.0,  // fallback mockup price
-          quantity: 1,
-        ),
-      );
+        if (sku != 'UNKNOWN') {
+          addedItems.add(name);
+          CartService().addItem(
+            CartItemModel(
+              id: sku,
+              name: name,
+              details: 'Recipe Ingredient: $reqQty',
+              imageUrl: thumbnail,
+              price: price,
+              quantity: 1,
+            ),
+          );
+        } else {
+          missingItems.add(name);
+        }
+      }
     }
 
     final theme = Theme.of(context);
+    final String message;
+    if (addedItems.isEmpty && missingItems.isEmpty) {
+      message = 'All ingredients are already in your cart!';
+    } else if (addedItems.isNotEmpty && missingItems.isEmpty) {
+      message = 'Added to cart: ${addedItems.join(', ')}';
+    } else if (addedItems.isEmpty && missingItems.isNotEmpty) {
+      message = 'Not in inventory: ${missingItems.join(', ')}';
+    } else {
+      message = 'Added: ${addedItems.join(', ')}\nNot in inventory: ${missingItems.join(', ')}';
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Added ${ingredients.length} ingredients to your cart!',
-          style: const TextStyle(fontFamily: 'ClashGrotesk', fontWeight: FontWeight.w500),
+          message,
+          style: const TextStyle(
+            fontFamily: 'ClashGrotesk',
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+          ),
         ),
         backgroundColor: theme.colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        duration: const Duration(seconds: 4),
       ),
     );
   }

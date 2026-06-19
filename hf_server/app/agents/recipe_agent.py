@@ -56,7 +56,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
         ]
 
         response = self.client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="mixtral-8x7b-32768",
             messages=messages,
             max_tokens=1024,
             temperature=0.2,
@@ -180,7 +180,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
         """
 
         completion = self.client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="mixtral-8x7b-32768",
             messages=[
                 {
                     "role": "system",

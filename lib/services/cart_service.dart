@@ -256,6 +256,27 @@ Future<Map<String, dynamic>?> analyzeAndInjectRecipeIngredients({
 
   // ─────────────────────────── CRUD ──────────────────────────────────────────
 
+  void removeItemBySkuOrName(String sku, String name) {
+    final index = _items.indexWhere((e) => e.id == sku || e.name == name);
+    if (index != -1) {
+      removeItem(index);
+    }
+  }
+
+  void removeOrDecrementItemBySkuOrName(String sku, String name, int quantity) {
+    final index = _items.indexWhere((e) => e.id == sku || e.name == name);
+    if (index != -1) {
+      final currentQty = _items[index].quantity;
+      if (currentQty > quantity) {
+        for (int i = 0; i < quantity; i++) {
+          decrementQuantity(index);
+        }
+      } else {
+        removeItem(index);
+      }
+    }
+  }
+
   /// Adds [item] to the cart. If an item with the same [name] already exists,
   /// its quantity is incremented instead of adding a duplicate.
   void addItem(CartItemModel item) {

@@ -23,9 +23,19 @@ def execute_database_cart_addition(user_id: str, sku: str, quantity: int) -> boo
         print(f"💾 [STATE COMMIT] User: '{user_id}' | SKU: '{sku}' successfully written to memory.")
     return success
 
+def execute_database_cart_removal(user_id: str, sku: str, quantity: int) -> bool:
+    """
+    Directly writes a persistent modification entry to remove or decrement a SKU in the cart.
+    """
+    success = live_cart_memory.remove_item(user_id=user_id, sku=sku, quantity=quantity)
+    if success:
+        print(f"💾 [STATE REMOVE] User: '{user_id}' | SKU: '{sku}' successfully removed/decremented from memory.")
+    return success
+
 # ─── ACTIVE REGISTRY MANDATORY HOOK ───
 ACTIVE_CART_TOOLS_REGISTRY = {
-    "add_to_cart": execute_database_cart_addition
+    "add_to_cart": execute_database_cart_addition,
+    "remove_from_cart": execute_database_cart_removal
 }
 
 class ShoppingAssistantAgent:
@@ -103,7 +113,7 @@ Return ONLY a valid JSON object in this format:
             response = await loop.run_in_executor(
                 None,
                 lambda: self.client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
+                    model="mixtral-8x7b-32768",
                     messages=messages,
                     max_tokens=256,
                     temperature=0.3,
@@ -117,25 +127,69 @@ Return ONLY a valid JSON object in this format:
             print(f"⚠️ [WARNING] Query classification failed: {e}")
             return {"classification": "recipe", "response_text": None}
 
-    async def process_recipe_workflow(self, user_id: str, current_cart_slugs: List[str], dish_query: str, servings: int) -> Dict[str, Any]:
+    def tool_search_inventory(self, query: str) -> List[Dict[str, Any]]:
+        """Search the store inventory for products matching the query."""
+        query_lower = query.lower().strip()
+        ing_tokens = set(t for t in query_lower.split() if len(t) >= 3 or t in ["ghee", "oil"])
+        
+        matches = []
+        for item in self.inventory:
+            item_name = item.get("name", "").lower()
+            item_slug = item.get("slug", "").lower()
+            
+            # Simple scoring
+            item_tokens = set(item_name.split() + item_slug.split("-"))
+            score = len(ing_tokens.intersection(item_tokens))
+            if query_lower in item_name or item_name in query_lower:
+                score += 5
+                
+            if score > 0:
+                matches.append((item, score))
+                
+        # Sort by score descending
+        matches.sort(key=lambda x: x[1], reverse=True)
+        return [item for item, score in matches[:10]]
+
+    def tool_add_to_cart(self, user_id: str, sku: str, quantity: int = 1, mutations: List[Dict[str, Any]] = None) -> str:
+        # Find item details
+        item = next((x for x in self.inventory if x.get("sku") == sku), None)
+        if not item:
+            return f"Error: SKU '{sku}' not found in inventory."
+            
+        success = execute_database_cart_addition(user_id, sku, quantity)
+        if success and mutations is not None:
+            mutations.append({
+                "action": "add",
+                "sku": sku,
+                "name": item.get("name"),
+                "price": float(item.get("price_rupees", 0.0)),
+                "quantity": quantity,
+                "thumbnail_url": item.get("thumbnail_url", "")
+            })
+        return f"Successfully added {quantity} x '{item.get('name')}' (SKU: {sku}) to the cart."
+
+    def tool_remove_from_cart(self, user_id: str, sku: str, quantity: int = 1, mutations: List[Dict[str, Any]] = None) -> str:
+        item = next((x for x in self.inventory if x.get("sku") == sku), None)
+        if not item:
+            return f"Error: SKU '{sku}' not found in inventory."
+            
+        success = execute_database_cart_removal(user_id, sku, quantity)
+        if success and mutations is not None:
+            mutations.append({
+                "action": "remove",
+                "sku": sku,
+                "name": item.get("name"),
+                "price": float(item.get("price_rupees", 0.0)),
+                "quantity": quantity
+            })
+        return f"Successfully removed/decremented {quantity} x '{item.get('name')}' (SKU: {sku}) from the cart."
+
+    async def _generate_and_match_recipe_internal(self, user_id: str, current_cart_slugs: List[str], dish_query: str, servings: int) -> Dict[str, Any]:
         """
-        Executes the full recipe pipeline, screens out payload injections, 
-        consolidates recurring missing items/cart additions cleanly, and formats for Flutter.
+        Generates the recipe and runs matching against catalog.
+        This contains the original process_recipe_workflow implementation.
         """
         try:
-            # ─────────────────────────────────────────────────────────────────
-            # GATE 0: QUERY CLASSIFICATION (RECIPE vs CONVERSATIONAL)
-            # ─────────────────────────────────────────────────────────────────
-            classification_result = await self._classify_query(dish_query)
-            if classification_result.get("classification") == "conversational":
-                return {
-                    "is_conversational": True,
-                    "response_text": classification_result.get("response_text") or "Hello! How can I assist you today?"
-                }
-
-            # ─────────────────────────────────────────────────────────────────
-            # GATE 1: IMMEDIATE FRONT-DOOR INPUT SANITIZATION
-            # ─────────────────────────────────────────────────────────────────
             toxic_keywords = {"cleaner", "harpic", "lizol", "toilet", "disinfectant", "floor", "soap"}
             processed_keywords = {"cerelac", "boost", "horlicks", "bournvita", "baby", "cereal", "chocos"}
             sauce_keywords = {"sauce", "ketchup", "paste", "jam", "spread"}
@@ -180,7 +234,7 @@ Return ONLY a valid JSON object in this format:
                     qty = ing.get("quantity", "").strip()
                     unit = ing.get("unit", "").strip()
                     
-                    # Deduplicate stutters: If unit string context is already sitting inside the quantity token, remove duplication
+                    # Deduplicate stutters
                     if unit and unit.lower() in qty.lower():
                         ing_str = f"{qty} {name}".strip()
                     else:
@@ -191,22 +245,18 @@ Return ONLY a valid JSON object in this format:
                 if ing_str:
                     parsed = self.quantity_parser.execute(ing_str)
                     
-                    # Deep-clean inner tool output stutter mappings (e.g. "1 tablespoon tablespoons")
+                    # Deep-clean inner tool output stutter mappings
                     raw_in = parsed.get("raw_input", "")
                     for u_word in ["tablespoons", "tablespoon", "teaspoons", "teaspoon", "cups", "cup", "pieces", "piece"]:
                         if raw_in.lower().count(u_word) > 1:
-                            # Reconstruct clean text dynamically
                             raw_in = f"{parsed.get('quantity', '')} {parsed.get('unit', '')} {parsed.get('name', '')}".replace("  ", " ").strip()
                             parsed["raw_input"] = raw_in
                             break
                             
                     parsed_ingredients.append(parsed)
 
-            # ─────────────────────────────────────────────────────────────────
             # GATE 2: BACKEND CATALOG FILTER MATRIX
-            # ─────────────────────────────────────────────────────────────────
             targeted_catalog = []
-
             for ing in parsed_ingredients:
                 ing_name = ing.get("name", "").lower().strip()
                 if not ing_name:
@@ -250,13 +300,11 @@ Return ONLY a valid JSON object in this format:
                         req_name = str(item.get("requested_name", item.get("name", ""))).lower().strip()
                         ai_lookup[req_name] = item
 
-            missing_ingredients_map = {} # ◄─── Map to deduplicate repetitive warehouse matching objects
+            missing_ingredients_map = {}
             cart_additions_map = {}
             normalized_cart_slugs = [str(slug).lower().strip() for slug in current_cart_slugs]
 
-            # ─────────────────────────────────────────────────────────────────
             # STRUCTURAL COMPOSITION GENERATION
-            # ─────────────────────────────────────────────────────────────────
             for ing in parsed_ingredients:
                 ing_name = ing.get("name", "").strip()
                 ing_name_lower = ing_name.lower().strip()
@@ -303,15 +351,7 @@ Return ONLY a valid JSON object in this format:
                     if best_score > 0:
                         final_match = best_match
 
-                # ─────────────────────────────────────────────────────────────
-                # PAYLOAD COMPOSITION STEP WITH MAP DEDUPLICATION
-                # ─────────────────────────────────────────────────────────────
-# ─────────────────────────────────────────────────────────────
                 # PAYLOAD COMPOSITION & DATABASE WRITE BACK TRANSACTION
-                # ─────────────────────────────────────────────────────────────
-# ─────────────────────────────────────────────────────────────
-                # PAYLOAD COMPOSITION & DATABASE WRITE BACK TRANSACTION
-                # ─────────────────────────────────────────────────────────────
                 if final_match and final_match.get("sku"):
                     item_sku = final_match.get("sku")
                     item_slug = final_match.get("slug", ing_slug_fallback).lower().strip()
@@ -319,18 +359,7 @@ Return ONLY a valid JSON object in this format:
                     if item_slug in normalized_cart_slugs:
                         continue
 
-                    # 🚀 FORCE ACTIVE AGENT TOOL CALL INTERACTION
-                    is_committed = False  # ◄─ This must stay BEFORE the 'try' block starts
-                    try:
-                        # Fetch the function directly from the registry
-                        tool_action_hook = ACTIVE_CART_TOOLS_REGISTRY["add_to_cart"]
-                        
-                        # Use the incoming dynamic user_id variable
-                        is_committed = tool_action_hook(user_id=user_id, sku=item_sku, quantity=1)
-                        print(f"🎯 [AGENT ACTION] Fired tool call for User '{user_id}' | SKU {item_sku}. Result: {is_committed}")
-                    except Exception as tool_ex:
-                        print(f"⚠️ [TOOL RUNTIME FAULT] Failed to run database tool: {tool_ex}")
-                        is_committed = False
+                    is_committed = False
                     
                     # Handle Missing Ingredients List Consolidation Matrix
                     if item_sku in missing_ingredients_map:
@@ -372,7 +401,7 @@ Return ONLY a valid JSON object in this format:
                 "servings": int(servings),
                 "recipe_instructions": list(instructions_list),
                 "parsed_ingredients": list(parsed_ingredients),
-                "missing_ingredients": list(missing_ingredients_map.values()), # ◄─── Cleanly cast to flat list layout
+                "missing_ingredients": list(missing_ingredients_map.values()),
                 "cart_additions": list(cart_additions_map.values())
             }
             
@@ -381,3 +410,236 @@ Return ONLY a valid JSON object in this format:
             print("❌ [CRITICAL PIPELINE EXCEPTION]")
             traceback.print_exc()
             return {"error": str(e), "missing_ingredients": [], "cart_additions": []}
+
+    async def process_recipe_workflow(self, user_id: str, current_cart_slugs: List[str], dish_query: str, servings: int) -> Dict[str, Any]:
+        mutations = []
+        recipe_data = None
+        
+        tools_definitions = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "search_inventory",
+                    "description": "Search the store inventory for products matching the query term. Returns items with SKU, name, price, and slug.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "The search term to look for in the catalog (e.g. 'snickers', 'milk', 'eggs')."
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "add_to_cart",
+                    "description": "Add a specific product to the user's cart by its SKU.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "sku": {
+                                "type": "string",
+                                "description": "The SKU of the product to add."
+                            },
+                            "quantity": {
+                                "type": "integer",
+                                "description": "The quantity to add.",
+                                "default": 1
+                            }
+                        },
+                        "required": ["sku"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "remove_from_cart",
+                    "description": "Remove or decrement a product from the user's cart by its SKU.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "sku": {
+                                "type": "string",
+                                "description": "The SKU of the product to remove/decrement."
+                            },
+                            "quantity": {
+                                "type": "integer",
+                                "description": "The quantity to remove/decrement.",
+                                "default": 1
+                            }
+                        },
+                        "required": ["sku"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "generate_and_match_recipe",
+                    "description": "Generate a cooking recipe for a specific dish and match its ingredients against the store inventory.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "dish_name": {
+                                "type": "string",
+                                "description": "The name of the dish."
+                            },
+                            "servings": {
+                                "type": "integer",
+                                "description": "The number of servings.",
+                                "default": 2
+                            }
+                        },
+                        "required": ["dish_name"]
+                    }
+                }
+            }
+        ]
+
+        messages = [
+            {
+                "role": "system",
+                "content": f"""You are the Qless Assistant, an intelligent, conversational AI retail and cooking assistant for the Qless self-checkout store.
+You help users with shopping suggestions, chitchat, cooking recipe inquiries, and real-time cart modifications.
+
+Active User ID: {user_id}
+Current Cart Slugs: {current_cart_slugs}
+
+### Guidelines:
+1. **Conversational Responses**: Be extremely friendly, natural, and helpful.
+2. **Recipe Requests**: If the user asks for a recipe or meal idea, ALWAYS call the `generate_and_match_recipe` tool.
+3. **Cart Mutations**: If the user asks to add/remove/delete items from their cart, search the inventory first using `search_inventory` to find the correct SKU, then call `add_to_cart` or `remove_from_cart`.
+4. **Validation**: Check if recommended items or requested items are in the inventory. If not in the inventory, politely inform the user.
+5. **No Hallucinations**: Only use the exact SKUs found in the inventory search.
+
+Your final output MUST be a JSON object containing:
+- "response_text": Your conversational response to the user.
+- "recipe": The recipe payload dictionary returned by the `generate_and_match_recipe` tool (if called), or null.
+- "cart_mutations": The list of cart mutations performed (automatically tracked by your tool calls), or null.
+"""
+            },
+            {
+                "role": "user",
+                "content": dish_query
+            }
+        ]
+
+        executed_tool_calls = set()
+        for loop_iter in range(3):
+            try:
+                loop = asyncio.get_event_loop()
+                completion = await loop.run_in_executor(
+                    None,
+                    lambda: self.client.chat.completions.create(
+                        model="mixtral-8x7b-32768",
+                        messages=messages,
+                        tools=tools_definitions,
+                        tool_choice="auto",
+                        max_tokens=1024,
+                        temperature=0.3
+                    )
+                )
+            except Exception as e:
+                print(f"⚠️ [AGENT LLM FAULT] {e}")
+                break
+
+            msg = completion.choices[0].message
+            messages.append(msg)
+
+            if not msg.tool_calls:
+                break
+
+            # Execute tool calls
+            should_break = False
+            for tool_call in msg.tool_calls:
+                tool_name = tool_call.function.name
+                tool_args_str = tool_call.function.arguments
+
+                # Check for loop/duplication
+                call_signature = (tool_name, tool_args_str)
+                if call_signature in executed_tool_calls:
+                    print(f"🔁 [LOOP PREVENTED] Agent attempted to call tool '{tool_name}' with identical arguments {tool_args_str} again. Breaking loop.")
+                    should_break = True
+                    break
+                executed_tool_calls.add(call_signature)
+
+                arguments = json.loads(tool_args_str)
+                print(f"🛠️ [TOOL CALL] {tool_name} with args {arguments}")
+
+                result_str = ""
+                if tool_name == "search_inventory":
+                    res = self.tool_search_inventory(arguments.get("query", ""))
+                    result_str = json.dumps(res)
+                elif tool_name == "add_to_cart":
+                    res = self.tool_add_to_cart(user_id, arguments.get("sku"), arguments.get("quantity", 1), mutations)
+                    result_str = res
+                elif tool_name == "remove_from_cart":
+                    res = self.tool_remove_from_cart(user_id, arguments.get("sku"), arguments.get("quantity", 1), mutations)
+                    result_str = res
+                elif tool_name == "generate_and_match_recipe":
+                    recipe_data = await self._generate_and_match_recipe_internal(
+                        user_id=user_id,
+                        current_cart_slugs=current_cart_slugs,
+                        dish_query=arguments.get("dish_name"),
+                        servings=arguments.get("servings", servings)
+                    )
+                    result_str = "Successfully generated recipe."
+                else:
+                    result_str = f"Error: Tool '{tool_name}' not found."
+
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "name": tool_name,
+                    "content": result_str
+                })
+
+            if should_break:
+                break
+
+        messages.append({
+            "role": "user",
+            "content": """Provide your final response as a JSON object matching this schema:
+{
+  "response_text": "your friendly chatbot response here",
+  "recipe": <the recipe JSON dictionary returned by generate_and_match_recipe, or null>,
+  "cart_mutations": <the list of cart mutations performed, or null>
+}
+
+Return ONLY this JSON object. No markdown formatting, no code fences, no extra text."""
+        })
+
+        try:
+            loop = asyncio.get_event_loop()
+            final_completion = await loop.run_in_executor(
+                None,
+                lambda: self.client.chat.completions.create(
+                    model="mixtral-8x7b-32768",
+                    messages=messages,
+                    max_tokens=1024,
+                    temperature=0.2,
+                    response_format={"type": "json_object"}
+                )
+            )
+            final_content = final_completion.choices[0].message.content or ""
+            final_content = final_content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+            final_json = json.loads(final_content)
+            
+            if mutations:
+                final_json["cart_mutations"] = mutations
+            if recipe_data:
+                final_json["recipe"] = recipe_data
+                
+            return final_json
+        except Exception as e:
+            print(f"⚠️ [FINAL FORMAT FAULT] {e}")
+            return {
+                "response_text": "I encountered an error formatting my response, but the operation was processed.",
+                "recipe": recipe_data,
+                "cart_mutations": mutations
+            }

@@ -59,7 +59,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
                         children: [
                           Icon(
                             Icons.chat_bubble_outline,
-                            color: theme.colorScheme.primary,
+                            color: Color(0xFF4A5568),
                             size: 22,
                           ),
                           const SizedBox(height: 4),
@@ -67,8 +67,8 @@ class _BottomNavBarState extends State<BottomNavBar> {
                             'Chat',
                             style: TextStyle(
                               fontSize: 11,
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF4A5568),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
