@@ -10,6 +10,12 @@ agent = ShoppingAssistantAgent()
 
 @router.post("/analyze-ingredients")
 async def analyze_recipe_ingredients(payload: RecipeRequest):
+    """
+    Analyze conversational queries, execute agentic tool loops, match recipes,
+    and identify available catalog items or substitutes.
+
+    Accepts current cart state and chat history to provide context-aware responses.
+    """
     try:
         user = str(payload.user_id).lower().strip() # ◄─ EXTRACT THE USER ID
         slugs = [str(s) for s in payload.current_cart_slugs]
