@@ -220,32 +220,158 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                       ),
                       const SizedBox(height: 10),
                       ...ingredients.map((item) {
+                        final rawName = item['name'] ?? '';
+                        
+                        // Find this ingredient in missing_ingredients to check for substitutes
+                        final missingIngredients = List<dynamic>.from(widget.recipe['missing_ingredients'] ?? []);
+                        Map<String, dynamic>? matchingMissing;
+                        for (final m in missingIngredients) {
+                          if (m is Map && (m['name'] as String).toLowerCase() == rawName.toLowerCase()) {
+                            matchingMissing = Map<String, dynamic>.from(m);
+                            break;
+                          }
+                        }
+                        
+                        // If no direct name match, try substring matching
+                        if (matchingMissing == null) {
+                          for (final m in missingIngredients) {
+                            if (m is Map) {
+                              final mName = (m['name'] as String).toLowerCase();
+                              final rName = rawName.toLowerCase();
+                              if (mName.contains(rName) || rName.contains(mName)) {
+                                matchingMissing = Map<String, dynamic>.from(m);
+                                break;
+                              }
+                            }
+                          }
+                        }
+
+                        final hasSubstitutes = matchingMissing != null &&
+                            matchingMissing['sku'] == 'UNKNOWN' &&
+                            matchingMissing['substitutes'] != null &&
+                            (matchingMissing['substitutes'] as List).isNotEmpty;
+
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                margin: const EdgeInsets.only(top: 6),
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: theme.colorScheme.secondary,
-                                ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 6),
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: theme.colorScheme.secondary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      '${item['quantity'] ?? ''} ${item['name'] ?? ''}',
+                                      style: TextStyle(
+                                        fontFamily: 'ClashGrotesk',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  '${item['quantity'] ?? ''} ${item['name'] ?? ''}',
-                                  style: TextStyle(
-                                    fontFamily: 'ClashGrotesk',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: theme.colorScheme.primary,
+                              if (hasSubstitutes) ...[
+                                const SizedBox(height: 6),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 18),
+                                  child: Text(
+                                    'Not in inventory. Substitutes:',
+                                    style: TextStyle(
+                                      fontFamily: 'ClashGrotesk',
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.redAccent.withValues(alpha: 0.8),
+                                    ),
                                   ),
                                 ),
-                              ),
+                                const SizedBox(height: 4),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 18),
+                                  child: Wrap(
+                                    spacing: 6,
+                                    runSpacing: 6,
+                                    children: List<dynamic>.from(matchingMissing['substitutes']).map((sub) {
+                                      final subMap = Map<String, dynamic>.from(sub);
+                                      final sSku = subMap['sku'] ?? '';
+                                      final sName = subMap['name'] ?? '';
+                                      final sPrice = (subMap['price_rupees'] as num?)?.toDouble() ?? 0.0;
+                                      final sImage = subMap['thumbnail_url'] ?? '';
+
+                                      return InkWell(
+                                        onTap: () {
+                                          CartService().addItem(
+                                            CartItemModel(
+                                              id: sSku,
+                                              name: sName,
+                                              details: 'Substitute for $rawName',
+                                              imageUrl: sImage,
+                                              price: sPrice,
+                                              quantity: 1,
+                                            ),
+                                          );
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Added substitute: $sName to cart!',
+                                                style: const TextStyle(
+                                                  fontFamily: 'ClashGrotesk',
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              backgroundColor: theme.colorScheme.primary,
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(16),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade50,
+                                            borderRadius: BorderRadius.circular(16),
+                                            border: Border.all(color: const Color(0xFFD2E4E6), width: 1.0),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.add_shopping_cart_rounded,
+                                                size: 12,
+                                                color: theme.colorScheme.secondary,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '$sName - ₹${sPrice.toStringAsFixed(0)}',
+                                                style: TextStyle(
+                                                  fontFamily: 'ClashGrotesk',
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: theme.colorScheme.primary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         );

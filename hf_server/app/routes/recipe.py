@@ -10,18 +10,28 @@ agent = ShoppingAssistantAgent()
 
 @router.post("/analyze-ingredients")
 async def analyze_recipe_ingredients(payload: RecipeRequest):
+    """
+    Analyze conversational queries, execute agentic tool loops, match recipes,
+    and identify available catalog items or substitutes.
+
+    Accepts current cart state and chat history to provide context-aware responses.
+    """
     try:
         user = str(payload.user_id).lower().strip() # ◄─ EXTRACT THE USER ID
         slugs = [str(s) for s in payload.current_cart_slugs]
         query = str(payload.dish_query)
         srv = int(payload.servings)
         
-        # ◄─ PASS THE USER VARIABLE TO THE METHOD BELOW
+        history = []
+        if payload.chat_history:
+            history = [{"is_user": h.is_user, "text": h.text} for h in payload.chat_history]
+
         result = await agent.process_recipe_workflow(
             user_id=user,
             current_cart_slugs=slugs,
             dish_query=query,
-            servings=srv
+            servings=srv,
+            chat_history=history
         )
         return result
     except Exception as e:

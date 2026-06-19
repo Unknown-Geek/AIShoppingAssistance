@@ -12,10 +12,11 @@ from ..services.detector import processor, session, get_image_embedding
 from ..services.chroma import ChromaSearcher
 from ..services.supabase import SupabaseQuerier
 
-router = APIRouter()
+router = APIRouter(tags=["Product Detection"])
 
 @router.post("/embed")
 async def get_embedding(file: UploadFile = File(...)):
+    """Generate and return raw CLIP embeddings for the uploaded product image."""
     try:
         contents = await file.read()
         embedding = get_image_embedding(contents)
@@ -30,6 +31,12 @@ async def detect_item(
     x_supabase_url: str = Header(default=None),
     x_supabase_key: str = Header(default=None)
 ):
+    """
+    Perform full end-to-end product detection:
+    1. Preprocess uploaded image and generate CLIP vector embeddings.
+    2. Search the vector catalog in ChromaDB for similarity matches.
+    3. Retrieve the matching item metadata from local catalog or Supabase DB.
+    """
     start_total = time.time()
     try:
         t0 = time.time()
@@ -108,6 +115,7 @@ async def detect_item(
 
 @router.get("/captured_images/{filename}")
 async def get_captured_image(filename: str):
+    """Fetch a previously captured scan image from local disk storage."""
     filepath = os.path.join(IMAGES_DIR, filename)
     if os.path.exists(filepath):
         return FileResponse(filepath)
@@ -115,6 +123,7 @@ async def get_captured_image(filename: str):
 
 @router.get("/gallery", response_class=HTMLResponse)
 async def get_gallery():
+    """Render a Scandinavian-modern product gallery page showcasing scanned items history."""
     files = []
     if os.path.exists(IMAGES_DIR):
         for f in os.listdir(IMAGES_DIR):

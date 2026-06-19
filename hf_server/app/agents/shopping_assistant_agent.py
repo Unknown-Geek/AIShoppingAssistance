@@ -387,13 +387,17 @@ Return ONLY a valid JSON object in this format:
                         }
                 else:
                     # Keep non-catalog items tracked flatly by fallback slug
+                    subs = []
+                    if ai_match and isinstance(ai_match, dict) and "substitutes" in ai_match:
+                        subs = ai_match["substitutes"]
                     missing_ingredients_map[ing_slug_fallback] = {
                         "sku": "UNKNOWN",
                         "slug": ing_slug_fallback,
                         "name": ing_name,
                         "price_rupees": 0.0,
                         "thumbnail_url": "",
-                        "required_quantity": final_qty
+                        "required_quantity": final_qty,
+                        "substitutes": subs
                     }
 
             return {
@@ -411,7 +415,7 @@ Return ONLY a valid JSON object in this format:
             traceback.print_exc()
             return {"error": str(e), "missing_ingredients": [], "cart_additions": []}
 
-    async def process_recipe_workflow(self, user_id: str, current_cart_slugs: List[str], dish_query: str, servings: int) -> Dict[str, Any]:
+    async def process_recipe_workflow(self, user_id: str, current_cart_slugs: List[str], dish_query: str, servings: int, chat_history: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         mutations = []
         recipe_data = None
         
@@ -522,12 +526,22 @@ Your final output MUST be a JSON object containing:
 - "recipe": The recipe payload dictionary returned by the `generate_and_match_recipe` tool (if called), or null.
 - "cart_mutations": The list of cart mutations performed (automatically tracked by your tool calls), or null.
 """
-            },
-            {
-                "role": "user",
-                "content": dish_query
             }
         ]
+
+        if chat_history:
+            for item in chat_history:
+                role = "user" if item.get("is_user") else "assistant"
+                messages.append({
+                    "role": role,
+                    "content": item.get("text") or ""
+                })
+
+        # Add the latest user message
+        messages.append({
+            "role": "user",
+            "content": dish_query
+        })
 
         executed_tool_calls = set()
         for loop_iter in range(3):
@@ -554,32 +568,36 @@ Your final output MUST be a JSON object containing:
             if not msg.tool_calls:
                 break
 
-            # Execute tool calls
+            # Check loop prevention first
             should_break = False
             for tool_call in msg.tool_calls:
-                tool_name = tool_call.function.name
-                tool_args_str = tool_call.function.arguments
-
-                # Check for loop/duplication
-                call_signature = (tool_name, tool_args_str)
+                call_signature = (tool_call.function.name, tool_call.function.arguments)
                 if call_signature in executed_tool_calls:
-                    print(f"🔁 [LOOP PREVENTED] Agent attempted to call tool '{tool_name}' with identical arguments {tool_args_str} again. Breaking loop.")
+                    print(f"🔁 [LOOP PREVENTED] Agent attempted to call tool '{tool_call.function.name}' with identical arguments {tool_call.function.arguments} again. Breaking loop.")
                     should_break = True
                     break
                 executed_tool_calls.add(call_signature)
 
+            if should_break:
+                break
+
+            # Execute tool calls in parallel
+            async def execute_single_tool(tool_call) -> Dict[str, Any]:
+                nonlocal recipe_data
+                tool_name = tool_call.function.name
+                tool_args_str = tool_call.function.arguments
                 arguments = json.loads(tool_args_str)
                 print(f"🛠️ [TOOL CALL] {tool_name} with args {arguments}")
 
                 result_str = ""
                 if tool_name == "search_inventory":
-                    res = self.tool_search_inventory(arguments.get("query", ""))
+                    res = await loop.run_in_executor(None, lambda: self.tool_search_inventory(arguments.get("query", "")))
                     result_str = json.dumps(res)
                 elif tool_name == "add_to_cart":
-                    res = self.tool_add_to_cart(user_id, arguments.get("sku"), arguments.get("quantity", 1), mutations)
+                    res = await loop.run_in_executor(None, lambda: self.tool_add_to_cart(user_id, arguments.get("sku"), arguments.get("quantity", 1), mutations))
                     result_str = res
                 elif tool_name == "remove_from_cart":
-                    res = self.tool_remove_from_cart(user_id, arguments.get("sku"), arguments.get("quantity", 1), mutations)
+                    res = await loop.run_in_executor(None, lambda: self.tool_remove_from_cart(user_id, arguments.get("sku"), arguments.get("quantity", 1), mutations))
                     result_str = res
                 elif tool_name == "generate_and_match_recipe":
                     recipe_data = await self._generate_and_match_recipe_internal(
@@ -592,12 +610,16 @@ Your final output MUST be a JSON object containing:
                 else:
                     result_str = f"Error: Tool '{tool_name}' not found."
 
-                messages.append({
+                return {
                     "role": "tool",
                     "tool_call_id": tool_call.id,
                     "name": tool_name,
                     "content": result_str
-                })
+                }
+
+            tasks = [execute_single_tool(tc) for tc in msg.tool_calls]
+            responses = await asyncio.gather(*tasks)
+            messages.extend(responses)
 
             if should_break:
                 break
