@@ -7,7 +7,26 @@ from dotenv import load_dotenv
 from app.agents.recipe_agent import RecipeAgent
 from app.agents.tools.quantity_parser_tool import QuantityParserTool
 
+# ─── NEW IMPORT ADDED HERE ───
+from app.utils.cart_state import live_cart_memory
+
 load_dotenv()
+
+# ─── UPDATED REAL TOOL FUNCTION ───
+def execute_database_cart_addition(user_id: str, sku: str, quantity: int) -> bool:
+    """
+    Directly writes a persistent modification entry to your application's 
+    active shopping cart storage cache layer.
+    """
+    success = live_cart_memory.add_item(user_id=user_id, sku=sku, quantity=quantity)
+    if success:
+        print(f"💾 [STATE COMMIT] User: '{user_id}' | SKU: '{sku}' successfully written to memory.")
+    return success
+
+# ─── ACTIVE REGISTRY MANDATORY HOOK ───
+ACTIVE_CART_TOOLS_REGISTRY = {
+    "add_to_cart": execute_database_cart_addition
+}
 
 class ShoppingAssistantAgent:
     def __init__(self):
@@ -35,7 +54,7 @@ class ShoppingAssistantAgent:
             print(f"⚠️ [WARNING] Failed to load inventory database catalog from {inventory_path}: {e}")
             return []
 
-    async def process_recipe_workflow(self, current_cart_slugs: List[str], dish_query: str, servings: int) -> Dict[str, Any]:
+    async def process_recipe_workflow(self, user_id: str, current_cart_slugs: List[str], dish_query: str, servings: int) -> Dict[str, Any]:
         """
         Executes the full recipe pipeline, screens out payload injections, 
         consolidates recurring missing items/cart additions cleanly, and formats for Flutter.
@@ -214,16 +233,34 @@ class ShoppingAssistantAgent:
                 # ─────────────────────────────────────────────────────────────
                 # PAYLOAD COMPOSITION STEP WITH MAP DEDUPLICATION
                 # ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+                # PAYLOAD COMPOSITION & DATABASE WRITE BACK TRANSACTION
+                # ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+                # PAYLOAD COMPOSITION & DATABASE WRITE BACK TRANSACTION
+                # ─────────────────────────────────────────────────────────────
                 if final_match and final_match.get("sku"):
                     item_sku = final_match.get("sku")
                     item_slug = final_match.get("slug", ing_slug_fallback).lower().strip()
                     
                     if item_slug in normalized_cart_slugs:
                         continue
+
+                    # 🚀 FORCE ACTIVE AGENT TOOL CALL INTERACTION
+                    is_committed = False  # ◄─ This must stay BEFORE the 'try' block starts
+                    try:
+                        # Fetch the function directly from the registry
+                        tool_action_hook = ACTIVE_CART_TOOLS_REGISTRY["add_to_cart"]
                         
+                        # Use the incoming dynamic user_id variable
+                        is_committed = tool_action_hook(user_id=user_id, sku=item_sku, quantity=1)
+                        print(f"🎯 [AGENT ACTION] Fired tool call for User '{user_id}' | SKU {item_sku}. Result: {is_committed}")
+                    except Exception as tool_ex:
+                        print(f"⚠️ [TOOL RUNTIME FAULT] Failed to run database tool: {tool_ex}")
+                        is_committed = False
+                    
                     # Handle Missing Ingredients List Consolidation Matrix
                     if item_sku in missing_ingredients_map:
-                        # Append the additional instruction requirement string description context
                         missing_ingredients_map[item_sku]["required_quantity"] += f" + {final_qty}"
                     else:
                         missing_ingredients_map[item_sku] = {
@@ -232,7 +269,8 @@ class ShoppingAssistantAgent:
                             "name": final_match.get("name"),
                             "price_rupees": float(final_match.get("price_rupees", 0.0)),
                             "thumbnail_url": final_match.get("thumbnail_url", ""),
-                            "required_quantity": final_qty
+                            "required_quantity": final_qty,
+                            "agent_tool_status": "Committed to DB" if is_committed else "Tool Error"
                         }
                     
                     # Handle Flutter Cart Service Mapping Matrix

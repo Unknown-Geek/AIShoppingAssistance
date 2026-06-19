@@ -2,10 +2,22 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/cart_item_model.dart';
 import 'cart_service.dart';
 
 class RecipeAgentService {
+  /// Resolves the active user's ID from Supabase auth.
+  /// Falls back to "anonymous_user" when no session is present.
+  String get _resolvedUserId =>
+      Supabase.instance.client.auth.currentUser?.id ?? 'anonymous_user';
+
+  // Getter for backendUrl used by other methods like fetchAgentCart
+  String get backendUrl {
+    final urls = backendUrls;
+    return urls.isNotEmpty ? urls.first : 'http://127.0.0.1:8000';
+  }
+
   List<String> get backendUrls {
     final urls = <String>[];
     
@@ -39,7 +51,11 @@ class RecipeAgentService {
     }).where((url) => url.isNotEmpty).toList();
   }
 
-  Future<Map<String, dynamic>> analyzeAndGetMissing(List<String> cartSlugs, String dish, int servings) async {
+  Future<Map<String, dynamic>> analyzeAndGetMissing(
+    List<String> cartSlugs,
+    String dish,
+    int servings,
+  ) async {
     final urls = backendUrls;
     List<String> errors = [];
 
@@ -50,6 +66,7 @@ class RecipeAgentService {
           Uri.parse('$url/recipe/analyze-ingredients'),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({
+            "user_id": _resolvedUserId, // Preserved from abhinav's branch
             "current_cart_slugs": cartSlugs,
             "dish_query": dish,
             "servings": servings,
@@ -81,9 +98,43 @@ class RecipeAgentService {
     throw Exception("Failed to process recipe orchestration layer. Errors: ${errors.join(', ')}");
   }
 
-  // Primary Goal: Add missing items seamlessly back into the workflow
-  void addMissingIngredientsToCart(List<dynamic> missingIngredients, CartService cartService) {
-    for (var item in missingIngredients) {
+  /// Fetches the agent-committed cart state from the backend in-memory store.
+  ///
+  /// The agent's [add_to_cart] tool writes SKUs to a process-scoped memory
+  /// store on the backend. This endpoint lets Flutter reconcile any items the
+  /// agent committed that were not returned in [cart_additions] (e.g. after a
+  /// server restart). Returns an empty list on failure — non-fatal.
+  Future<List<Map<String, dynamic>>> fetchAgentCart() async {
+    final userId = _resolvedUserId;
+    try {
+      final response = await http.get(
+        Uri.parse('$backendUrl/recipe/cart/$userId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final items = data['items'] as List<dynamic>? ?? [];
+        return items.cast<Map<String, dynamic>>();
+      } else {
+        return [];
+      }
+    } catch (_) {
+      // Non-fatal: backend may be unavailable; local cart state is authoritative.
+      return [];
+    }
+  }
+
+  /// Injects matched missing ingredients into [cartService].
+  ///
+  /// Only items with a known SKU (not "UNKNOWN") are added. Each triggers an
+  /// immediate SharedPreferences write + a debounced Supabase background sync
+  /// via [CartService.addItem].
+  void addMissingIngredientsToCart(
+    List<dynamic> missingIngredients,
+    CartService cartService,
+  ) {
+    for (final item in missingIngredients) {
       if (item['sku'] != 'UNKNOWN') {
         // Instantiate using your model mappings
         CartItemModel missingItem = CartItemModel(
@@ -94,8 +145,6 @@ class RecipeAgentService {
           price: (item['price_rupees'] as num?)?.toDouble() ?? 0.0,
           quantity: 1, // Add default increment unit
         );
-        
-        // This triggers your immediate SharedPreferences update + async background Supabase sync
         cartService.addItem(missingItem);
       }
     }
