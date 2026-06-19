@@ -47,6 +47,7 @@ class ShoppingAssistantAgent:
             print("[WARNING] GROQ_API_KEY not detected in environment, using mock key to prevent startup crash")
             api_key = "gsk_mock_key_placeholder_for_verification_only"
         self.client = Groq(api_key=api_key)
+        self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
         self.recipe_agent = RecipeAgent()
         self.quantity_parser = QuantityParserTool()
         self.inventory = self._load_inventory()
@@ -570,7 +571,7 @@ Current Cart Items:
                 completion = await loop.run_in_executor(
                     None,
                     lambda: self.client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
+                        model=self.model,
                         messages=messages,
                         tools=tools_definitions,
                         tool_choice="auto",
@@ -660,7 +661,7 @@ Return ONLY this JSON object. No markdown formatting, no code fences, no extra t
             final_completion = await loop.run_in_executor(
                 None,
                 lambda: self.client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model=self.model,
                     messages=messages,
                     max_tokens=1024,
                     temperature=0.2,

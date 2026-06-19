@@ -31,6 +31,7 @@ class RecipeAgent:
             print("[WARNING] GROQ_API_KEY not detected, using mock key")
             api_key = "gsk_mock_key_placeholder_for_verification_only"
         self.client = Groq(api_key=api_key)
+        self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 
     async def generate(self, dish_query: str, servings: int) -> Dict[str, Any]:
         """
@@ -59,7 +60,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
         ]
 
         response = self.client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=self.model,
             messages=messages,
             max_tokens=1024,
             temperature=0.2,
@@ -191,7 +192,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
         """
 
         completion = self.client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=self.model,
             messages=[
                 {
                     "role": "system",
