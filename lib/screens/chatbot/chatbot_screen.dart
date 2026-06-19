@@ -450,11 +450,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               children: [
                 // Floating Header Pill
                 ChatHeaderPill(
+                  onBackTap: () {
+                    Navigator.of(context).pop();
+                  },
                   onHistoryTap: () {
                     _scaffoldKey.currentState?.openDrawer();
-                  },
-                  onNewChatTap: () {
-                    _startNewChat();
                   },
                 ),
                 const SizedBox(height: 8),
@@ -612,13 +612,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 }
 
 class ChatHeaderPill extends StatelessWidget {
+  final VoidCallback onBackTap;
   final VoidCallback onHistoryTap;
-  final VoidCallback onNewChatTap;
 
   const ChatHeaderPill({
     super.key,
+    required this.onBackTap,
     required this.onHistoryTap,
-    required this.onNewChatTap,
   });
 
   @override
@@ -643,11 +643,11 @@ class ChatHeaderPill extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Left actions: History
+          // Left action: Back
           Align(
             alignment: Alignment.centerLeft,
             child: GestureDetector(
-              onTap: onHistoryTap,
+              onTap: onBackTap,
               child: Container(
                 width: 44,
                 height: 44,
@@ -661,7 +661,7 @@ class ChatHeaderPill extends StatelessWidget {
                 ),
                 child: Center(
                   child: Icon(
-                    Icons.history_rounded,
+                    Icons.arrow_back_rounded,
                     color: theme.colorScheme.primary,
                     size: 20,
                   ),
@@ -684,11 +684,11 @@ class ChatHeaderPill extends StatelessWidget {
               ),
             ),
           ),
-          // Right action: New Chat (+)
+          // Right action: History
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
-              onTap: onNewChatTap,
+              onTap: onHistoryTap,
               child: Container(
                 width: 44,
                 height: 44,
@@ -701,13 +701,10 @@ class ChatHeaderPill extends StatelessWidget {
                   ),
                 ),
                 child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Icon(
-                      Icons.add_comment_outlined,
-                      color: theme.colorScheme.primary,
-                      size: 17,
-                    ),
+                  child: Icon(
+                    Icons.history_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 20,
                   ),
                 ),
               ),

@@ -346,25 +346,31 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                             borderRadius: BorderRadius.circular(16),
                                             border: Border.all(color: const Color(0xFFD2E4E6), width: 1.0),
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.add_shopping_cart_rounded,
-                                                size: 12,
-                                                color: theme.colorScheme.secondary,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                '$sName - ₹${sPrice.toStringAsFixed(0)}',
-                                                style: TextStyle(
-                                                  fontFamily: 'ClashGrotesk',
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: theme.colorScheme.primary,
+                                          child: Text.rich(
+                                            TextSpan(
+                                              children: [
+                                                WidgetSpan(
+                                                  alignment: PlaceholderAlignment.middle,
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.only(right: 4),
+                                                    child: Icon(
+                                                      Icons.add_shopping_cart_rounded,
+                                                      size: 12,
+                                                      color: theme.colorScheme.secondary,
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
+                                                TextSpan(
+                                                  text: '$sName - ₹${sPrice.toStringAsFixed(0)}',
+                                                  style: TextStyle(
+                                                    fontFamily: 'ClashGrotesk',
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: theme.colorScheme.primary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       );
@@ -427,30 +433,26 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
           ),
           const SizedBox(height: 20),
           // Horizontal Action Pills
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                _buildActionChip(
-                  icon: _isExpanded ? Icons.expand_less_rounded : Icons.menu_book_rounded,
-                  label: _isExpanded ? 'Hide Recipe' : 'View Recipe',
-                  onTap: _toggleExpanded,
-                ),
-                const SizedBox(width: 8),
-                _buildActionChip(
-                  icon: Icons.add_shopping_cart_rounded,
-                  label: 'Add to Cart',
-                  onTap: () => _addIngredientsToCart(context),
-                ),
-                const SizedBox(width: 8),
-                _buildActionChip(
-                  icon: Icons.share_rounded,
-                  label: 'Share',
-                  onTap: () => _shareRecipe(context),
-                ),
-              ],
-            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildActionChip(
+                icon: _isExpanded ? Icons.expand_less_rounded : Icons.menu_book_rounded,
+                label: _isExpanded ? 'Hide Recipe' : 'View Recipe',
+                onTap: _toggleExpanded,
+              ),
+              _buildActionChip(
+                icon: Icons.add_shopping_cart_rounded,
+                label: 'Add to Cart',
+                onTap: () => _addIngredientsToCart(context),
+              ),
+              _buildActionChip(
+                icon: Icons.share_rounded,
+                label: 'Share',
+                onTap: () => _shareRecipe(context),
+              ),
+            ],
           ),
         ],
       ),
