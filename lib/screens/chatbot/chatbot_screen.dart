@@ -277,6 +277,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         cartSlugs,
         prompt,
         2, // servings
+        _messages,
       );
 
       // Process cart mutations if present

@@ -16,12 +16,16 @@ async def analyze_recipe_ingredients(payload: RecipeRequest):
         query = str(payload.dish_query)
         srv = int(payload.servings)
         
-        # ◄─ PASS THE USER VARIABLE TO THE METHOD BELOW
+        history = []
+        if payload.chat_history:
+            history = [{"is_user": h.is_user, "text": h.text} for h in payload.chat_history]
+
         result = await agent.process_recipe_workflow(
             user_id=user,
             current_cart_slugs=slugs,
             dish_query=query,
-            servings=srv
+            servings=srv,
+            chat_history=history
         )
         return result
     except Exception as e:

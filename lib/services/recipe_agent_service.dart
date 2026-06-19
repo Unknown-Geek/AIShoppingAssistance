@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/cart_item_model.dart';
+import '../models/chatbot_models.dart';
 import 'cart_service.dart';
 
 class RecipeAgentService {
@@ -55,9 +56,17 @@ class RecipeAgentService {
     List<String> cartSlugs,
     String dish,
     int servings,
+    List<ChatMessage> chatHistory,
   ) async {
     final urls = backendUrls;
     List<String> errors = [];
+
+    final historyList = chatHistory.map((m) {
+      return {
+        "is_user": m.isUser,
+        "text": m.text ?? "",
+      };
+    }).toList();
 
     for (final url in urls) {
       try {
@@ -70,6 +79,7 @@ class RecipeAgentService {
             "current_cart_slugs": cartSlugs,
             "dish_query": dish,
             "servings": servings,
+            "chat_history": historyList,
           }),
         ).timeout(const Duration(seconds: 8));
 

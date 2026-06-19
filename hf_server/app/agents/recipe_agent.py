@@ -160,7 +160,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
 
         2. Only match when the product IS the ingredient (e.g., "Oil" → "Groundnut Oil", "Milk" → "Standardised Milk", "Ginger" or "Garlic" → "Ginger Garlic Paste").
 
-        3. If no truly matching product exists in inventory, you MUST return "sku": "UNKNOWN", "price_rupees": 0, "slug": the ingredient name as a lowercase-slug, "name": the ingredient name. It is BETTER to return UNKNOWN than to return a wrong product.
+        3. If no truly matching product exists in inventory, you MUST return "sku": "UNKNOWN", "price_rupees": 0, "slug": the ingredient name as a lowercase-slug, "name": the ingredient name. In this case, you should also look at the inventory catalog and provide up to 3 possible close substitutes that are available in the inventory under the "substitutes" key. For example, if "Heavy Cream" is requested and not found, you can suggest "Standardised Milk" or "Butter" as substitutes. If no substitutes are reasonable, return an empty list.
 
         4. The "required_quantity" field should use the ingredient's "quantity" value from the requested ingredient (or "raw_input").
 
@@ -173,7 +173,15 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
               "slug": "string",
               "name": "string",
               "price_rupees": number,
-              "required_quantity": "string"
+              "required_quantity": "string",
+              "substitutes": [
+                {{
+                  "sku": "string",
+                  "name": "string",
+                  "price_rupees": number,
+                  "thumbnail_url": "string"
+                }}
+              ]
             }}
           ]
         }}
@@ -184,7 +192,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a strict inventory matching assistant. Never match an ingredient to a product that is not the actual ingredient. Only match when the product IS the ingredient (e.g. oil to oil, milk to milk). If no match exists, return UNKNOWN. Return only a valid JSON object with a \"results\" key."
+                    "content": "You are a strict inventory matching assistant. Never match an ingredient to a product that is not the actual ingredient. Only match when the product IS the ingredient (e.g. oil to oil, milk to milk). If no match exists, return UNKNOWN. If an ingredient is UNKNOWN, identify up to 3 suitable substitute items from the inventory catalog and place them in the \"substitutes\" list. Return only a valid JSON object with a \"results\" key."
                 },
                 {
                     "role": "user",
