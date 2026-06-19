@@ -29,15 +29,14 @@ hf_server/
 │   │   ├── __init__.py
 │   │   ├── health.py            # health and root paths
 │   │   ├── detection.py         # product detection, embeddings, and gallery
-│   │   └── recipe.py            # recipe generation agent
+│   │   └── recipe.py            # recipe generation and cart agent
 │   └── agents/                  # AI agents & parser logic
 │       ├── __init__.py
+│       ├── shopping_assistant_agent.py # Main conversational agentic loop
 │       ├── recipe_agent.py      # Recipe agent orchestrator
-│       ├── recipe_parser.py     # Markdown parser
 │       └── tools/               # Agent tools
 │           ├── __init__.py
-│           ├── recipe_tool.py   # MealDB query tool
-│           └── firecrawl_recipe_tool.py # Firecrawl scraping tool
+│           └── quantity_parser_tool.py # Quantity measurement parser
 ├── requirements.txt
 ├── Dockerfile                  # Updated entrypoint cmd
 └── run_local.sh

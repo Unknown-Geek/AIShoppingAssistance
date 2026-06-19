@@ -84,6 +84,8 @@ The FastAPI backend exposes the following endpoints for the mobile client:
 | `/health` | `GET`, `HEAD` | Liveness probe for deployment/tunnel monitoring | `{ "status": "ok" }` |
 | `/embed` | `POST` | Generate and return raw CLIP embeddings for an image | `{ "status": "success", "embedding": [...] }` |
 | `/detect` | `POST` | Run full detection path (embed + vector match + local resolve) | `{ "status": "success", "match_found": true, "item": {...} }` |
+| `/recipe/analyze-ingredients` | `POST` | Conversational query parsing, tool execution, and recipe matching | `{ "response_text": "...", "recipe": {...}, "cart_mutations": [...] }` |
+| `/recipe/cart/{user_id}` | `GET` | Retrieve the backend live memory cart state for the user | `{ "user_id": "...", "items": [{"sku": "...", "quantity": 1}] }` |
 
 ---
 
