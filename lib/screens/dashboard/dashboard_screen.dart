@@ -57,6 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   // Timestamp tracking to prevent stale background scan race conditions
   DateTime? _lastActionTime;
+  DateTime? _backgroundScanPauseUntil;
 
   @override
   void initState() {
@@ -172,6 +173,11 @@ class _DashboardScreenState extends State<DashboardScreen>
     // 2. Cart must be collapsed (expanded controller value == 0)
     // 3. Shutter must NOT be actively searching/loading a manual scan
     // 4. Confirmation sheet must NOT be open
+    // 5. Background scanning must not be paused
+    if (_backgroundScanPauseUntil != null &&
+        DateTime.now().isBefore(_backgroundScanPauseUntil!)) {
+      return;
+    }
     if (!_isCameraInitialized || _cameraController == null || _isCameraBusy) {
       return;
     }
@@ -421,6 +427,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         setState(() {
           _isConfirmSheetOpen = false;
           _lastActionTime = DateTime.now();
+          _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
           _cachedDetectedItem = null;
           _cachedDetectionTime = null;
         });
@@ -470,6 +477,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     setState(() {
       _isSearchingImage = true;
       _lastActionTime = DateTime.now();
+      _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
     });
     _isCameraBusy = true;
 
@@ -496,6 +504,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           setState(() {
             _isConfirmSheetOpen = false;
             _lastActionTime = DateTime.now();
+            _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
             _cachedDetectedItem = null;
             _cachedDetectionTime = null;
           });
