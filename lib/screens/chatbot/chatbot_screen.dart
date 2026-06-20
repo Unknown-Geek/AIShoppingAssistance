@@ -316,8 +316,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             } else if (action == 'clear') {
               CartService().clearCart();
             }
-          } catch (ex_mut) {
-            debugPrint('[ChatbotScreen] Mutation error: $ex_mut');
+          } catch (exMut) {
+            debugPrint('[ChatbotScreen] Mutation error: $exMut');
           }
         }
       }

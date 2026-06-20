@@ -217,3 +217,78 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
             return result
         except Exception:
             return []
+
+    async def generate_and_match_recipe(self, dish_query: str, servings: int, inventory_catalog: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Generates a detailed recipe and matches its ingredients to the store catalog in a single LLM call.
+        """
+        food_catalog = [item for item in inventory_catalog if not self._is_non_food(item)]
+
+        prompt = f"""Generate a detailed recipe for {dish_query} for {servings} servings, and match the required ingredients to our store's inventory catalog.
+
+Available Store Inventory Catalog (SKUs and Names):
+{json.dumps(food_catalog, indent=2)}
+
+### CRITICAL MATCHING RULES:
+1. Every single recipe ingredient must be matched to a product in the catalog.
+2. The product MUST BE the actual ingredient, not just share a word. Examples of BAD matches:
+   - "Onions" -> "Cream and Onion Chips" (chips are NOT onions)
+   - "Rice" -> "Cerelac Rice" (baby cereal is NOT cooking rice)
+   - "Garlic" -> "Wheat Apple Baby Food"
+   - "Oil" -> "Tomato Ketchup"
+3. Only match when the product IS the ingredient (e.g. "Oil" -> "Gold Winner Refined Sunflower Oil" or "Idhayam Mantra Groundnut Oil", "Milk" -> "Amul Gold Standardised Milk", "Ginger" or "Garlic" -> "Aachi Ginger Garlic Paste").
+4. If no truly matching product exists in the catalog, you MUST return "sku": "UNKNOWN", "price_rupees": 0, "name": the ingredient name, and "slug": the ingredient name as a lowercase-slug. For UNKNOWN items, look at the catalog and provide up to 3 possible close substitutes that are available in our catalog under the "substitutes" key. If no substitutes are reasonable, return an empty list.
+
+Return ONLY valid JSON in this exact format (no markdown strings, no code fences):
+{{
+  "dish": "{dish_query}",
+  "servings": {servings},
+  "instructions": ["step 1", "step 2"],
+  "ingredients": [
+    {{
+      "name": "Ingredient Name",
+      "quantity": "amount",
+      "unit": "unit",
+      "sku": "SKU_CODE_IF_MATCHED_OR_UNKNOWN",
+      "slug": "product-slug",
+      "price_rupees": 0.0,
+      "substitutes": [
+        {{
+          "sku": "string",
+          "name": "string",
+          "price_rupees": 0.0
+        }}
+      ]
+    }}
+  ]
+}}
+"""
+
+        messages = [
+            {
+                "role": "system",
+                "content": "You are an expert chef and a strict retail inventory matching system. You must generate recipes and match the ingredients strictly to the available catalog products, returning only a valid JSON object matching the requested schema."
+            },
+            {"role": "user", "content": prompt}
+        ]
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            max_tokens=1536,
+            temperature=0.2,
+            response_format={"type": "json_object"}
+        )
+
+        content = response.choices[0].message.content or ""
+        content = content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            return {
+                "dish": dish_query,
+                "servings": servings,
+                "instructions": [],
+                "ingredients": []
+            }

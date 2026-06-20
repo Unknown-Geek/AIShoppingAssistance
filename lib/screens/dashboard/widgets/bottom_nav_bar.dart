@@ -54,7 +54,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
                   Expanded(
                     child: InkWell(
                       onTap: widget.onChatTap,
-                      child: Column(
+                      child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
@@ -62,7 +62,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
                             color: Color(0xFF4A5568),
                             size: 22,
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Chat',
                             style: TextStyle(
