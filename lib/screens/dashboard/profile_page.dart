@@ -41,7 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
           .select()
           .eq('user_id', user.id)
           .ilike('status', 'processed')
-          .order('vreated_at', ascending: false);
+          .order('created_at', ascending: false);
 
       setState(() {
         orders = List<Map<String, dynamic>>.from(response);
