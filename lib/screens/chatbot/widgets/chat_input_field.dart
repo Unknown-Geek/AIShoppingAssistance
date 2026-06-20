@@ -77,8 +77,11 @@ class ChatInputField extends StatelessWidget {
                         size: 14,
                         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
                       ),
-                      backgroundColor: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.35),
-                      side: BorderSide.none,
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      side: const BorderSide(
+                        color: Color(0xFFD2E4E6),
+                        width: 1.0,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
