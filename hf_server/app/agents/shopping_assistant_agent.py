@@ -693,6 +693,7 @@ Current Cart Items:
 5. **Displaying Cart and Cart Quantities**:
    - When asked to show, display, or list the cart, list each item on a new line in a clear, user-friendly bulleted list showing its name and quantity (e.g., "- Product Name: 2"). Do not list the SKU to keep the response clean. Do not call any tools to list the cart; rely strictly on the "Current Cart Items" list provided above.
    - **CRITICAL**: The "Current Cart Items" block represents the absolute, exact, and up-to-date state of the user's cart. Past chat history requests (e.g., "add 4 items") are already fully processed and reflected in "Current Cart Items". Do NOT sum, add, or accumulate quantities from the chat history with the "Current Cart Items". Do NOT assume the user has items that are not explicitly present in the "Current Cart Items" list.
+5b. **Cart Action Confirmations**: After successfully adding, removing, or clearing items from the cart via a tool call, respond with a short, friendly confirmation message (e.g., "Done! I've added Snickers to your cart 🛒", "All clear! Your cart is now empty 🧹"). Do NOT echo the cart state or list all items unless the user explicitly asks to see the cart.
 6. **Displaying Search Results / Products**: When listing products from inventory searches or queries:
    - Always display them as a clean bulleted list on new lines (rather than inline or in paragraphs) for better readability.
    - Show only the human-friendly product names.
@@ -888,6 +889,14 @@ Available Store Catalog (SKUs and Names):
                 elif tool_name == "clear_cart":
                     res = await loop.run_in_executor(None, lambda: self.tool_clear_cart(user_id, mutations))
                     result_str = res
+                    # Signal the outer loop to short-circuit with a canned response
+                    return {
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "name": tool_name,
+                        "content": result_str,
+                        "__fast_path_response": "Done! Your cart has been cleared. 🧹 Let me know if you'd like to add anything!"
+                    }
                 elif tool_name == "generate_and_match_recipe":
                     recipe_data = await self._generate_and_match_recipe_internal(
                         user_id=user_id,
@@ -908,7 +917,19 @@ Available Store Catalog (SKUs and Names):
 
             tasks = [execute_single_tool(tc) for tc in msg.tool_calls]
             responses = await asyncio.gather(*tasks)
+
+            # Check if any tool requested a fast-path early exit
+            fast_path_msg = None
+            for resp in responses:
+                if resp and resp.get("__fast_path_response"):
+                    fast_path_msg = resp.pop("__fast_path_response")
+                    break
+
             messages.extend(responses)
+
+            if fast_path_msg:
+                yield json.dumps({"text_chunk": fast_path_msg}) + "\n"
+                break
 
             if should_break:
                 break
