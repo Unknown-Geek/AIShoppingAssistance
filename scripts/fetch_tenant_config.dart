@@ -18,7 +18,7 @@ void main(List<String> args) async {
   }
 
   if (tenantId == null || tenantId.trim().isEmpty || tenantId.trim().toLowerCase() == 'qless') {
-    print('Info: No tenant ID specified or tenant is "qless". Generating default Qless configuration.');
+    stdout.writeln('Info: No tenant ID specified or tenant is "qless". Generating default Qless configuration.');
     writeDefaultConfig();
     return;
   }
@@ -31,7 +31,7 @@ void main(List<String> args) async {
     envFile = File('../.env');
   }
   if (!envFile.existsSync()) {
-    print('Error: .env file not found. Falling back to default Qless configuration.');
+    stderr.writeln('Error: .env file not found. Falling back to default Qless configuration.');
     writeDefaultConfig();
     return;
   }
@@ -41,31 +41,31 @@ void main(List<String> args) async {
   final supabaseAnonKey = env['SUPABASE_ANON_KEY'];
 
   if (supabaseUrl == null || supabaseUrl.isEmpty || supabaseAnonKey == null || supabaseAnonKey.isEmpty) {
-    print('Error: SUPABASE_URL or SUPABASE_ANON_KEY not found in .env. Falling back to default Qless configuration.');
+    stderr.writeln('Error: SUPABASE_URL or SUPABASE_ANON_KEY not found in .env. Falling back to default Qless configuration.');
     writeDefaultConfig();
     return;
   }
 
-  print('Fetching configuration for tenant: "$tenantId" from Supabase...');
+  stdout.writeln('Fetching configuration for tenant: "$tenantId" from Supabase...');
   
   final tenantData = await fetchTenantConfig(supabaseUrl, supabaseAnonKey, tenantId);
   if (tenantData == null) {
-    print('Warning: Failed to fetch tenant "$tenantId". Falling back to default Qless configuration.');
+    stderr.writeln('Warning: Failed to fetch tenant "$tenantId". Falling back to default Qless configuration.');
     writeDefaultConfig();
     return;
   }
 
   if (tenantData['is_active'] == false) {
-    print('Warning: Tenant "$tenantId" is marked as inactive. Falling back to default Qless configuration.');
+    stderr.writeln('Warning: Tenant "$tenantId" is marked as inactive. Falling back to default Qless configuration.');
     writeDefaultConfig();
     return;
   }
 
   try {
     writeTenantConfig(tenantData);
-    print('Success: Generated configuration for tenant "$tenantId" in lib/config/active_tenant.g.dart.');
+    stdout.writeln('Success: Generated configuration for tenant "$tenantId" in lib/config/active_tenant.g.dart.');
   } catch (e) {
-    print('Error generating tenant config file: $e. Falling back to default Qless configuration.');
+    stderr.writeln('Error generating tenant config file: $e. Falling back to default Qless configuration.');
     writeDefaultConfig();
   }
 }
@@ -102,21 +102,21 @@ Future<Map<String, dynamic>?> fetchTenantConfig(String url, String anonKey, Stri
     
     final response = await request.close();
     if (response.statusCode != 200) {
-      print('Supabase HTTP Error: ${response.statusCode}');
+      stderr.writeln('Supabase HTTP Error: ${response.statusCode}');
       final body = await response.transform(utf8.decoder).join();
-      print('Response Body: $body');
+      stderr.writeln('Response Body: $body');
       return null;
     }
     
     final body = await response.transform(utf8.decoder).join();
     final List<dynamic> data = json.decode(body);
     if (data.isEmpty) {
-      print('No record found in "tenants" table with tenant_id = "$tenantId"');
+      stderr.writeln('No record found in "tenants" table with tenant_id = "$tenantId"');
       return null;
     }
     return data.first as Map<String, dynamic>;
   } catch (e) {
-    print('Network error querying Supabase: $e');
+    stderr.writeln('Network error querying Supabase: $e');
     return null;
   } finally {
     client.close();
