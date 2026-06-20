@@ -147,6 +147,8 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
     final instructions = List<String>.from(
       widget.recipe['instructions'] ?? widget.recipe['recipe_instructions'] ?? [],
     );
+    final missingIngredients = List<dynamic>.from(widget.recipe['missing_ingredients'] ?? []);
+    final hasAnyAvailable = missingIngredients.any((item) => item is Map && item['sku'] != 'UNKNOWN');
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -461,12 +463,14 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                   label: _isExpanded ? 'Hide Recipe' : 'View Recipe',
                   onTap: _toggleExpanded,
                 ),
-                const SizedBox(width: 8),
-                _buildActionChip(
-                  icon: Icons.add_shopping_cart_rounded,
-                  label: 'Add to Cart',
-                  onTap: () => _addIngredientsToCart(context),
-                ),
+                if (hasAnyAvailable) ...[
+                  const SizedBox(width: 8),
+                  _buildActionChip(
+                    icon: Icons.add_shopping_cart_rounded,
+                    label: 'Add to Cart',
+                    onTap: () => _addIngredientsToCart(context),
+                  ),
+                ],
                 const SizedBox(width: 8),
                 _buildActionChip(
                   icon: Icons.share_rounded,
