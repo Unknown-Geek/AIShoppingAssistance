@@ -547,59 +547,29 @@ Available Store Catalog (SKUs and Names):
                     "content": item.get("text") or ""
                 })
 
-        # Identify the product from the image locally using CLIP/ChromaDB if image_base64 is present
-        modified_query = dish_query
+        # Determine model to use (switch to vision-capable model if image is attached)
+        model_to_use = self.model
         if image_base64:
-            try:
-                import base64
-                import io
-                from PIL import Image
-                import numpy as np
-                from app.services.detector import processor, session
-                from app.services.chroma import ChromaSearcher
-                from app.config import SIMILARITY_THRESHOLD
-
-                # Decode base64 image data
-                img_bytes = base64.b64decode(image_base64)
-                image = Image.open(io.BytesIO(img_bytes)).convert("RGB")
-                image = image.resize((224, 224), Image.Resampling.BILINEAR)
-
-                # Generate CLIP embedding
-                inputs = processor(images=image, return_tensors="np")
-                pixel_values = inputs["pixel_values"]
-                outputs = session.run(["image_embeds"], {"pixel_values": pixel_values})
-                image_embeds = outputs[0]
-                norm = np.linalg.norm(image_embeds, axis=-1, keepdims=True)
-                normalized_image_embeds = image_embeds / (norm + 1e-12)
-                embedding = normalized_image_embeds[0].tolist()
-
-                # Search ChromaDB
-                searcher = ChromaSearcher()
-                search_result = await searcher.search(embedding)
-                detected_product_name = None
-                if search_result:
-                    slug, distance = search_result
-                    if distance <= SIMILARITY_THRESHOLD:
-                        # Map slug back to inventory item name
-                        matched_item = next((item for item in self.inventory if item.get("slug") == slug), None)
-                        if matched_item:
-                            detected_product_name = matched_item.get("name")
-
-                if detected_product_name:
-                    desc = f"[User uploaded photo of: {detected_product_name}]"
-                    modified_query = f"{desc} {dish_query}".strip()
-                    print(f"👁️ [VISION MATCH] Image recognized as: '{detected_product_name}'")
-                else:
-                    desc = "[User uploaded photo of: Unknown Item]"
-                    modified_query = f"{desc} {dish_query}".strip()
-                    print("👁️ [VISION MATCH] Image not recognized.")
-            except Exception as ex:
-                print(f"⚠️ [VISION EXCEPTION] Failed to run local image detection: {ex}")
+            model_to_use = "meta-llama/llama-4-scout-17b-16e-instruct"
+            user_content = [
+                {
+                    "type": "text",
+                    "text": dish_query if dish_query else "What is this image? Tell me if I should add it to my cart or how I can cook with it."
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{image_base64}"
+                    }
+                }
+            ]
+        else:
+            user_content = dish_query
 
         # Add the latest user message
         messages.append({
             "role": "user",
-            "content": modified_query
+            "content": user_content
         })
 
         executed_tool_calls = set()
@@ -608,7 +578,7 @@ Available Store Catalog (SKUs and Names):
                 loop = asyncio.get_event_loop()
                 def get_stream():
                     return self.client.chat.completions.create(
-                        model=self.model,
+                        model=model_to_use,
                         messages=messages,
                         tools=tools_definitions,
                         tool_choice="auto",
