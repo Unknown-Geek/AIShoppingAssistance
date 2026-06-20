@@ -462,13 +462,13 @@ Return ONLY a valid JSON object in this format:
                 "type": "function",
                 "function": {
                     "name": "generate_and_match_recipe",
-                    "description": "Generate a cooking recipe for a specific dish and match its ingredients against the store inventory.",
+                    "description": "Generate a cooking recipe for a SPECIFIC dish name (e.g. 'pasta', 'veg biryani'). DO NOT call this tool for general shopping recommendations, breakfast item suggestions, snacks, greetings, or conversational questions.",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "dish_name": {
                                 "type": "string",
-                                "description": "The name of the dish."
+                                "description": "The name of the specific dish to generate a recipe for (e.g., 'Tomato Soup'). Do NOT pass general queries or lists here."
                             },
                             "servings": {
                                 "type": "integer",
@@ -523,6 +523,10 @@ Current Cart Items:
    - Show only the human-friendly product names.
    - Do NOT display product SKUs (e.g., "QLS-XXXX") in your final response text unless the user specifically asks for the SKU.
 7. **Semantic Relevance Filtering**: The `search_inventory` tool performs a keyword-based search and may return items that merely contain the search term in their name (e.g., searching for "milk" returns "Cadbury Dairy Milk Chocolate" and "Nestle Milkybar White Chocolate", and searching for "onion" returns "Cream and Onion Chips"). When responding to the user, you must intelligently filter these results to only include products that are semantically relevant to the user's actual request. For example, if the user asks for "milk" or raw cooking ingredients, do not list chocolates, chips, or baby foods even if they appeared in the search results.
+8. **General Shopping Suggestions and Chitchat**:
+   - If the user asks for general shopping recommendations, breakfast item suggestions, snacks, greetings, or conversational questions, do NOT call the `generate_and_match_recipe` tool.
+   - Instead, respond conversationally using products that are available in the 'Available Store Catalog' list below (e.g., for breakfast suggest "Nestle Ceregrow Multigrain Cereal", "Standardised Milk", "Organic Eggs", etc.).
+   - Only call the `generate_and_match_recipe` tool when the user is explicitly requesting a recipe or cooking instructions for a specific dish.
 
 Available Store Catalog (SKUs and Names):
 {catalog_str}

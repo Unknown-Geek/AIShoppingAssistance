@@ -31,7 +31,7 @@ async def analyze_recipe_ingredients(payload: RecipeRequest):
         if payload.current_cart:
             current_cart = [{"sku": c.sku, "name": c.name, "quantity": c.quantity} for c in payload.current_cart]
 
-        generator = agent.process_recipe_workflow(
+        result = await agent.process_recipe_workflow(
             user_id=user,
             current_cart_slugs=slugs,
             dish_query=query,
@@ -40,30 +40,7 @@ async def analyze_recipe_ingredients(payload: RecipeRequest):
             current_cart=current_cart
         )
         
-        full_text = ""
-        recipe_data = None
-        mutations = None
-        
-        async for chunk_str in generator:
-            if not chunk_str.strip():
-                continue
-            try:
-                chunk = json.loads(chunk_str.strip())
-                if "text_chunk" in chunk:
-                    full_text += chunk["text_chunk"]
-                else:
-                    if "recipe" in chunk:
-                        recipe_data = chunk["recipe"]
-                    if "cart_mutations" in chunk:
-                        mutations = chunk["cart_mutations"]
-            except Exception as parse_err:
-                print(f"Error parsing generator chunk: {parse_err}")
-        
-        return {
-            "response_text": full_text,
-            "recipe": recipe_data,
-            "cart_mutations": mutations
-        }
+        return result
     except Exception as e:
         print("\n=== CRITICAL API ROUTE ERROR TRACEBACK ===")
         traceback.print_exc()
