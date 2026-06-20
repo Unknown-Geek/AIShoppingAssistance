@@ -52,53 +52,83 @@ class ChatInputField extends StatelessWidget {
           if (selectedImage != null || selectedFileName != null)
             Padding(
               padding: const EdgeInsets.only(
-                left: 20.0,
-                right: 20.0,
                 bottom: 8.0,
               ),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  if (selectedImage != null)
-                    InputChip(
-                      labelStyle: const TextStyle(
-                        fontFamily: 'ClashGrotesk',
-                        fontWeight: FontWeight.w600,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Row(
+                  children: [
+                    if (selectedImage != null)
+                      InputChip(
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        labelPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                        labelStyle: TextStyle(
+                          fontFamily: 'ClashGrotesk',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        avatar: Icon(
+                          Icons.image,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        label: Text(selectedImage!.name.split('/').last),
+                        onDeleted: onClearImage,
+                        deleteIcon: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Color(0xFFEF4444),
+                        ),
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(
+                          color: Color(0xFFD2E4E6),
+                          width: 1.0,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      avatar: Icon(
-                        Icons.image,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.primary,
+                    if (selectedImage != null && selectedFileName != null)
+                      const SizedBox(width: 8),
+                    if (selectedFileName != null)
+                      InputChip(
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        labelPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                        labelStyle: TextStyle(
+                          fontFamily: 'ClashGrotesk',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        avatar: Icon(
+                          Icons.attach_file,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        label: Text(selectedFileName!),
+                        onDeleted: onClearFile,
+                        deleteIcon: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Color(0xFFEF4444),
+                        ),
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(
+                          color: Color(0xFFD2E4E6),
+                          width: 1.0,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      label: Text(selectedImage!.name.split('/').last),
-                      onDeleted: onClearImage,
-                      deleteIconColor: const Color(0xFFEF4444),
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  if (selectedFileName != null)
-                    InputChip(
-                      labelStyle: const TextStyle(
-                        fontFamily: 'ClashGrotesk',
-                        fontWeight: FontWeight.w600,
-                      ),
-                      avatar: Icon(
-                        Icons.attach_file,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      label: Text(selectedFileName!),
-                      onDeleted: onClearFile,
-                      deleteIconColor: const Color(0xFFEF4444),
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           // Floating 84px input area
