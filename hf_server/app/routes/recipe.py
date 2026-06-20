@@ -37,7 +37,8 @@ async def analyze_recipe_ingredients(payload: RecipeRequest):
             dish_query=query,
             servings=srv,
             chat_history=history,
-            current_cart=current_cart
+            current_cart=current_cart,
+            image_base64=payload.image_base64
         )
         
         return result
@@ -73,7 +74,8 @@ async def analyze_recipe_ingredients_stream(payload: RecipeRequest):
                 dish_query=query,
                 servings=srv,
                 chat_history=history,
-                current_cart=current_cart
+                current_cart=current_cart,
+                image_base64=payload.image_base64
             )
             async for chunk in generator:
                 yield chunk

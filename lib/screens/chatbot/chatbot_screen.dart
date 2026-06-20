@@ -262,16 +262,22 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   Future<void> _sendMessage() async {
     final prompt = _controller.text.trim();
-    if (prompt.isEmpty || _loading) return;
+    final imageFile = _selectedImage;
+    if ((prompt.isEmpty && imageFile == null) || _loading) return;
 
     setState(() {
-      _messages.add(ChatMessage(isUser: true, text: prompt));
+      _messages.add(ChatMessage(
+        isUser: true,
+        text: prompt.isEmpty ? "Sent a photo" : prompt,
+      ));
 
       if (_messages.length == 1) {
-        _currentChatTitle = prompt;
+        _currentChatTitle = prompt.isEmpty ? "Image Scan" : prompt;
       }
 
       _loading = true;
+      _selectedImage = null;
+      _selectedFileName = null;
     });
 
     _saveCurrentChat();
@@ -279,6 +285,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     _scrollToBottom();
 
     try {
+      String? base64Image;
+      if (imageFile != null) {
+        final bytes = await imageFile.readAsBytes();
+        base64Image = base64Encode(bytes);
+      }
+
       final cartSlugs = CartService().items.map((item) {
         return item.name.toLowerCase().replaceAll(' ', '-');
       }).toList();
@@ -297,6 +309,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         prompt,
         2, // servings
         _messages.sublist(0, _messages.length - 1), // History without the latest message
+        imageBase64: base64Image,
       );
 
       // Add a placeholder message for the assistant's response

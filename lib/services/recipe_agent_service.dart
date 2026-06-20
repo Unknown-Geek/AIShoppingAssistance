@@ -115,8 +115,9 @@ class RecipeAgentService {
     List<Map<String, dynamic>> currentCart,
     String dish,
     int servings,
-    List<ChatMessage> chatHistory,
-  ) async {
+    List<ChatMessage> chatHistory, {
+    String? imageBase64,
+  }) async {
     final urls = backendUrls;
     List<String> errors = [];
 
@@ -142,6 +143,7 @@ class RecipeAgentService {
             "servings": servings,
             "chat_history": historyList,
             "current_cart": currentCart,
+            "image_base64": imageBase64,
           });
 
         final response = await http.Client().send(request).timeout(const Duration(seconds: 60));
