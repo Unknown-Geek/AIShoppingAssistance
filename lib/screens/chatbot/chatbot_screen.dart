@@ -23,7 +23,6 @@ class ChatbotScreen extends StatefulWidget {
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  String? _selectedFileName;
   XFile? _selectedImage;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -277,7 +276,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
       _loading = true;
       _selectedImage = null;
-      _selectedFileName = null;
     });
 
     _saveCurrentChat();
@@ -642,25 +640,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   loading: _loading,
                   onSend: _sendMessage,
                   selectedImage: _selectedImage,
-                  selectedFileName: _selectedFileName,
                   onImageSelected: (image) {
                     setState(() {
                       _selectedImage = image;
                     });
                   },
-                  onFileSelected: (file, fileName) {
-                    setState(() {
-                      _selectedFileName = fileName;
-                    });
-                  },
                   onClearImage: () {
                     setState(() {
                       _selectedImage = null;
-                    });
-                  },
-                  onClearFile: () {
-                    setState(() {
-                      _selectedFileName = null;
                     });
                   },
                 ),
