@@ -77,6 +77,47 @@ def format_ingredient_quantity(quantity: Any, unit: Any) -> str:
             
     return f"{qty_str} {unit_str}"
 
+def clean_ingredient_name(name: Any, unit: Any) -> str:
+    """
+    Cleans the ingredient name by removing any prepended unit words.
+    E.g. name="cups All-purpose flour", unit="cups" -> "All-purpose flour"
+    E.g. name="teaspoons Active dry yeast", unit="teaspoons" -> "Active dry yeast"
+    """
+    name_str = str(name or "").strip()
+    unit_str = str(unit or "").strip()
+    if not name_str or not unit_str:
+        return name_str
+        
+    name_words = name_str.split()
+    if not name_words:
+        return name_str
+        
+    first_word = name_words[0]
+    
+    # Exact word match (case-insensitive)
+    if first_word.lower() == unit_str.lower():
+        cleaned = " ".join(name_words[1:]).strip()
+        if cleaned.lower().startswith("of "):
+            cleaned = cleaned[3:].strip()
+        return cleaned
+        
+    # Singular/plural matched word comparison
+    def clean_word(w):
+        w = w.lower().strip(".,() ")
+        if w.endswith("es"):
+            w = w[:-2]
+        elif w.endswith("s"):
+            w = w[:-1]
+        return w
+        
+    if clean_word(first_word) == clean_word(unit_str):
+        cleaned = " ".join(name_words[1:]).strip()
+        if cleaned.lower().startswith("of "):
+            cleaned = cleaned[3:].strip()
+        return cleaned
+        
+    return name_str
+
 class ShoppingAssistantAgent:
     def __init__(self):
         api_key = os.getenv("GROQ_API_KEY")
@@ -316,7 +357,7 @@ class ShoppingAssistantAgent:
 
             # Parse and compose the final missing ingredients and cart additions lists
             for ing in ingredients:
-                ing_name = ing.get("name", "").strip()
+                ing_name = clean_ingredient_name(ing.get("name", ""), ing.get("unit", ""))
                 ing_name_lower = ing_name.lower().strip()
                 ing_sku = ing.get("sku", "UNKNOWN")
                 
@@ -398,7 +439,7 @@ class ShoppingAssistantAgent:
                 "recipe_instructions": list(instructions_list),
                 "ingredients": [
                     {
-                        "name": ing.get("name", ""),
+                        "name": clean_ingredient_name(ing.get("name", ""), ing.get("unit", "")),
                         "quantity": format_ingredient_quantity(ing.get("quantity"), ing.get("unit"))
                     }
                     for ing in ingredients
