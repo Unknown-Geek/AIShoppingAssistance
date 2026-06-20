@@ -92,14 +92,17 @@ class ChatInputField extends StatelessWidget {
             ),
           // Floating 84px input area
           Container(
-            height: 84,
+            constraints: const BoxConstraints(
+              minHeight: 80,
+              maxHeight: 160,
+            ),
             margin: EdgeInsets.only(
               left: 16,
               right: 16,
               top: topGap,
               bottom: bottomGap,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(42),
@@ -115,6 +118,7 @@ class ChatInputField extends StatelessWidget {
               ],
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 // Plus Menu Button
                 GestureDetector(
@@ -140,26 +144,34 @@ class ChatInputField extends StatelessWidget {
                 const SizedBox(width: 12),
                 // Text Field
                 Expanded(
-                  child: TextField(
-                    controller: controller,
-                    onSubmitted: loading ? null : (_) => onSend(),
-                    style: TextStyle(
-                      fontFamily: 'ClashGrotesk',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Ask me anything...',
-                      hintStyle: TextStyle(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: TextField(
+                      controller: controller,
+                      onSubmitted: loading ? null : (_) => onSend(),
+                      maxLines: null,
+                      minLines: 1,
+                      keyboardType: TextInputType.multiline,
+                      style: TextStyle(
                         fontFamily: 'ClashGrotesk',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
-                      border: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      enabledBorder: InputBorder.none,
+                      decoration: InputDecoration(
+                        hintText: 'Ask me anything...',
+                        hintStyle: TextStyle(
+                          fontFamily: 'ClashGrotesk',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        border: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ),
                   ),
                 ),
