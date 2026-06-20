@@ -46,43 +46,6 @@ async def send_chat_message(payload: ChatRequest):
         print("==========================================\n")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/message-stream")
-async def send_chat_message_stream(payload: ChatRequest):
-    """
-    Streaming endpoint returning SSE/chunked response for real-time UI.
-    """
-    try:
-        user = str(payload.user_id).lower().strip()
-        slugs = [str(s) for s in payload.current_cart_slugs]
-        query = str(payload.dish_query)
-        srv = int(payload.servings)
-        
-        history = []
-        if payload.chat_history:
-            history = [{"is_user": h.is_user, "text": h.text} for h in payload.chat_history]
-
-        current_cart = []
-        if payload.current_cart:
-            current_cart = [{"sku": c.sku, "name": c.name, "quantity": c.quantity} for c in payload.current_cart]
-
-        async def event_generator():
-            generator = agent.process_recipe_workflow_stream(
-                user_id=user,
-                current_cart_slugs=slugs,
-                dish_query=query,
-                servings=srv,
-                chat_history=history,
-                current_cart=current_cart,
-                image_base64=payload.image_base64
-            )
-            async for chunk in generator:
-                yield chunk
-
-        return StreamingResponse(event_generator(), media_type="text/plain")
-    except Exception as e:
-        print("\n=== CRITICAL STREAM API ROUTE ERROR ===")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/cart/{user_id}")
 async def get_user_live_cart(user_id: str):

@@ -301,7 +301,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         };
       }).toList();
 
-      final streamedResponse = await ChatAgentService().sendChatMessageStream(
+      final response = await ChatAgentService().sendChatMessage(
         cartSlugs,
         currentCart,
         prompt,
@@ -310,101 +310,72 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         imageBase64: base64Image,
       );
 
-      // Add a placeholder message for the assistant's response
-      setState(() {
-        _messages.add(ChatMessage(isUser: false, text: ""));
-      });
-      final messageIndex = _messages.length - 1;
+      final String responseText = response['response_text'] ?? '';
+      final List<dynamic>? mutations = response['cart_mutations'] != null ? List<dynamic>.from(response['cart_mutations']) : null;
+      final Map<String, dynamic>? recipePayload = response['recipe'] != null ? Map<String, dynamic>.from(response['recipe']) : null;
 
-      String accumulatedText = "";
+      // Handle mutations if any
+      if (mutations != null) {
+        for (final mutation in mutations) {
+          try {
+            final action = mutation['action'];
+            final sku = mutation['sku'];
+            final name = mutation['name'] ?? 'Unknown Item';
+            final price = (mutation['price'] as num?)?.toDouble() ?? 50.0;
+            final quantity = (mutation['quantity'] as num?)?.toInt() ?? 1;
 
-      await streamedResponse.stream
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen((line) {
-        if (line.trim().isEmpty) return;
-        try {
-          final chunk = jsonDecode(line);
-          if (chunk.containsKey('text_chunk')) {
-            accumulatedText += chunk['text_chunk'] as String;
-            setState(() {
-              _messages[messageIndex] = ChatMessage(
-                isUser: false,
-                text: accumulatedText,
+            if (action == 'add') {
+              CartService().addItem(
+                CartItemModel(
+                  id: sku ?? 'unknown_sku_${DateTime.now().millisecondsSinceEpoch}',
+                  name: name,
+                  price: price,
+                  quantity: quantity,
+                  details: 'Added by Qless Assistant',
+                  imageUrl: mutation['thumbnail_url'] ?? '',
+                ),
               );
-            });
-            _scrollToBottom();
-          } else {
-            // Final metadata chunk containing cart mutations and recipe
-            if (chunk['cart_mutations'] != null && chunk['cart_mutations'] is List) {
-              final mutations = List<dynamic>.from(chunk['cart_mutations']);
-              for (final mutation in mutations) {
-                try {
-                  final action = mutation['action'];
-                  final sku = mutation['sku'];
-                  final name = mutation['name'] ?? 'Unknown Item';
-                  final price = (mutation['price'] as num?)?.toDouble() ?? 50.0;
-                  final quantity = (mutation['quantity'] as num?)?.toInt() ?? 1;
-
-                  if (action == 'add') {
-                    CartService().addItem(
-                      CartItemModel(
-                        id: sku ?? 'unknown_sku_${DateTime.now().millisecondsSinceEpoch}',
-                        name: name,
-                        price: price,
-                        quantity: quantity,
-                        details: 'Added by Qless Assistant',
-                        imageUrl: mutation['thumbnail_url'] ?? '',
-                      ),
-                    );
-                  } else if (action == 'remove') {
-                    CartService().removeOrDecrementItemBySkuOrName(sku ?? '', name, quantity);
-                  } else if (action == 'clear') {
-                    CartService().clearCart();
-                  }
-                } catch (exMut) {
-                  debugPrint('[ChatbotScreen] Mutation error: $exMut');
-                }
-              }
+            } else if (action == 'remove') {
+              CartService().removeOrDecrementItemBySkuOrName(sku ?? '', name, quantity);
+            } else if (action == 'clear') {
+              CartService().clearCart();
             }
-
-            if (chunk['recipe'] != null) {
-              final recipePayload = Map<String, dynamic>.from(chunk['recipe'] as Map);
-              final recipeData = {
-                'dish': recipePayload['dish'] ?? prompt,
-                'servings': recipePayload['servings'] ?? 2,
-                'ready_time': '20 min',
-                'summary': recipePayload['recipe_instructions'] != null && (recipePayload['recipe_instructions'] as List).isNotEmpty
-                    ? 'A delicious ${recipePayload['dish'] ?? prompt} crafted by your AI Chef.'
-                    : 'A custom recipe for ${recipePayload['dish'] ?? prompt}.',
-                'ingredients': (recipePayload['parsed_ingredients'] as List<dynamic>?)?.map((item) {
-                  return {
-                    'name': item['name'] ?? '',
-                    'quantity': item['quantity'] ?? '1',
-                  };
-                }).toList() ?? [],
-                'instructions': List<String>.from(recipePayload['recipe_instructions'] ?? []),
-                'missing_ingredients': recipePayload['missing_ingredients'],
-              };
-
-              setState(() {
-                _messages[messageIndex] = ChatMessage(isUser: false, recipe: recipeData);
-              });
-            } else if (accumulatedText.isEmpty) {
-              setState(() {
-                _messages[messageIndex] = ChatMessage(
-                  isUser: false,
-                  text: 'How can I assist you today?',
-                );
-              });
-            }
-            _scrollToBottom();
+          } catch (exMut) {
+            debugPrint('[ChatbotScreen] Mutation error: $exMut');
           }
-        } catch (e) {
-          debugPrint('[ChatbotScreen] Error decoding stream chunk: $e');
         }
-      }).asFuture();
+      }
 
+      // Handle recipe or message display
+      ChatMessage assistantMessage;
+      if (recipePayload != null) {
+        final recipeData = {
+          'dish': recipePayload['dish'] ?? prompt,
+          'servings': recipePayload['servings'] ?? 2,
+          'ready_time': '20 min',
+          'summary': recipePayload['recipe_instructions'] != null && (recipePayload['recipe_instructions'] as List).isNotEmpty
+              ? 'A delicious ${recipePayload['dish'] ?? prompt} crafted by your AI Chef.'
+              : 'A custom recipe for ${recipePayload['dish'] ?? prompt}.',
+          'ingredients': (recipePayload['parsed_ingredients'] as List<dynamic>?)?.map((item) {
+            return {
+              'name': item['name'] ?? '',
+              'quantity': item['quantity'] ?? '1',
+            };
+          }).toList() ?? [],
+          'instructions': List<String>.from(recipePayload['recipe_instructions'] ?? []),
+          'missing_ingredients': recipePayload['missing_ingredients'],
+        };
+        assistantMessage = ChatMessage(isUser: false, recipe: recipeData);
+      } else {
+        assistantMessage = ChatMessage(
+          isUser: false,
+          text: responseText.isNotEmpty ? responseText : 'How can I assist you today?',
+        );
+      }
+
+      setState(() {
+        _messages.add(assistantMessage);
+      });
       _saveCurrentChat();
     } catch (e) {
       debugPrint('[ChatbotScreen] Send message error: $e');
@@ -412,7 +383,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         _messages.add(
           ChatMessage(
             isUser: false,
-            text: 'Unable to connect to recipe service.',
+            text: 'Unable to connect to assistant service.',
           ),
         );
       });
@@ -554,34 +525,34 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                         child: Column(
                                           children: [
                                             SuggestionPill(
-                                              text: 'Suggest healthy breakfast items to buy',
-                                              icon: Icons.shopping_basket_outlined,
+                                              text: 'What snacks do you have under ₹50?',
+                                              icon: Icons.local_offer_outlined,
                                               onTap: () {
-                                                _controller.text = 'Suggest healthy breakfast items to buy';
+                                                _controller.text = 'What snacks do you have under ₹50?';
                                                 _sendMessage();
                                               },
                                             ),
                                             SuggestionPill(
-                                              text: 'Add milk, organic eggs and bread to my cart',
+                                              text: 'Add 2 Snickers and a KitKat to my cart',
                                               icon: Icons.add_shopping_cart_rounded,
                                               onTap: () {
-                                                _controller.text = 'Add milk, organic eggs and bread to my cart';
+                                                _controller.text = 'Add 2 Snickers and a KitKat to my cart';
                                                 _sendMessage();
                                               },
                                             ),
                                             SuggestionPill(
-                                              text: 'Is organic milk healthier than regular milk?',
-                                              icon: Icons.help_outline_rounded,
-                                              onTap: () {
-                                                _controller.text = 'Is organic milk healthier than regular milk?';
-                                                _sendMessage();
-                                              },
-                                            ),
-                                            SuggestionPill(
-                                              text: 'Quick and easy dinner recipe ideas',
+                                              text: 'Make me a recipe for Maggi noodles',
                                               icon: Icons.restaurant_menu_rounded,
                                               onTap: () {
-                                                _controller.text = 'Quick and easy dinner recipe ideas';
+                                                _controller.text = 'Make me a recipe for Maggi noodles';
+                                                _sendMessage();
+                                              },
+                                            ),
+                                            SuggestionPill(
+                                              text: "What's the difference between Horlicks and Bournvita?",
+                                              icon: Icons.help_outline_rounded,
+                                              onTap: () {
+                                                _controller.text = "What's the difference between Horlicks and Bournvita?";
                                                 _sendMessage();
                                               },
                                             ),
