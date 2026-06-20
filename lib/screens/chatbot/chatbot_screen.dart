@@ -33,16 +33,30 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   String _currentChatTitle = 'New Chat';
   String? _currentChatSessionId;
 
+  bool _showScrollDownButton = false;
   Animation<double>? _routeAnimation;
   bool _isTransitioning = true;
 
   static const String _storageKey = 'chat_history_v2'; // Changed key to differentiate updated model storage
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    final showButton = maxScroll - currentScroll > 200;
+    if (showButton != _showScrollDownButton) {
+      setState(() {
+        _showScrollDownButton = showButton;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
     _loadChatHistory();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
@@ -410,6 +424,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _routeAnimation?.removeStatusListener(_handleRouteStatus);
     _controller.dispose();
     _scrollController.dispose();
@@ -565,9 +580,21 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                               : ListView.builder(
                                   controller: _scrollController,
                                   padding: const EdgeInsets.only(top: 12, bottom: 48),
-                                  itemCount: _messages.length,
-                                  itemBuilder: (_, index) =>
-                                      MessageBubble(message: _messages[index]),
+                                  itemCount: _messages.length + (_loading ? 1 : 0),
+                                  itemBuilder: (_, index) {
+                                    if (index == _messages.length) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(bottom: 8),
+                                        child: MessageBubble(
+                                          message: ChatMessage(
+                                            isUser: false,
+                                            text: null,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return MessageBubble(message: _messages[index]);
+                                  },
                                 ),
                         ),
                       ),
@@ -593,19 +620,41 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           end: Alignment.bottomCenter,
                         ),
                       ),
+                      if (_showScrollDownButton)
+                        Positioned(
+                          left: 16,
+                          bottom: 16,
+                          child: GestureDetector(
+                            onTap: _scrollToBottom,
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFFD2E4E6),
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: theme.colorScheme.primary,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                if (_loading)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: MessageBubble(
-                      message: ChatMessage(
-                        isUser: false,
-                        text: null, // trigger typing indicator
-                      ),
-                    ),
-                  ),
                 ChatInputField(
                   controller: _controller,
                   loading: _loading,
