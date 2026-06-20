@@ -371,9 +371,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               ? 'A delicious ${recipePayload['dish'] ?? prompt} crafted by your AI Chef.'
               : 'A custom recipe for ${recipePayload['dish'] ?? prompt}.',
           'ingredients': (recipePayload['ingredients'] as List<dynamic>?)?.map((item) {
+            final cleaned = _cleanIngredient(
+              item['quantity'] ?? '',
+              item['name'] ?? '',
+            );
             return {
-              'name': item['name'] ?? '',
-              'quantity': item['quantity'] ?? '1',
+              'name': cleaned['name'] ?? '',
+              'quantity': cleaned['quantity'] ?? '1',
             };
           }).toList() ?? [],
           'instructions': List<String>.from(recipePayload['recipe_instructions'] ?? []),
@@ -420,6 +424,72 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         );
       }
     });
+  }
+
+  Map<String, String> _cleanIngredient(String quantity, String name) {
+    var qtyStr = quantity.trim();
+    var nameStr = name.trim();
+    
+    if (qtyStr.isEmpty) return {'quantity': '', 'name': nameStr};
+    if (nameStr.isEmpty) return {'quantity': qtyStr, 'name': ''};
+    
+    // 1. Clean the quantity if unit is duplicated in the quantity string itself (e.g. "2 cups cups" -> "2 cups")
+    final qtyWords = qtyStr.split(RegExp(r'\s+'));
+    if (qtyWords.length >= 2) {
+      final lastWord = qtyWords.last;
+      final secondLastWord = qtyWords[qtyWords.length - 2];
+      
+      String cleanWord(String w) {
+        var word = w.toLowerCase().trim();
+        if (word.endsWith('es')) {
+          word = word.substring(0, word.length - 2);
+        } else if (word.endsWith('s')) {
+          word = word.substring(0, word.length - 1);
+        }
+        return word;
+      }
+      
+      if (cleanWord(lastWord) == cleanWord(secondLastWord)) {
+        qtyStr = qtyWords.sublist(0, qtyWords.length - 1).join(' ').trim();
+      }
+    }
+    
+    // 2. Clean the name if it starts with a unit word already present in the quantity
+    final nameWords = nameStr.split(RegExp(r'\s+'));
+    if (nameWords.isNotEmpty) {
+      final firstWord = nameWords.first.toLowerCase().replaceAll(RegExp(r'[.,()]+'), '');
+      final qtyWordsForCheck = qtyStr.toLowerCase().split(RegExp(r'\s+'));
+      
+      String cleanWord(String w) {
+        var word = w.toLowerCase().trim();
+        if (word.endsWith('es')) {
+          word = word.substring(0, word.length - 2);
+        } else if (word.endsWith('s')) {
+          word = word.substring(0, word.length - 1);
+        }
+        return word;
+      }
+      
+      final cleanFirst = cleanWord(firstWord);
+      
+      bool matched = false;
+      for (final qWord in qtyWordsForCheck) {
+        if (cleanWord(qWord) == cleanFirst) {
+          matched = true;
+          break;
+        }
+      }
+      
+      if (matched) {
+        var cleaned = nameWords.sublist(1).join(' ').trim();
+        if (cleaned.toLowerCase().startsWith('of ')) {
+          cleaned = cleaned.substring(3).trim();
+        }
+        nameStr = cleaned;
+      }
+    }
+    
+    return {'quantity': qtyStr, 'name': nameStr};
   }
 
   @override
