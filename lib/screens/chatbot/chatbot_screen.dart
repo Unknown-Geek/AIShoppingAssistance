@@ -291,87 +291,115 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         };
       }).toList();
 
-      final data = await RecipeAgentService().analyzeAndGetMissing(
+      final streamedResponse = await RecipeAgentService().analyzeAndGetMissingStream(
         cartSlugs,
         currentCart,
         prompt,
         2, // servings
-        _messages,
+        _messages.sublist(0, _messages.length - 1), // History without the latest message
       );
 
-      // Process cart mutations if present
-      if (data['cart_mutations'] != null && data['cart_mutations'] is List) {
-        final mutations = List<dynamic>.from(data['cart_mutations']);
-        for (final mutation in mutations) {
-          try {
-            final action = mutation['action'];
-            final sku = mutation['sku'];
-            final name = mutation['name'] ?? 'Unknown Item';
-            final price = (mutation['price'] as num?)?.toDouble() ?? 50.0;
-            final quantity = (mutation['quantity'] as num?)?.toInt() ?? 1;
+      // Add a placeholder message for the assistant's response
+      setState(() {
+        _messages.add(const ChatMessage(isUser: false, text: ""));
+      });
+      final messageIndex = _messages.length - 1;
 
-            if (action == 'add') {
-              CartService().addItem(
-                CartItemModel(
-                  id: sku ?? 'unknown_sku_${DateTime.now().millisecondsSinceEpoch}',
-                  name: name,
-                  price: price,
-                  quantity: quantity,
-                  details: 'Added by Qless Assistant',
-                  imageUrl: mutation['thumbnail_url'] ?? '',
-                ),
+      String accumulatedText = "";
+
+      await streamedResponse.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        if (line.trim().isEmpty) return;
+        try {
+          final chunk = jsonDecode(line);
+          if (chunk.containsKey('text_chunk')) {
+            accumulatedText += chunk['text_chunk'] as String;
+            setState(() {
+              _messages[messageIndex] = ChatMessage(
+                isUser: false,
+                text: accumulatedText,
               );
-            } else if (action == 'remove') {
-              CartService().removeOrDecrementItemBySkuOrName(sku ?? '', name, quantity);
-            } else if (action == 'clear') {
-              CartService().clearCart();
+            });
+            _scrollToBottom();
+          } else {
+            // Final metadata chunk containing cart mutations and recipe
+            if (chunk['cart_mutations'] != null && chunk['cart_mutations'] is List) {
+              final mutations = List<dynamic>.from(chunk['cart_mutations']);
+              for (final mutation in mutations) {
+                try {
+                  final action = mutation['action'];
+                  final sku = mutation['sku'];
+                  final name = mutation['name'] ?? 'Unknown Item';
+                  final price = (mutation['price'] as num?)?.toDouble() ?? 50.0;
+                  final quantity = (mutation['quantity'] as num?)?.toInt() ?? 1;
+
+                  if (action == 'add') {
+                    CartService().addItem(
+                      CartItemModel(
+                        id: sku ?? 'unknown_sku_${DateTime.now().millisecondsSinceEpoch}',
+                        name: name,
+                        price: price,
+                        quantity: quantity,
+                        details: 'Added by Qless Assistant',
+                        imageUrl: mutation['thumbnail_url'] ?? '',
+                      ),
+                    );
+                  } else if (action == 'remove') {
+                    CartService().removeOrDecrementItemBySkuOrName(sku ?? '', name, quantity);
+                  } else if (action == 'clear') {
+                    CartService().clearCart();
+                  }
+                } catch (exMut) {
+                  debugPrint('[ChatbotScreen] Mutation error: $exMut');
+                }
+              }
             }
-          } catch (exMut) {
-            debugPrint('[ChatbotScreen] Mutation error: $exMut');
+
+            if (chunk['recipe'] != null) {
+              final recipePayload = Map<String, dynamic>.from(chunk['recipe'] as Map);
+              final recipeData = {
+                'dish': recipePayload['dish'] ?? prompt,
+                'servings': recipePayload['servings'] ?? 2,
+                'ready_time': '20 min',
+                'summary': recipePayload['recipe_instructions'] != null && (recipePayload['recipe_instructions'] as List).isNotEmpty
+                    ? 'A delicious ${recipePayload['dish'] ?? prompt} crafted by your AI Chef.'
+                    : 'A custom recipe for ${recipePayload['dish'] ?? prompt}.',
+                'ingredients': (recipePayload['parsed_ingredients'] as List<dynamic>?)?.map((item) {
+                  return {
+                    'name': item['name'] ?? '',
+                    'quantity': item['quantity'] ?? '1',
+                  };
+                }).toList() ?? [],
+                'instructions': List<String>.from(recipePayload['recipe_instructions'] ?? []),
+                'missing_ingredients': recipePayload['missing_ingredients'],
+              };
+
+              setState(() {
+                _messages[messageIndex] = ChatMessage(isUser: false, recipe: recipeData);
+              });
+            } else if (accumulatedText.isEmpty) {
+              setState(() {
+                _messages[messageIndex] = const ChatMessage(
+                  isUser: false,
+                  text: 'How can I assist you today?',
+                );
+              });
+            }
+            _scrollToBottom();
           }
+        } catch (e) {
+          debugPrint('[ChatbotScreen] Error decoding stream chunk: $e');
         }
-      }
-
-      if (data['recipe'] != null) {
-        final recipePayload = Map<String, dynamic>.from(data['recipe'] as Map);
-        // Translate backend payload to keys expected by RecipeCard
-        final recipeData = {
-          'dish': recipePayload['dish'] ?? prompt,
-          'servings': recipePayload['servings'] ?? 2,
-          'ready_time': '20 min',
-          'summary': recipePayload['recipe_instructions'] != null && (recipePayload['recipe_instructions'] as List).isNotEmpty
-              ? 'A delicious ${recipePayload['dish'] ?? prompt} crafted by your AI Chef.'
-              : 'A custom recipe for ${recipePayload['dish'] ?? prompt}.',
-          'ingredients': (recipePayload['parsed_ingredients'] as List<dynamic>?)?.map((item) {
-            return {
-              'name': item['name'] ?? '',
-              'quantity': item['quantity'] ?? '1',
-            };
-          }).toList() ?? [],
-          'instructions': List<String>.from(recipePayload['recipe_instructions'] ?? []),
-          'missing_ingredients': recipePayload['missing_ingredients'],
-        };
-
-        setState(() {
-          _messages.add(ChatMessage(isUser: false, recipe: recipeData));
-        });
-      } else {
-        setState(() {
-          _messages.add(
-            ChatMessage(
-              isUser: false,
-              text: data['response_text'] ?? 'How can I assist you today?',
-            ),
-          );
-        });
-      }
+      }).asFuture();
 
       _saveCurrentChat();
     } catch (e) {
       debugPrint('[ChatbotScreen] Send message error: $e');
       setState(() {
         _messages.add(
-          ChatMessage(
+          const ChatMessage(
             isUser: false,
             text: 'Unable to connect to recipe service.',
           ),
