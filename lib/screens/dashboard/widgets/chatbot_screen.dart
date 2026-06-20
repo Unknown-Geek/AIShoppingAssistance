@@ -180,63 +180,74 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   _controller.clear();
   _scrollToBottom();
 
+  final client = http.Client();
   try {
-    final response = await http
-        .post(
-          Uri.parse('$baseUrl/recipe/analyze-ingredients/'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'dish': prompt,
-            'servings': 2,
-          }),
-        )
-        .timeout(const Duration(seconds: 60));
+    final request = http.Request(
+      'POST',
+      Uri.parse('$baseUrl/recipe/analyze-ingredients-stream'),
+    )
+      ..headers['Content-Type'] = 'application/json'
+      ..body = jsonEncode({
+        'dish': prompt,
+        'servings': 2,
+      });
 
-    dynamic data;
-    try {
-      data = jsonDecode(response.body);
-    } catch (_) {
-      data = null;
-    }
+    final streamedResponse = await client.send(request).timeout(const Duration(seconds: 60));
 
-    if (response.statusCode == 200 && data is Map<String, dynamic>) {
-      if (data['is_conversational'] == true) {
-        setState(() {
-          _messages.add(
-            ChatMessage(
-              isUser: false,
-              text: data['response_text'] ?? 'How can I assist you today?',
-            ),
-          );
-        });
-      } else if (data['status'] == 'success' || data.containsKey('dish')) {
-        setState(() {
-          _messages.add(
-            ChatMessage(isUser: false, recipe: data),
-          );
-        });
-      } else {
-        setState(() {
-          _messages.add(
-            ChatMessage(
-              isUser: false,
-              text: data['message'] ?? 'Recipe not found',
-            ),
-          );
-        });
-      }
+    if (streamedResponse.statusCode == 200) {
+      // Add a placeholder message for the assistant's response
+      setState(() {
+        _messages.add(const ChatMessage(isUser: false, text: ""));
+      });
+      final messageIndex = _messages.length - 1;
+
+      String accumulatedText = "";
+      
+      await streamedResponse.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        if (line.trim().isEmpty) return;
+        try {
+          final chunk = jsonDecode(line);
+          if (chunk.containsKey('text_chunk')) {
+            accumulatedText += chunk['text_chunk'] as String;
+            setState(() {
+              _messages[messageIndex] = ChatMessage(
+                isUser: false,
+                text: accumulatedText,
+              );
+            });
+            _scrollToBottom();
+          } else {
+            // Final metadata chunk containing recipe data
+            if (chunk.containsKey('recipe') && chunk['recipe'] != null) {
+              setState(() {
+                _messages[messageIndex] = ChatMessage(
+                  isUser: false,
+                  recipe: Map<String, dynamic>.from(chunk['recipe'] as Map),
+                );
+              });
+              _scrollToBottom();
+            }
+          }
+        } catch (e) {
+          debugPrint('[ChatbotScreen] Error decoding stream chunk: $e');
+        }
+      }).asFuture();
+      
+      _saveCurrentChat();
     } else {
       setState(() {
         _messages.add(
           ChatMessage(
             isUser: false,
-            text: 'Server error: ${response.statusCode}',
+            text: 'Server error: ${streamedResponse.statusCode}',
           ),
         );
       });
+      _saveCurrentChat();
     }
-
-    _saveCurrentChat();
   } on TimeoutException {
     setState(() {
       _messages.add(

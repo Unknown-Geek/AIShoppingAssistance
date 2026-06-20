@@ -218,204 +218,101 @@ Return ONLY a valid JSON object in this format:
                     "missing_ingredients": [],
                     "cart_additions": []
                 }
-
-            # 1. Generate clean recipe structures via Groq
-            raw_recipe = await self.recipe_agent.generate(dish_query, servings)
             
-            raw_ingredients = []
-            instructions_list = []
-
-            if isinstance(raw_recipe, dict):
-                raw_ingredients = raw_recipe.get("ingredients", [])
-                instructions_list = raw_recipe.get("instructions", [])
-            elif isinstance(raw_recipe, str):
-                try:
-                    data = json.loads(raw_recipe)
-                    if isinstance(data, dict):
-                        raw_ingredients = data.get("ingredients", [])
-                        instructions_list = data.get("instructions", [])
-                except Exception:
-                    instructions_list = [raw_recipe]
-
-            # Parse measurements cleanly via QuantityParserTool
-            parsed_ingredients = []
-            for ing in raw_ingredients:
-                if isinstance(ing, dict):
-                    name = ing.get("name", "").strip()
-                    qty = ing.get("quantity", "").strip()
-                    unit = ing.get("unit", "").strip()
-                    
-                    # Deduplicate stutters
-                    if unit and unit.lower() in qty.lower():
-                        ing_str = f"{qty} {name}".strip()
-                    else:
-                        ing_str = f"{qty} {unit} {name}".strip()
-                else:
-                    ing_str = str(ing).strip()
-
-                if ing_str:
-                    parsed = self.quantity_parser.execute(ing_str)
-                    
-                    # Deep-clean inner tool output stutter mappings
-                    raw_in = parsed.get("raw_input", "")
-                    for u_word in ["tablespoons", "tablespoon", "teaspoons", "teaspoon", "cups", "cup", "pieces", "piece"]:
-                        if raw_in.lower().count(u_word) > 1:
-                            raw_in = f"{parsed.get('quantity', '')} {parsed.get('unit', '')} {parsed.get('name', '')}".replace("  ", " ").strip()
-                            parsed["raw_input"] = raw_in
-                            break
-                            
-                    parsed_ingredients.append(parsed)
-
-            # GATE 2: BACKEND CATALOG FILTER MATRIX
-            targeted_catalog = []
-            for ing in parsed_ingredients:
-                ing_name = ing.get("name", "").lower().strip()
-                if not ing_name:
-                    continue
-                
-                if any(tk in ing_name for tk in toxic_keywords):
-                    continue
-                    
-                ing_tokens = set(t for t in ing_name.split() if len(t) >= 3 or t == "ghee" or t == "oil")
-                
-                for item in self.inventory:
-                    item_name = item.get("name", "").lower()
-                    item_slug = item.get("slug", "").lower()
-
-                    if any(tk in item_name for tk in toxic_keywords):
-                        continue
-                    if any(pk in item_name for pk in processed_keywords) and not any(pk in ing_name for pk in processed_keywords):
-                        continue
-                    if any(sk in item_name for sk in sauce_keywords) and not any(sk in ing_name for sk in sauce_keywords):
-                        continue
-
-                    item_tokens = set(item_name.split() + item_slug.split("-"))
-                    if ing_name in item_name or item_name in ing_name or ing_tokens.intersection(item_tokens):
-                        if item not in targeted_catalog:
-                            targeted_catalog.append(item)
-
-            if not targeted_catalog and self.inventory:
-                targeted_catalog = [item for item in self.inventory if not any(tk in item.get("name", "").lower() for tk in toxic_keywords)]
-
-            # Run AI matching context sequence
-            ai_matched_items = []
-            try:
-                ai_matched_items = self.recipe_agent.match_inventory_with_ai(parsed_ingredients, targeted_catalog)
-            except Exception as ai_err:
-                print(f"⚠️ [AI MATCHING ERROR] Falling back entirely to deterministic matrix matcher: {ai_err}")
-
-            ai_lookup = {}
-            if isinstance(ai_matched_items, list):
-                for item in ai_matched_items:
-                    if isinstance(item, dict):
-                        req_name = str(item.get("requested_name", item.get("name", ""))).lower().strip()
-                        ai_lookup[req_name] = item
+            # 1. Generate and match recipe in a single LLM call
+            recipe_result = await self.recipe_agent.generate_and_match_recipe(dish_query, servings, self.inventory)
+            
+            instructions_list = recipe_result.get("instructions", [])
+            ingredients = recipe_result.get("ingredients", [])
 
             missing_ingredients_map = {}
             cart_additions_map = {}
             normalized_cart_slugs = [str(slug).lower().strip() for slug in current_cart_slugs]
 
-            # STRUCTURAL COMPOSITION GENERATION
-            for ing in parsed_ingredients:
+            # Parse and compose the final missing ingredients and cart additions lists
+            for ing in ingredients:
                 ing_name = ing.get("name", "").strip()
                 ing_name_lower = ing_name.lower().strip()
-                ing_slug_fallback = ing_name_lower.replace(" ", "-")
+                ing_sku = ing.get("sku", "UNKNOWN")
                 
-                if ing_slug_fallback in normalized_cart_slugs:
+                # Deduplicate slug format
+                ing_slug = ing.get("slug", ing_name_lower.replace(" ", "-")).lower().strip()
+                if not ing_slug:
+                    ing_slug = ing_name_lower.replace(" ", "-")
+
+                if ing_slug in normalized_cart_slugs:
                     continue
 
-                qty_str = ing.get('quantity', '').strip()
-                unit_str = ing.get('unit', '').strip()
+                qty_str = str(ing.get('quantity', '')).strip()
+                unit_str = str(ing.get('unit', '')).strip()
                 final_qty = f"{qty_str} {unit_str}".strip() if unit_str and unit_str.lower() not in qty_str.lower() else qty_str
 
-                # Try Layer 1: AI lookup matching
-                ai_match = ai_lookup.get(ing_name_lower) or next((v for k, v in ai_lookup.items() if k in ing_name_lower or ing_name_lower in k), None)
-                
-                final_match = None
-                if ai_match and ai_match.get("sku") != "UNKNOWN":
-                    final_match = ai_match
-                else:
-                    # Try Layer 2: Deterministic substring containment & token scoring matrix fallback
-                    best_match = None
-                    best_score = 0
-                    ing_tokens = set(t for t in ing_name_lower.split() if len(t) >= 3 or t in ["ghee", "oil"])
-                    
-                    for item in targeted_catalog:
-                        item_name_lower = item.get("name", "").lower()
-                        item_slug_lower = item.get("slug", "").lower()
+                if ing_sku != "UNKNOWN":
+                    # Look up actual item from catalog to resolve name, slug, price, and thumbnail_url
+                    actual_item = next((item for item in self.inventory if item.get("sku") == ing_sku), None)
+                    if actual_item:
+                        item_sku = actual_item.get("sku")
+                        item_slug = actual_item.get("slug", ing_slug).lower().strip()
                         
-                        if any(sk in item_name_lower for sk in snack_keywords) and any(spice in ing_name_lower for spice in ["masala", "powder", "salt", "spice"]):
+                        if item_slug in normalized_cart_slugs:
                             continue
-                        if any(uk in item_name_lower for uk in utility_keywords) and ing_name_lower in ["water", "milk", "oil", "ghee", "juice"]:
-                            continue
-                        
-                        item_tokens = set(item_name_lower.split() + item_slug_lower.split("-"))
-                        score = len(ing_tokens.intersection(item_tokens))
-                        
-                        if ing_name_lower in item_name_lower or item_name_lower in ing_name_lower:
-                            score += 5
-                            
-                        if score > best_score:
-                            best_score = score
-                            best_match = item
-                            
-                    if best_score > 0:
-                        final_match = best_match
 
-                # PAYLOAD COMPOSITION & DATABASE WRITE BACK TRANSACTION
-                if final_match and final_match.get("sku"):
-                    item_sku = final_match.get("sku")
-                    item_slug = final_match.get("slug", ing_slug_fallback).lower().strip()
-                    
-                    if item_slug in normalized_cart_slugs:
-                        continue
-
-                    is_committed = False
-                    
-                    # Handle Missing Ingredients List Consolidation Matrix
-                    if item_sku in missing_ingredients_map:
-                        missing_ingredients_map[item_sku]["required_quantity"] += f" + {final_qty}"
-                    else:
-                        missing_ingredients_map[item_sku] = {
-                            "sku": item_sku,
-                            "slug": item_slug,
-                            "name": final_match.get("name"),
-                            "price_rupees": float(final_match.get("price_rupees", 0.0)),
-                            "thumbnail_url": final_match.get("thumbnail_url", ""),
-                            "required_quantity": final_qty,
-                            "agent_tool_status": "Committed to DB" if is_committed else "Tool Error"
-                        }
-                    
-                    # Handle Flutter Cart Service Mapping Matrix
-                    if item_sku in cart_additions_map:
-                        cart_additions_map[item_sku]["quantity"] += 1
-                    else:
-                        cart_additions_map[item_sku] = {
-                            "sku": item_sku,
-                            "name": final_match.get("name"),
-                            "price": float(final_match.get("price_rupees", 0.0)),
-                            "quantity": 1
-                        }
+                        if item_sku in missing_ingredients_map:
+                            missing_ingredients_map[item_sku]["required_quantity"] += f" + {final_qty}"
+                        else:
+                            missing_ingredients_map[item_sku] = {
+                                "sku": item_sku,
+                                "slug": item_slug,
+                                "name": actual_item.get("name"),
+                                "price_rupees": float(actual_item.get("price_rupees", 0.0)),
+                                "thumbnail_url": actual_item.get("thumbnail_url", ""),
+                                "required_quantity": final_qty,
+                                "agent_tool_status": "Committed to DB"
+                            }
+                        
+                        if item_sku in cart_additions_map:
+                            cart_additions_map[item_sku]["quantity"] += 1
+                        else:
+                            cart_additions_map[item_sku] = {
+                                "sku": item_sku,
+                                "name": actual_item.get("name"),
+                                "price": float(actual_item.get("price_rupees", 0.0)),
+                                "quantity": 1
+                            }
                 else:
-                    # Keep non-catalog items tracked flatly by fallback slug
-                    subs = []
-                    if ai_match and isinstance(ai_match, dict) and "substitutes" in ai_match:
-                        subs = ai_match["substitutes"]
-                    missing_ingredients_map[ing_slug_fallback] = {
+                    # Clean up substitute list if any (ensure thumbnail URLs from inventory match if applicable)
+                    cleaned_subs = []
+                    for sub in ing.get("substitutes", []):
+                        sub_sku = sub.get("sku")
+                        if sub_sku:
+                            actual_sub = next((item for item in self.inventory if item.get("sku") == sub_sku), None)
+                            if actual_sub:
+                                cleaned_subs.append({
+                                    "sku": sub_sku,
+                                    "name": actual_sub.get("name"),
+                                    "price_rupees": float(actual_sub.get("price_rupees", 0.0)),
+                                    "thumbnail_url": actual_sub.get("thumbnail_url", "")
+                                })
+                            else:
+                                cleaned_subs.append(sub)
+                        else:
+                            cleaned_subs.append(sub)
+
+                    missing_ingredients_map[ing_slug] = {
                         "sku": "UNKNOWN",
-                        "slug": ing_slug_fallback,
+                        "slug": ing_slug,
                         "name": ing_name,
                         "price_rupees": 0.0,
                         "thumbnail_url": "",
                         "required_quantity": final_qty,
-                        "substitutes": subs
+                        "substitutes": cleaned_subs
                     }
 
             return {
                 "dish": str(dish_query),
                 "servings": int(servings),
                 "recipe_instructions": list(instructions_list),
-                "parsed_ingredients": list(parsed_ingredients),
+                "parsed_ingredients": [],
                 "missing_ingredients": list(missing_ingredients_map.values()),
                 "cart_additions": list(cart_additions_map.values())
             }
@@ -435,6 +332,46 @@ Return ONLY a valid JSON object in this format:
         chat_history: List[Dict[str, Any]] = None,
         current_cart: List[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
+        generator = self.process_recipe_workflow_stream(
+            user_id=user_id,
+            current_cart_slugs=current_cart_slugs,
+            dish_query=dish_query,
+            servings=servings,
+            chat_history=chat_history,
+            current_cart=current_cart
+        )
+        full_text = ""
+        recipe_data = None
+        mutations = None
+        async for chunk_str in generator:
+            if not chunk_str.strip():
+                continue
+            try:
+                chunk = json.loads(chunk_str.strip())
+                if "text_chunk" in chunk:
+                    full_text += chunk["text_chunk"]
+                else:
+                    if "recipe" in chunk:
+                        recipe_data = chunk["recipe"]
+                    if "cart_mutations" in chunk:
+                        mutations = chunk["cart_mutations"]
+            except Exception as parse_err:
+                print(f"Error parsing generator chunk: {parse_err}")
+        return {
+            "response_text": full_text.strip(),
+            "recipe": recipe_data,
+            "cart_mutations": mutations
+        }
+
+    async def process_recipe_workflow_stream(
+        self,
+        user_id: str = "anonymous_user",
+        current_cart_slugs: List[str] = None,
+        dish_query: str = "",
+        servings: int = 2,
+        chat_history: List[Dict[str, Any]] = None,
+        current_cart: List[Dict[str, Any]] = None
+    ):
         mutations = []
         recipe_data = None
         
@@ -574,11 +511,7 @@ Current Cart Items:
 
 
 ### Guidelines:
-1. **Conversational Responses**: Be extremely friendly, natural, and helpful. Every time you provide your final conversational response (when you are not calling any tools), you must format it as a valid JSON object containing only a single key 'response_text':
-{{
-  "response_text": "<your message here>"
-}}
-Do NOT wrap it in markdown code blocks, just return the raw JSON object string.
+1. **Conversational Responses**: Be extremely friendly, natural, and helpful.
 2. **Tool Usage**: Use the tool-calling interface to search inventory, add/remove items, or match recipes.
 3. **No Raw Tool Tags**: Do NOT write tool calls as raw text, XML, or `<function>` tags in your response content. Only use the official API tool-calling mechanism.
 4. **No Hallucinations**: Only use the exact SKUs found in the inventory catalog.
@@ -617,23 +550,92 @@ Available Store Catalog (SKUs and Names):
         for loop_iter in range(3):
             try:
                 loop = asyncio.get_event_loop()
-                completion = await loop.run_in_executor(
-                    None,
-                    lambda: self.client.chat.completions.create(
+                def get_stream():
+                    return self.client.chat.completions.create(
                         model=self.model,
                         messages=messages,
                         tools=tools_definitions,
                         tool_choice="auto",
                         max_tokens=1024,
-                        temperature=0.3
+                        temperature=0.3,
+                        stream=True
                     )
-                )
+                
+                completion_stream = await loop.run_in_executor(None, get_stream)
+                
+                role = "assistant"
+                content = ""
+                tool_calls_dict = {}
+                
+                for chunk in completion_stream:
+                    delta = chunk.choices[0].delta
+                    if delta.content:
+                        content += delta.content
+                        yield json.dumps({"text_chunk": delta.content}) + "\n"
+                    
+                    if delta.tool_calls:
+                        for tc in delta.tool_calls:
+                            idx = tc.index
+                            if idx not in tool_calls_dict:
+                                tool_calls_dict[idx] = {
+                                    "id": tc.id or "",
+                                    "type": "function",
+                                    "function": {
+                                        "name": tc.function.name or "",
+                                        "arguments": tc.function.arguments or ""
+                                    }
+                                }
+                            else:
+                                if tc.id:
+                                    tool_calls_dict[idx]["id"] += tc.id
+                                if tc.function.name:
+                                    tool_calls_dict[idx]["function"]["name"] += tc.function.name
+                                if tc.function.arguments:
+                                    tool_calls_dict[idx]["function"]["arguments"] += tc.function.arguments
             except Exception as e:
                 print(f"⚠️ [AGENT LLM FAULT] {e}")
                 break
 
-            msg = completion.choices[0].message
-            messages.append(msg)
+            # Reconstruct SimpleNamespace for internal checks
+            tool_calls = []
+            if tool_calls_dict:
+                from types import SimpleNamespace
+                for idx in sorted(tool_calls_dict.keys()):
+                    tc_data = tool_calls_dict[idx]
+                    tool_calls.append(SimpleNamespace(
+                        id=tc_data["id"],
+                        type="function",
+                        function=SimpleNamespace(
+                            name=tc_data["function"]["name"],
+                            arguments=tc_data["function"]["arguments"]
+                        )
+                    ))
+            
+            from types import SimpleNamespace
+            msg = SimpleNamespace(
+                role=role,
+                content=content if content else None,
+                tool_calls=tool_calls if tool_calls else None
+            )
+
+            # Append plain dict to message history list for API compatibility
+            api_msg = {
+                "role": role,
+                "content": content if content else None
+            }
+            if tool_calls_dict:
+                api_msg["tool_calls"] = [
+                    {
+                        "id": tc_data["id"],
+                        "type": "function",
+                        "function": {
+                            "name": tc_data["function"]["name"],
+                            "arguments": tc_data["function"]["arguments"]
+                        }
+                    }
+                    for tc_data in tool_calls_dict.values()
+                ]
+            messages.append(api_msg)
 
             if not msg.tool_calls:
                 break
@@ -697,47 +699,8 @@ Available Store Catalog (SKUs and Names):
             if should_break:
                 break
 
-        final_content = ""
-        # Find the last message content
-        for m in reversed(messages):
-            if isinstance(m, dict):
-                content = m.get("content")
-            else:
-                content = getattr(m, "content", "")
-            
-            if content:
-                final_content = content
-                break
-
-        final_json = {}
-        if final_content:
-            final_content = str(final_content).strip()
-            # Clean markdown code fences if present (e.g. ```json ... ```)
-            if final_content.startswith("```"):
-                lines = final_content.splitlines()
-                if len(lines) >= 2:
-                    if lines[0].startswith("```"):
-                        lines = lines[1:]
-                    if lines[-1].startswith("```"):
-                        lines = lines[:-1]
-                final_content = "\n".join(lines).strip()
-            
-            # Remove any leading json label if the model outputted it
-            if final_content.lower().startswith("json"):
-                final_content = final_content[4:].strip()
-            
-            try:
-                final_json = json.loads(final_content)
-            except Exception:
-                final_json = {"response_text": final_content}
-        else:
-            final_json = {"response_text": "I processed your request."}
-
-        # Safeguard "response_text" key
-        if not isinstance(final_json, dict) or "response_text" not in final_json:
-            final_json = {"response_text": str(final_json)}
-
-        final_json["cart_mutations"] = mutations if mutations else None
-        final_json["recipe"] = recipe_data if recipe_data else None
-
-        return final_json
+        # Yield final metadata chunk
+        yield json.dumps({
+            "cart_mutations": mutations if mutations else None,
+            "recipe": recipe_data if recipe_data else None
+        }) + "\n"
