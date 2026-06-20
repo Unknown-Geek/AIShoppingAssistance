@@ -14,6 +14,7 @@ class RecipeCard extends StatefulWidget {
 
 class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
+  bool get _enableSubstitutes => false;
 
   void _toggleExpanded() {
     setState(() {
@@ -248,7 +249,8 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                           }
                         }
 
-                        final hasSubstitutes = matchingMissing != null &&
+                        final hasSubstitutes = _enableSubstitutes &&
+                            matchingMissing != null &&
                             matchingMissing['sku'] == 'UNKNOWN' &&
                             matchingMissing['substitutes'] != null &&
                             (matchingMissing['substitutes'] as List).isNotEmpty;
@@ -284,6 +286,21 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                   ),
                                 ],
                               ),
+                              if (matchingMissing != null && matchingMissing['sku'] == 'UNKNOWN' && !hasSubstitutes) ...[
+                                const SizedBox(height: 6),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 18),
+                                  child: Text(
+                                    'Not in inventory',
+                                    style: TextStyle(
+                                      fontFamily: 'ClashGrotesk',
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.redAccent.withValues(alpha: 0.8),
+                                    ),
+                                  ),
+                                ),
+                              ],
                               if (hasSubstitutes) ...[
                                 const SizedBox(height: 6),
                                 Padding(
