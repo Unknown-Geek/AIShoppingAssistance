@@ -622,7 +622,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       ),
                       if (_showScrollDownButton)
                         Positioned(
-                          left: 16,
+                          right: 16,
                           bottom: 16,
                           child: GestureDetector(
                             onTap: _scrollToBottom,
