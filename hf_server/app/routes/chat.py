@@ -1,24 +1,22 @@
 import traceback
+import json
 from fastapi import APIRouter, HTTPException
-from typing import List
-from app.models.recipe import RecipeRequest
+from fastapi.responses import StreamingResponse
+from app.models.chat import ChatRequest
 from app.agents.shopping_assistant_agent import ShoppingAssistantAgent
 from app.utils.cart_state import live_cart_memory
 
-router = APIRouter(prefix="/recipe", tags=["Recipe Management"])
+router = APIRouter(prefix="/chat", tags=["Chat Management"])
 agent = ShoppingAssistantAgent()
 
-import json
-from fastapi.responses import StreamingResponse
-
-@router.post("/analyze-ingredients")
-async def analyze_recipe_ingredients(payload: RecipeRequest):
+@router.post("/message")
+async def send_chat_message(payload: ChatRequest):
     """
     Non-streaming endpoint for backward compatibility (e.g. cart sync, tests).
     Accumulates the generator chunks and returns a flat JSON dictionary.
     """
     try:
-        user = str(payload.user_id).lower().strip() # ◄─ EXTRACT THE USER ID
+        user = str(payload.user_id).lower().strip()
         slugs = [str(s) for s in payload.current_cart_slugs]
         query = str(payload.dish_query)
         srv = int(payload.servings)
@@ -48,8 +46,8 @@ async def analyze_recipe_ingredients(payload: RecipeRequest):
         print("==========================================\n")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/analyze-ingredients-stream")
-async def analyze_recipe_ingredients_stream(payload: RecipeRequest):
+@router.post("/message-stream")
+async def send_chat_message_stream(payload: ChatRequest):
     """
     Streaming endpoint returning SSE/chunked response for real-time UI.
     """
@@ -92,7 +90,6 @@ async def get_user_live_cart(user_id: str):
     Endpoint for Flutter client to fetch the active item quantities 
     that the AI agent added via tool calls.
     """
-    # Force alignment to lower case to eliminate typographical sorting mismatches
     raw_cart_data = live_cart_memory.get_cart(user_id.lower().strip())
     
     formatted_items = [

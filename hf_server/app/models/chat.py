@@ -16,7 +16,7 @@ class CartItemPayload(BaseModel):
     name: str
     quantity: int
 
-class RecipeRequest(BaseModel):
+class ChatRequest(BaseModel):
     user_id: str
     current_cart_slugs: List[str]
     dish_query: str

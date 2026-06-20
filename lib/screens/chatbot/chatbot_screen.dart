@@ -11,7 +11,7 @@ import 'widgets/message_bubble.dart';
 import 'widgets/chat_input_field.dart';
 import 'widgets/history_drawer.dart';
 import 'widgets/animated_orb.dart';
-import '../../services/recipe_agent_service.dart';
+import '../../services/chat_agent_service.dart';
 import '../../services/cart_service.dart';
 
 class ChatbotScreen extends StatefulWidget {
@@ -301,7 +301,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         };
       }).toList();
 
-      final streamedResponse = await RecipeAgentService().analyzeAndGetMissingStream(
+      final streamedResponse = await ChatAgentService().sendChatMessageStream(
         cartSlugs,
         currentCart,
         prompt,
