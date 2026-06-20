@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ChatInputField extends StatelessWidget {
@@ -7,11 +6,8 @@ class ChatInputField extends StatelessWidget {
   final bool loading;
   final VoidCallback onSend;
   final XFile? selectedImage;
-  final String? selectedFileName;
   final ValueChanged<XFile?> onImageSelected;
-  final Function(PlatformFile?, String?) onFileSelected;
   final VoidCallback onClearImage;
-  final VoidCallback onClearFile;
 
   const ChatInputField({
     super.key,
@@ -19,11 +15,8 @@ class ChatInputField extends StatelessWidget {
     required this.loading,
     required this.onSend,
     required this.selectedImage,
-    required this.selectedFileName,
     required this.onImageSelected,
-    required this.onFileSelected,
     required this.onClearImage,
-    required this.onClearFile,
   });
 
   @override
@@ -33,9 +26,11 @@ class ChatInputField extends StatelessWidget {
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     // Calculate equal visual gaps above and below the floating white pill
-    final double topGap = isKeyboardOpen
-        ? 8.0
-        : (bottomPadding > 0 ? 24.0 : 16.0);
+    final double topGap = selectedImage != null
+        ? 6.0
+        : (isKeyboardOpen
+            ? 8.0
+            : (bottomPadding > 0 ? 24.0 : 16.0));
     final double bottomGap = isKeyboardOpen
         ? 8.0
         : (bottomPadding > 0 ? bottomPadding : 16.0);
@@ -49,56 +44,50 @@ class ChatInputField extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Floating File/Image Chips above the text input pill
-          if (selectedImage != null || selectedFileName != null)
+          if (selectedImage != null)
             Padding(
               padding: const EdgeInsets.only(
-                left: 20.0,
-                right: 20.0,
-                bottom: 8.0,
+                top: 12.0,
+                bottom: 4.0,
               ),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  if (selectedImage != null)
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Row(
+                  children: [
                     InputChip(
-                      labelStyle: const TextStyle(
-                        fontFamily: 'ClashGrotesk',
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                      labelStyle: TextStyle(
                         fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                       avatar: Icon(
-                        Icons.image,
-                        size: 16,
+                        Icons.image_outlined,
+                        size: 14,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       label: Text(selectedImage!.name.split('/').last),
                       onDeleted: onClearImage,
-                      deleteIconColor: const Color(0xFFEF4444),
-                      backgroundColor: Colors.white,
+                      deleteIcon: Icon(
+                        Icons.close,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+                      ),
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      side: const BorderSide(
+                        color: Color(0xFFD2E4E6),
+                        width: 1.0,
+                      ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
-                  if (selectedFileName != null)
-                    InputChip(
-                      labelStyle: const TextStyle(
-                        fontFamily: 'ClashGrotesk',
-                        fontWeight: FontWeight.w600,
-                      ),
-                      avatar: Icon(
-                        Icons.attach_file,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      label: Text(selectedFileName!),
-                      onDeleted: onClearFile,
-                      deleteIconColor: const Color(0xFFEF4444),
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           // Floating 84px input area
@@ -291,36 +280,7 @@ class ChatInputField extends StatelessWidget {
                   }
                 },
               ),
-              const SizedBox(height: 8),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 8,
-                ),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F1F2),
-                  child: Icon(
-                    Icons.attach_file_rounded,
-                    color: Color(0xFF001A23),
-                  ),
-                ),
-                title: const Text(
-                  'Choose Document / File',
-                  style: TextStyle(
-                    fontFamily: 'ClashGrotesk',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF001A23),
-                  ),
-                ),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final result = await FilePicker.platform.pickFiles();
-                  if (result != null && result.files.isNotEmpty) {
-                    onFileSelected(result.files.first, result.files.first.name);
-                  }
-                },
-              ),
+
             ],
           ),
         ),

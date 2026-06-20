@@ -23,7 +23,6 @@ class ChatbotScreen extends StatefulWidget {
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  String? _selectedFileName;
   XFile? _selectedImage;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -262,16 +261,21 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   Future<void> _sendMessage() async {
     final prompt = _controller.text.trim();
-    if (prompt.isEmpty || _loading) return;
+    final imageFile = _selectedImage;
+    if ((prompt.isEmpty && imageFile == null) || _loading) return;
 
     setState(() {
-      _messages.add(ChatMessage(isUser: true, text: prompt));
+      _messages.add(ChatMessage(
+        isUser: true,
+        text: prompt.isEmpty ? "Sent a photo" : prompt,
+      ));
 
       if (_messages.length == 1) {
-        _currentChatTitle = prompt;
+        _currentChatTitle = prompt.isEmpty ? "Image Scan" : prompt;
       }
 
       _loading = true;
+      _selectedImage = null;
     });
 
     _saveCurrentChat();
@@ -279,6 +283,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     _scrollToBottom();
 
     try {
+      String? base64Image;
+      if (imageFile != null) {
+        final bytes = await imageFile.readAsBytes();
+        base64Image = base64Encode(bytes);
+      }
+
       final cartSlugs = CartService().items.map((item) {
         return item.name.toLowerCase().replaceAll(' ', '-');
       }).toList();
@@ -297,11 +307,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         prompt,
         2, // servings
         _messages.sublist(0, _messages.length - 1), // History without the latest message
+        imageBase64: base64Image,
       );
 
       // Add a placeholder message for the assistant's response
       setState(() {
-        _messages.add(const ChatMessage(isUser: false, text: ""));
+        _messages.add(ChatMessage(isUser: false, text: ""));
       });
       final messageIndex = _messages.length - 1;
 
@@ -381,7 +392,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               });
             } else if (accumulatedText.isEmpty) {
               setState(() {
-                _messages[messageIndex] = const ChatMessage(
+                _messages[messageIndex] = ChatMessage(
                   isUser: false,
                   text: 'How can I assist you today?',
                 );
@@ -399,7 +410,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       debugPrint('[ChatbotScreen] Send message error: $e');
       setState(() {
         _messages.add(
-          const ChatMessage(
+          ChatMessage(
             isUser: false,
             text: 'Unable to connect to recipe service.',
           ),
@@ -629,25 +640,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   loading: _loading,
                   onSend: _sendMessage,
                   selectedImage: _selectedImage,
-                  selectedFileName: _selectedFileName,
                   onImageSelected: (image) {
                     setState(() {
                       _selectedImage = image;
                     });
                   },
-                  onFileSelected: (file, fileName) {
-                    setState(() {
-                      _selectedFileName = fileName;
-                    });
-                  },
                   onClearImage: () {
                     setState(() {
                       _selectedImage = null;
-                    });
-                  },
-                  onClearFile: () {
-                    setState(() {
-                      _selectedFileName = null;
                     });
                   },
                 ),

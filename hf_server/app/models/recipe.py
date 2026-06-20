@@ -23,3 +23,4 @@ class RecipeRequest(BaseModel):
     servings: int
     chat_history: Optional[List[ChatMessagePayload]] = None
     current_cart: Optional[List[CartItemPayload]] = None
+    image_base64: Optional[str] = None

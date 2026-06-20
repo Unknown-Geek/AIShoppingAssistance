@@ -330,7 +330,8 @@ Return ONLY a valid JSON object in this format:
         dish_query: str = "",
         servings: int = 2,
         chat_history: List[Dict[str, Any]] = None,
-        current_cart: List[Dict[str, Any]] = None
+        current_cart: List[Dict[str, Any]] = None,
+        image_base64: str = None
     ) -> Dict[str, Any]:
         generator = self.process_recipe_workflow_stream(
             user_id=user_id,
@@ -338,7 +339,8 @@ Return ONLY a valid JSON object in this format:
             dish_query=dish_query,
             servings=servings,
             chat_history=chat_history,
-            current_cart=current_cart
+            current_cart=current_cart,
+            image_base64=image_base64
         )
         full_text = ""
         recipe_data = None
@@ -370,7 +372,8 @@ Return ONLY a valid JSON object in this format:
         dish_query: str = "",
         servings: int = 2,
         chat_history: List[Dict[str, Any]] = None,
-        current_cart: List[Dict[str, Any]] = None
+        current_cart: List[Dict[str, Any]] = None,
+        image_base64: str = None
     ):
         mutations = []
         recipe_data = None
@@ -544,10 +547,29 @@ Available Store Catalog (SKUs and Names):
                     "content": item.get("text") or ""
                 })
 
+        # Determine model to use (switch to vision-capable model if image is attached)
+        model_to_use = self.model
+        if image_base64:
+            model_to_use = "meta-llama/llama-4-scout-17b-16e-instruct"
+            user_content = [
+                {
+                    "type": "text",
+                    "text": dish_query if dish_query else "What is this image? Tell me if I should add it to my cart or how I can cook with it."
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{image_base64}"
+                    }
+                }
+            ]
+        else:
+            user_content = dish_query
+
         # Add the latest user message
         messages.append({
             "role": "user",
-            "content": dish_query
+            "content": user_content
         })
 
         executed_tool_calls = set()
@@ -556,7 +578,7 @@ Available Store Catalog (SKUs and Names):
                 loop = asyncio.get_event_loop()
                 def get_stream():
                     return self.client.chat.completions.create(
-                        model=self.model,
+                        model=model_to_use,
                         messages=messages,
                         tools=tools_definitions,
                         tool_choice="auto",
