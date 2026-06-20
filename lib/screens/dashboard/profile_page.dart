@@ -40,7 +40,7 @@ class _ProfilePageState extends State<ProfilePage> {
           .from('user_carts')
           .select()
           .eq('user_id', user.id)
-          .eq('status', 'processed')
+          .ilike('status', 'processed')
           .order('vreated_at', ascending: false);
 
       setState(() {
