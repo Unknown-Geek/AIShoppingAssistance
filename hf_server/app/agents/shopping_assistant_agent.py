@@ -40,6 +40,43 @@ ACTIVE_CART_TOOLS_REGISTRY = {
     "remove_from_cart": execute_database_cart_removal
 }
 
+def format_ingredient_quantity(quantity: Any, unit: Any) -> str:
+    """
+    Formats the quantity and unit of an ingredient safely, avoiding duplication
+    such as "1 cup cup" or "1 cup cup flour".
+    """
+    qty_str = str(quantity or "").strip()
+    unit_str = str(unit or "").strip()
+    
+    if not unit_str:
+        return qty_str
+    if not qty_str:
+        return unit_str
+        
+    # Check if the unit string is already present in quantity or vice versa
+    if unit_str.lower() in qty_str.lower():
+        return qty_str
+    if qty_str.lower() in unit_str.lower():
+        return unit_str
+        
+    # Word-level comparison to prevent e.g. "1 cup" and "cups" -> "1 cup cups"
+    qty_words = qty_str.split()
+    if qty_words:
+        last_word = qty_words[-1]
+        
+        def clean_word(w):
+            w = w.lower().strip(".,() ")
+            if w.endswith("es"):
+                w = w[:-2]
+            elif w.endswith("s"):
+                w = w[:-1]
+            return w
+            
+        if clean_word(last_word) == clean_word(unit_str):
+            return qty_str
+            
+    return f"{qty_str} {unit_str}"
+
 class ShoppingAssistantAgent:
     def __init__(self):
         api_key = os.getenv("GROQ_API_KEY")
@@ -291,9 +328,7 @@ class ShoppingAssistantAgent:
                 if ing_slug in normalized_cart_slugs:
                     continue
 
-                qty_str = str(ing.get('quantity', '')).strip()
-                unit_str = str(ing.get('unit', '')).strip()
-                final_qty = f"{qty_str} {unit_str}".strip() if unit_str and unit_str.lower() not in qty_str.lower() else qty_str
+                final_qty = format_ingredient_quantity(ing.get('quantity'), ing.get('unit'))
 
                 if ing_sku != "UNKNOWN":
                     # Look up actual item from catalog to resolve name, slug, price, and thumbnail_url
@@ -364,7 +399,7 @@ class ShoppingAssistantAgent:
                 "ingredients": [
                     {
                         "name": ing.get("name", ""),
-                        "quantity": f"{str(ing.get('quantity', '')).strip()} {str(ing.get('unit', '')).strip()}".strip()
+                        "quantity": format_ingredient_quantity(ing.get("quantity"), ing.get("unit"))
                     }
                     for ing in ingredients
                 ],
