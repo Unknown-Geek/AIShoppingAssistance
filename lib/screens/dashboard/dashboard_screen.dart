@@ -16,6 +16,7 @@ import 'widgets/camera_viewport.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'widgets/checkout_bar.dart';
 import 'widgets/dashboard_sheets.dart';
+import 'profile_page.dart';
 
 class DashboardScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
@@ -826,13 +827,36 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   void _showProfileSheet() {
     final user = Supabase.instance.client.auth.currentUser;
+    final name = user?.userMetadata?['name'] as String? ?? 'User';
     final email = user?.email ?? 'Guest';
-    DashboardSheets.showProfileSheet(
+
+    Navigator.push(
       context,
-      email: email,
-      onSignOut: () async {
-        await Supabase.instance.client.auth.signOut();
-      },
+      PageRouteBuilder(
+        pageBuilder: (_, animation, __) => ProfilePage(
+          name: name,
+          email: email,
+          onLogout: () async {
+            await Supabase.instance.client.auth.signOut();
+            if (mounted) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
+          },
+        ),
+        transitionsBuilder: (_, animation, __, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(-1.0, 0.0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            )),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
     );
   }
 }
