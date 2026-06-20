@@ -314,7 +314,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
       // Add a placeholder message for the assistant's response
       setState(() {
-        _messages.add(const ChatMessage(isUser: false, text: ""));
+        _messages.add(ChatMessage(isUser: false, text: ""));
       });
       final messageIndex = _messages.length - 1;
 
@@ -394,7 +394,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               });
             } else if (accumulatedText.isEmpty) {
               setState(() {
-                _messages[messageIndex] = const ChatMessage(
+                _messages[messageIndex] = ChatMessage(
                   isUser: false,
                   text: 'How can I assist you today?',
                 );
@@ -412,7 +412,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       debugPrint('[ChatbotScreen] Send message error: $e');
       setState(() {
         _messages.add(
-          const ChatMessage(
+          ChatMessage(
             isUser: false,
             text: 'Unable to connect to recipe service.',
           ),
