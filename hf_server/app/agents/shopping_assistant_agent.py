@@ -359,7 +359,15 @@ class ShoppingAssistantAgent:
             return {
                 "dish": str(dish_query),
                 "servings": int(servings),
+                "instructions": list(instructions_list),
                 "recipe_instructions": list(instructions_list),
+                "ingredients": [
+                    {
+                        "name": ing.get("name", ""),
+                        "quantity": f"{str(ing.get('quantity', '')).strip()} {str(ing.get('unit', '')).strip()}".strip()
+                    }
+                    for ing in ingredients
+                ],
                 "parsed_ingredients": [],
                 "missing_ingredients": list(missing_ingredients_map.values()),
                 "cart_additions": list(cart_additions_map.values())

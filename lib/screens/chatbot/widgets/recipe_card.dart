@@ -143,7 +143,9 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
     final readyTime = widget.recipe['ready_time'] ?? '20 min';
     final summary = widget.recipe['summary'] ?? 'A delicious dish crafted by your AI Chef.';
     final ingredients = List<Map<String, dynamic>>.from(widget.recipe['ingredients'] ?? []);
-    final instructions = List<String>.from(widget.recipe['instructions'] ?? []);
+    final instructions = List<String>.from(
+      widget.recipe['instructions'] ?? widget.recipe['recipe_instructions'] ?? [],
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -432,27 +434,30 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                 : const SizedBox.shrink(),
           ),
           const SizedBox(height: 20),
-          // Horizontal Action Pills
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildActionChip(
-                icon: _isExpanded ? Icons.expand_less_rounded : Icons.menu_book_rounded,
-                label: _isExpanded ? 'Hide Recipe' : 'View Recipe',
-                onTap: _toggleExpanded,
-              ),
-              _buildActionChip(
-                icon: Icons.add_shopping_cart_rounded,
-                label: 'Add to Cart',
-                onTap: () => _addIngredientsToCart(context),
-              ),
-              _buildActionChip(
-                icon: Icons.share_rounded,
-                label: 'Share',
-                onTap: () => _shareRecipe(context),
-              ),
-            ],
+          // Horizontal scrollable action row
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildActionChip(
+                  icon: _isExpanded ? Icons.expand_less_rounded : Icons.menu_book_rounded,
+                  label: _isExpanded ? 'Hide Recipe' : 'View Recipe',
+                  onTap: _toggleExpanded,
+                ),
+                const SizedBox(width: 8),
+                _buildActionChip(
+                  icon: Icons.add_shopping_cart_rounded,
+                  label: 'Add to Cart',
+                  onTap: () => _addIngredientsToCart(context),
+                ),
+                const SizedBox(width: 8),
+                _buildActionChip(
+                  icon: Icons.share_rounded,
+                  label: 'Share',
+                  onTap: () => _shareRecipe(context),
+                ),
+              ],
+            ),
           ),
         ],
       ),
