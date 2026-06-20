@@ -356,7 +356,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           'summary': recipePayload['recipe_instructions'] != null && (recipePayload['recipe_instructions'] as List).isNotEmpty
               ? 'A delicious ${recipePayload['dish'] ?? prompt} crafted by your AI Chef.'
               : 'A custom recipe for ${recipePayload['dish'] ?? prompt}.',
-          'ingredients': (recipePayload['parsed_ingredients'] as List<dynamic>?)?.map((item) {
+          'ingredients': (recipePayload['ingredients'] as List<dynamic>?)?.map((item) {
             return {
               'name': item['name'] ?? '',
               'quantity': item['quantity'] ?? '1',
