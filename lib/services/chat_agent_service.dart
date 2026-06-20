@@ -57,8 +57,9 @@ class ChatAgentService {
     List<Map<String, dynamic>> currentCart,
     String dish,
     int servings,
-    List<ChatMessage> chatHistory,
-  ) async {
+    List<ChatMessage> chatHistory, {
+    String? imageBase64,
+  }) async {
     final urls = backendUrls;
     List<String> errors = [];
 
@@ -82,6 +83,7 @@ class ChatAgentService {
             "servings": servings,
             "chat_history": historyList,
             "current_cart": currentCart,
+            "image_base64": imageBase64,
           }),
         ).timeout(const Duration(seconds: 60));
 
@@ -110,61 +112,6 @@ class ChatAgentService {
     throw Exception("Failed to process chat orchestration layer. Errors: ${errors.join(', ')}");
   }
 
-  Future<http.StreamedResponse> sendChatMessageStream(
-    List<String> cartSlugs,
-    List<Map<String, dynamic>> currentCart,
-    String dish,
-    int servings,
-    List<ChatMessage> chatHistory, {
-    String? imageBase64,
-  }) async {
-    final urls = backendUrls;
-    List<String> errors = [];
-
-    final historyList = chatHistory.map((m) {
-      return {
-        "is_user": m.isUser,
-        "text": m.text ?? "",
-      };
-    }).toList();
-
-    for (final url in urls) {
-      try {
-        debugPrint('[ChatAgentService] Attempting streaming request to backend: $url/chat/message-stream');
-        final request = http.Request(
-          'POST',
-          Uri.parse('$url/chat/message-stream'),
-        )
-          ..headers["Content-Type"] = "application/json"
-          ..body = jsonEncode({
-            "user_id": _resolvedUserId,
-            "current_cart_slugs": cartSlugs,
-            "dish_query": dish,
-            "servings": servings,
-            "chat_history": historyList,
-            "current_cart": currentCart,
-            "image_base64": imageBase64,
-          });
-
-        final response = await http.Client().send(request).timeout(const Duration(seconds: 60));
-        
-        if (response.statusCode == 200) {
-          debugPrint('[ChatAgentService] Success starting stream using backend: $url');
-          return response;
-        } else {
-          final errorMsg = 'Server $url returned status code: ${response.statusCode}';
-          debugPrint('[ChatAgentService] $errorMsg');
-          errors.add(errorMsg);
-        }
-      } catch (e) {
-        final errorMsg = 'Failed to connect to $url for stream: $e';
-        debugPrint('[ChatAgentService] $errorMsg');
-        errors.add(errorMsg);
-      }
-    }
-
-    throw Exception("Failed to start chat orchestration stream. Errors: ${errors.join(', ')}");
-  }
 
   /// Fetches the agent-committed cart state from the backend in-memory store.
   Future<List<Map<String, dynamic>>> fetchAgentCart() async {

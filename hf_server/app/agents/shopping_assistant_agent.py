@@ -83,52 +83,100 @@ class ShoppingAssistantAgent:
             print(f"⚠️ [WARNING] Failed to load inventory database catalog from {inventory_path}: {e}")
             return []
 
-    async def _classify_query(self, query: str) -> Dict[str, Any]:
+    # ── Stopwords to strip before keyword matching ──
+    _STOP_WORDS = {
+        "a", "an", "the", "is", "are", "do", "you", "have", "has", "me", "my",
+        "i", "to", "of", "for", "in", "on", "at", "and", "or", "but", "can",
+        "it", "this", "that", "what", "how", "where", "which", "with", "your",
+        "add", "get", "show", "give", "want", "buy", "some", "any", "please",
+        "tell", "like", "make", "under", "over", "than", "more", "less", "much",
+        "many", "very", "just", "also", "from", "about", "would", "could", "should",
+    }
+
+    def _prefetch_relevant_items(self, query: str) -> List[Dict[str, Any]]:
         """
-        Classifies user query into 'recipe' or 'conversational'.
-        If conversational, generates response text.
+        Regex-extract meaningful keywords from the user query, run token
+        matching against the inventory, and return the top matches with full
+        details (name, SKU, price).  Called before the first LLM request so
+        the LLM can answer price/detail questions without an extra
+        search_inventory round-trip.
         """
-        prompt = f"""Analyze the following user query:
-"{query}"
+        import re
 
-Classify this query as one of:
-- "recipe": the user is explicitly asking for a recipe, cooking steps, or instructions to prepare a specific dish/meal (e.g. "how to cook pasta", "veg biryani recipe", "how do I bake a cake").
-- "conversational": the user is greeting, chitchatting, asking generic questions about the store/app, asking for shopping recommendations/suggestions, or asking for general advice (e.g., "hi", "who are you?", "suggest some healthy snacks", "do you sell milk?", "is organic food healthy?").
+        # ── Category-word → inventory-token expansion ──────────────────────
+        _CATEGORY_MAP = {
+            "snack":     ["chocolate", "chips", "biscuit", "cookie", "wafer", "bar", "candy", "cracker"],
+            "snacks":    ["chocolate", "chips", "biscuit", "cookie", "wafer", "bar", "candy", "cracker"],
+            "drink":     ["drink", "juice", "milk", "water", "coffee", "tea", "energy"],
+            "drinks":    ["drink", "juice", "milk", "water", "coffee", "tea", "energy"],
+            "noodle":    ["noodles", "maggi", "instant", "cuppa"],
+            "noodles":   ["noodles", "maggi", "instant", "cuppa"],
+            "breakfast": ["cereal", "oats", "milk", "bread", "egg", "muesli"],
+            "chocolate": ["chocolate", "cocoa", "dark"],
+            "biscuit":   ["biscuit", "cookie", "digestive", "cream"],
+            "biscuits":  ["biscuit", "cookie", "digestive", "cream"],
+            "chips":     ["chips", "crisps", "namkeen", "rings", "puffs"],
+            "sauce":     ["sauce", "ketchup", "chutney", "paste"],
+        }
 
-If classified as "conversational", also generate a helpful, natural, friendly response as the AI retail assistant. Do not try to generate a structured recipe for conversational queries.
+        # ── Extract price ceiling from query (e.g. "under ₹50", "below 100") ──
+        price_ceiling = None
+        price_match = re.search(r"(?:under|below|less\s+than|within)\s*[₹rs\.]*\s*(\d+)", query.lower())
+        if price_match:
+            price_ceiling = int(price_match.group(1))
 
-Return ONLY a valid JSON object in this format:
-{{
-  "classification": "recipe" or "conversational",
-  "response_text": "your friendly chatbot response goes here if conversational, otherwise null"
-}}"""
+        # Lowercase, strip punctuation, tokenise
+        cleaned = re.sub(r"[^\w\s]", " ", query.lower())
+        raw_tokens = [t for t in cleaned.split() if len(t) >= 3 and t not in self._STOP_WORDS]
 
-        messages = [
-            {
-                "role": "system",
-                "content": "You are a helpful retail and cooking assistant for the Qless self-checkout store. You must categorize queries and provide chat responses when appropriate, formatted strictly as a json object matching the requested schema."
-            },
-            {"role": "user", "content": prompt}
-        ]
+        # Expand category words
+        expanded_tokens = list(raw_tokens)
+        for t in raw_tokens:
+            if t in _CATEGORY_MAP:
+                expanded_tokens.extend(_CATEGORY_MAP[t])
 
-        try:
-            loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                None,
-                lambda: self.client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=messages,
-                    max_tokens=256,
-                    temperature=0.3,
-                    response_format={"type": "json_object"}
-                )
-            )
-            content = response.choices[0].message.content or ""
-            content = content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-            return json.loads(content)
-        except Exception as e:
-            print(f"⚠️ [WARNING] Query classification failed: {e}")
-            return {"classification": "recipe", "response_text": None}
+        if not expanded_tokens:
+            return []
+
+        matches: List[tuple] = []
+        for item in self.inventory:
+            item_name   = item.get("name", "").lower()
+            item_slug   = item.get("slug", "").lower()
+            item_tokens = set(item_name.split() + item_slug.split("-"))
+            score = sum(1 for t in expanded_tokens if t in item_tokens)
+            # Exact substring bonus for original (non-expanded) tokens
+            for t in raw_tokens:
+                if t in item_name:
+                    score += 2
+            if score > 0:
+                matches.append((item, score))
+
+        matches.sort(key=lambda x: x[1], reverse=True)
+        top = [item for item, _ in matches[:20]]
+
+        # Apply price filter if detected
+        if price_ceiling is not None:
+            top = [it for it in top if it.get("price_rupees", 9999) <= price_ceiling]
+
+        return top[:12]
+
+
+    # ── Regex-based recipe intent classifier (no LLM needed) ──────────────
+    _RECIPE_PATTERNS = [
+        r"\b(recipe|recipes)\b",
+        r"\bhow\s+(?:do\s+(?:i|we)|to|can\s+(?:i|we))\s+(?:make|cook|prepare|bake|fry|boil|roast|grill)\b",
+        r"\b(?:steps?|instructions?|procedure)\s+(?:to|for)\s+(?:make|cook|prepare)\b",
+        r"\b(?:make|cook|prepare|bake)\s+(?:me\s+)?(?:a|an|some)?\s*\w+\s+(?:dish|meal|curry|biryani|dosa|roti|bread|cake|soup|salad|pasta|noodle)\b",
+        r"\bingredients\s+(?:for|to\s+make)\b",
+        r"\bwhat\s+(?:do\s+i\s+need|ingredients)\s+(?:for|to\s+(?:make|cook))\b",
+    ]
+
+    def _is_recipe_query(self, query: str) -> bool:
+        """Pure-regex recipe intent check — no LLM call needed."""
+        import re
+        q = query.lower()
+        return any(re.search(p, q) for p in self._RECIPE_PATTERNS)
+
 
     def tool_search_inventory(self, query: str) -> List[Dict[str, Any]]:
         """Search the store inventory for products matching the query."""
@@ -359,8 +407,18 @@ Return ONLY a valid JSON object in this format:
                         mutations = chunk["cart_mutations"]
             except Exception as parse_err:
                 print(f"Error parsing generator chunk: {parse_err}")
+        # Handle case where the LLM may have output a JSON wrapper (legacy behavior)
+        response_text = full_text.strip()
+        if response_text.startswith('{'):
+            try:
+                parsed = json.loads(response_text)
+                if isinstance(parsed, dict) and "response_text" in parsed:
+                    response_text = parsed["response_text"]
+            except Exception:
+                pass  # Not JSON, use as-is
+        
         return {
-            "response_text": full_text.strip(),
+            "response_text": response_text,
             "recipe": recipe_data,
             "cart_mutations": mutations
         }
@@ -375,10 +433,10 @@ Return ONLY a valid JSON object in this format:
         current_cart: List[Dict[str, Any]] = None,
         image_base64: str = None
     ):
-        mutations = []
+        mutations: List[Dict[str, Any]] = []
         recipe_data = None
-        
-        # Format the current cart details
+
+        # Format current cart details
         cart_details_str = "No items in cart."
         if current_cart:
             cart_details_str = "\n".join([
@@ -390,14 +448,44 @@ Return ONLY a valid JSON object in this format:
                 f"- {slug} (Quantity: 1)"
                 for slug in current_cart_slugs
             ])
-        
-        # Format the catalog details for Option 2
+
+        # ── Pre-fetch relevant inventory items for this query ──────────────
+        prefetched_items: List[Dict[str, Any]] = []
+        if dish_query and not image_base64:
+            prefetched_items = self._prefetch_relevant_items(dish_query)
+
+        # ── Fast-path: if clearly a recipe query, skip LLM tool-call round-trip ──
+        if dish_query and not image_base64 and self._is_recipe_query(dish_query):
+            print(f"🍳 [RECIPE FAST-PATH] Detected recipe intent in: {dish_query!r}")
+            recipe_data = await self._generate_and_match_recipe_internal(
+                user_id=user_id,
+                current_cart_slugs=current_cart_slugs,
+                dish_query=dish_query,
+                servings=servings
+            )
+            yield json.dumps({"text_chunk": f"Here's your recipe for {dish_query}! I've matched the ingredients to our store catalog. Check the recipe card below 🍽️"}) + "\n"
+            yield json.dumps({"cart_mutations": mutations if mutations else None, "recipe": recipe_data}) + "\n"
+            return
+
+        # Format the catalog details for system prompt
+        # When prefetch found relevant items, use those (with price) instead of the full catalog
+        # to save tokens. Fall back to full catalog for open-ended or greeting queries.
         catalog_str = "No items in catalog."
         if self.inventory:
-            catalog_str = "\n".join([
-                f"- Name: {item.get('name')} | SKU: {item.get('sku')}"
-                for item in self.inventory
-            ])
+            if prefetched_items:
+                catalog_str = (
+                    "(Showing items most relevant to this query — full catalog available via search_inventory tool)\n"
+                    + "\n".join(
+                        f"- Name: {it.get('name')} | SKU: {it.get('sku')} | Price: ₹{it.get('price_rupees', '?')}"
+                        for it in prefetched_items
+                    )
+                )
+            else:
+                catalog_str = "\n".join([
+                    f"- Name: {item.get('name')} | SKU: {item.get('sku')}"
+                    for item in self.inventory
+                ])
+
         
         tools_definitions = [
             {
@@ -514,7 +602,7 @@ Current Cart Items:
 
 
 ### Guidelines:
-1. **Conversational Responses**: Be extremely friendly, natural, and helpful.
+1. **Conversational Responses**: Be extremely friendly, natural, and helpful. Always write your final response as plain, readable text — never as JSON or code blocks.
 2. **Tool Usage**: Use the tool-calling interface to search inventory, add/remove items, or match recipes.
 3. **No Raw Tool Tags**: Do NOT write tool calls as raw text, XML, or `<function>` tags in your response content. Only use the official API tool-calling mechanism.
 4. **No Hallucinations**: Only use the exact SKUs found in the inventory catalog.
@@ -565,6 +653,21 @@ Available Store Catalog (SKUs and Names):
             ]
         else:
             user_content = dish_query
+            # ── Pre-fetch relevant inventory items and inject into user message ──
+            if dish_query and not image_base64:
+                prefetched = self._prefetch_relevant_items(dish_query)
+                if prefetched:
+                    product_lines = "\n".join(
+                        f"- {it['name']} (SKU: {it['sku']}, Price: ₹{it.get('price_rupees', '?')})"
+                        for it in prefetched
+                    )
+                    user_content = (
+                        f"{dish_query}\n\n"
+                        f"[Context – Matching Store Products]\n"
+                        f"{product_lines}\n"
+                        f"(Use this list to answer directly; only call search_inventory if the user's request is "
+                        f"not covered by these results.)"
+                    )
 
         # Add the latest user message
         messages.append({
@@ -574,6 +677,8 @@ Available Store Catalog (SKUs and Names):
 
         executed_tool_calls = set()
         for loop_iter in range(3):
+            content = ""
+            tool_calls_dict = {}
             try:
                 loop = asyncio.get_event_loop()
                 def get_stream():
@@ -590,9 +695,6 @@ Available Store Catalog (SKUs and Names):
                 completion_stream = await loop.run_in_executor(None, get_stream)
                 
                 role = "assistant"
-                content = ""
-                tool_calls_dict = {}
-                
                 for chunk in completion_stream:
                     delta = chunk.choices[0].delta
                     if delta.content:
@@ -620,6 +722,8 @@ Available Store Catalog (SKUs and Names):
                                     tool_calls_dict[idx]["function"]["arguments"] += tc.function.arguments
             except Exception as e:
                 print(f"⚠️ [AGENT LLM FAULT] {e}")
+                if not content:
+                    yield json.dumps({"text_chunk": "Sorry, I'm having trouble connecting right now. Please try again in a moment."}) + "\n"
                 break
 
             # Reconstruct SimpleNamespace for internal checks
