@@ -26,9 +26,11 @@ class ChatInputField extends StatelessWidget {
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     // Calculate equal visual gaps above and below the floating white pill
-    final double topGap = isKeyboardOpen
-        ? 8.0
-        : (bottomPadding > 0 ? 24.0 : 16.0);
+    final double topGap = selectedImage != null
+        ? 6.0
+        : (isKeyboardOpen
+            ? 8.0
+            : (bottomPadding > 0 ? 24.0 : 16.0));
     final double bottomGap = isKeyboardOpen
         ? 8.0
         : (bottomPadding > 0 ? bottomPadding : 16.0);
@@ -45,7 +47,8 @@ class ChatInputField extends StatelessWidget {
           if (selectedImage != null)
             Padding(
               padding: const EdgeInsets.only(
-                bottom: 8.0,
+                top: 12.0,
+                bottom: 4.0,
               ),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -55,33 +58,29 @@ class ChatInputField extends StatelessWidget {
                     InputChip(
                       visualDensity: VisualDensity.compact,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       labelPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                       labelStyle: TextStyle(
-                        fontFamily: 'ClashGrotesk',
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       avatar: Icon(
-                        Icons.image,
+                        Icons.image_outlined,
                         size: 14,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       label: Text(selectedImage!.name.split('/').last),
                       onDeleted: onClearImage,
-                      deleteIcon: const Icon(
+                      deleteIcon: Icon(
                         Icons.close,
                         size: 14,
-                        color: Color(0xFFEF4444),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
                       ),
-                      backgroundColor: Colors.white,
-                      side: const BorderSide(
-                        color: Color(0xFFD2E4E6),
-                        width: 1.0,
-                      ),
+                      backgroundColor: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.35),
+                      side: BorderSide.none,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
                   ],
