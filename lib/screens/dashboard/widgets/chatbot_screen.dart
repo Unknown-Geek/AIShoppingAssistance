@@ -190,7 +190,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             'servings': 2,
           }),
         )
-        .timeout(const Duration(seconds: 10));
+        .timeout(const Duration(seconds: 60));
 
     dynamic data;
     try {
