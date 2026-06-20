@@ -451,6 +451,14 @@ Return ONLY a valid JSON object in this format:
                 for slug in current_cart_slugs
             ])
         
+        # Format the catalog details for Option 2
+        catalog_str = "No items in catalog."
+        if self.inventory:
+            catalog_str = "\n".join([
+                f"- Name: {item.get('name')} | SKU: {item.get('sku')}"
+                for item in self.inventory
+            ])
+        
         tools_definitions = [
             {
                 "type": "function",
@@ -566,10 +574,14 @@ Current Cart Items:
 
 
 ### Guidelines:
-1. **Conversational Responses**: Be extremely friendly, natural, and helpful.
+1. **Conversational Responses**: Be extremely friendly, natural, and helpful. Every time you provide your final conversational response (when you are not calling any tools), you must format it as a valid JSON object containing only a single key 'response_text':
+{{
+  "response_text": "<your message here>"
+}}
+Do NOT wrap it in markdown code blocks, just return the raw JSON object string.
 2. **Tool Usage**: Use the tool-calling interface to search inventory, add/remove items, or match recipes.
 3. **No Raw Tool Tags**: Do NOT write tool calls as raw text, XML, or `<function>` tags in your response content. Only use the official API tool-calling mechanism.
-4. **No Hallucinations**: Only use the exact SKUs found in the inventory search.
+4. **No Hallucinations**: Only use the exact SKUs found in the inventory catalog.
 5. **Displaying Cart and Cart Quantities**:
    - When asked to show, display, or list the cart, list each item on a new line in a clear, user-friendly bulleted list showing its name and quantity (e.g., "- Product Name: 2"). Do not list the SKU to keep the response clean. Do not call any tools to list the cart; rely strictly on the "Current Cart Items" list provided above.
    - **CRITICAL**: The "Current Cart Items" block represents the absolute, exact, and up-to-date state of the user's cart. Past chat history requests (e.g., "add 4 items") are already fully processed and reflected in "Current Cart Items". Do NOT sum, add, or accumulate quantities from the chat history with the "Current Cart Items". Do NOT assume the user has items that are not explicitly present in the "Current Cart Items" list.
@@ -578,6 +590,11 @@ Current Cart Items:
    - Show only the human-friendly product names.
    - Do NOT display product SKUs (e.g., "QLS-XXXX") in your final response text unless the user specifically asks for the SKU.
 7. **Semantic Relevance Filtering**: The `search_inventory` tool performs a keyword-based search and may return items that merely contain the search term in their name (e.g., searching for "milk" returns "Cadbury Dairy Milk Chocolate" and "Nestle Milkybar White Chocolate", and searching for "onion" returns "Cream and Onion Chips"). When responding to the user, you must intelligently filter these results to only include products that are semantically relevant to the user's actual request. For example, if the user asks for "milk" or raw cooking ingredients, do not list chocolates, chips, or baby foods even if they appeared in the search results.
+
+Available Store Catalog (SKUs and Names):
+{catalog_str}
+
+*PRO-TIP FOR CATALOG USAGE*: Since you are provided with the absolute list of all available items in the store in the 'Available Store Catalog' section above, you can and must directly select the matching SKU and call `add_to_cart` or `remove_from_cart` immediately without needing to search the inventory first. Use the `search_inventory` tool ONLY if the item name requested by the user is ambiguous or not clearly matching any of the items in the catalog above.
 """
             }
         ]
@@ -680,45 +697,47 @@ Current Cart Items:
             if should_break:
                 break
 
-        messages.append({
-            "role": "user",
-            "content": """Provide your final response as a JSON object containing only a single key "response_text" with your friendly chatbot response to the user.
-Example:
-{
-  "response_text": "I have added 2 Snickers to your cart."
-}
-
-Return ONLY this JSON object. No markdown formatting, no code fences, no extra text."""
-        })
-
-        try:
-            loop = asyncio.get_event_loop()
-            final_completion = await loop.run_in_executor(
-                None,
-                lambda: self.client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    max_tokens=1024,
-                    temperature=0.2,
-                    response_format={"type": "json_object"}
-                )
-            )
-            final_content = final_completion.choices[0].message.content or ""
-            final_content = final_content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-            final_json = json.loads(final_content)
+        final_content = ""
+        # Find the last message content
+        for m in reversed(messages):
+            if isinstance(m, dict):
+                content = m.get("content")
+            else:
+                content = getattr(m, "content", "")
             
-            # Safeguard "response_text" key
-            if not isinstance(final_json, dict) or "response_text" not in final_json:
-                final_json = {"response_text": str(final_json)}
-                
-            final_json["cart_mutations"] = mutations if mutations else None
-            final_json["recipe"] = recipe_data if recipe_data else None
-                
-            return final_json
-        except Exception as e:
-            print(f"⚠️ [FINAL FORMAT FAULT] {e}")
-            return {
-                "response_text": "I processed your request, but had trouble formatting the response.",
-                "recipe": recipe_data,
-                "cart_mutations": mutations
-            }
+            if content:
+                final_content = content
+                break
+
+        final_json = {}
+        if final_content:
+            final_content = str(final_content).strip()
+            # Clean markdown code fences if present (e.g. ```json ... ```)
+            if final_content.startswith("```"):
+                lines = final_content.splitlines()
+                if len(lines) >= 2:
+                    if lines[0].startswith("```"):
+                        lines = lines[1:]
+                    if lines[-1].startswith("```"):
+                        lines = lines[:-1]
+                final_content = "\n".join(lines).strip()
+            
+            # Remove any leading json label if the model outputted it
+            if final_content.lower().startswith("json"):
+                final_content = final_content[4:].strip()
+            
+            try:
+                final_json = json.loads(final_content)
+            except Exception:
+                final_json = {"response_text": final_content}
+        else:
+            final_json = {"response_text": "I processed your request."}
+
+        # Safeguard "response_text" key
+        if not isinstance(final_json, dict) or "response_text" not in final_json:
+            final_json = {"response_text": str(final_json)}
+
+        final_json["cart_mutations"] = mutations if mutations else None
+        final_json["recipe"] = recipe_data if recipe_data else None
+
+        return final_json
