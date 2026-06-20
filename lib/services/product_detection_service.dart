@@ -124,9 +124,8 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
             debugPrint('[ProductDetectionService] Matched: $name (SLU: $slug, SKU: $sku, Price: ₹$priceRupees, LocalResolved: ${localProduct != null})');
             debugPrint('[ProductDetectionService] Overall detection took: ${overallStopwatch.elapsedMilliseconds}ms');
 
-            // Fetch thumbnail_url from Supabase and cache it (non-blocking is
-            // fine here — we await it so the image is ready for the confirm sheet)
-            await inventoryService.getProductBySlug(slug);
+            // Fetch thumbnail_url from Supabase in the background (non-blocking)
+            inventoryService.getProductBySlug(slug);
 
             return CartItemModel(
               id: DateTime.now().millisecondsSinceEpoch.toString(),

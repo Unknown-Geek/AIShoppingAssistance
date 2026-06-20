@@ -1,6 +1,5 @@
 import re
 
-
 class RecipeParser:
     BAD_WORDS = [
         "facebook",
@@ -37,6 +36,50 @@ class RecipeParser:
         if any(word in cleaned for word in self.BAD_WORDS):
             return True
         return False
+
+    def extract_servings(self, markdown: str) -> int:
+        """
+        Extract serving count from recipe markdown.
+        
+        Looks for patterns like:
+        - Serves 4
+        - Servings: 4
+        - Yield: 4
+        - Makes 4 servings
+        
+        Args:
+            markdown (str): Recipe markdown content
+            
+        Returns:
+            int: Number of servings, defaults to 1 if not found
+        """
+        if not markdown:
+            return 1
+        
+        # Search in the first 2000 characters to find metadata
+        text = markdown[:2000].lower()
+        
+        # Pattern 1: "serves 4" or "serve 4"
+        match = re.search(r'serves?\s+(\d+)', text)
+        if match:
+            return int(match.group(1))
+        
+        # Pattern 2: "servings: 4" or "serving: 4"
+        match = re.search(r'servings?\s*:\s*(\d+)', text)
+        if match:
+            return int(match.group(1))
+        
+        # Pattern 3: "yield: 4"
+        match = re.search(r'yields?\s*:\s*(\d+)', text)
+        if match:
+            return int(match.group(1))
+        
+        # Pattern 4: "makes 4 servings" or "make 4 servings"
+        match = re.search(r'makes?\s+(\d+)', text)
+        if match:
+            return int(match.group(1))
+        
+        return 1
 
     def parse(self, markdown: str):
         ingredients = []

@@ -1,3 +1,4 @@
+import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -5,10 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/cart_item_model.dart';
 
+
 /// Singleton cart service that acts as the session-scoped cart database.
 /// Persists cart state across page refreshes via SharedPreferences and syncs
 /// with Supabase for logged-in users.
 class CartService extends ChangeNotifier {
+  static final CartService instance = CartService();
   static final CartService _instance = CartService._internal();
   factory CartService() => _instance;
 
@@ -82,6 +85,83 @@ class CartService extends ChangeNotifier {
     } finally {
       _isLoaded = true;
       notifyListeners();
+    }
+  }
+
+  final String _agentBaseUrl = "http://localhost:8000";
+
+Future<Map<String, dynamic>?> analyzeAndInjectRecipeIngredients({
+    required String dishQuery,
+    required int servings,
+  }) async {
+    // 1. Resolve identity gracefully
+    final currentUserId = _supabase.auth.currentUser?.id ?? "anonymous_user";
+    final url = Uri.parse("$_agentBaseUrl/chat/message");
+
+    try {
+      debugPrint("📡 [ARCHITECT BRIDGE] Dispatching agent payload for user: $currentUserId");
+      
+      final List<String> currentSlugs = _items.map((e) => e.name.toLowerCase().replaceAll(' ', '-')).toList();
+
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "user_id": currentUserId,
+          "dish_query": dishQuery,
+          "servings": servings,
+          "current_cart_slugs": currentSlugs,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final List<dynamic> additions = data['cart_additions'] ?? [];
+
+        debugPrint("📥 [ARCHITECT BRIDGE] Agent returned ${additions.length} items to inject.");
+
+        // 2. Core Write-Through Phase
+        for (var addition in additions) {
+          final String itemName = addition['name'] ?? 'Unknown Item';
+          final double itemPrice = (addition['price'] as num).toDouble();
+          final int itemQty = addition['quantity'] ?? 1;
+
+          final existingIdx = _items.indexWhere((e) => e.name == itemName);
+          if (existingIdx != -1) {
+            _items[existingIdx].quantity += itemQty;
+          } else {
+            _items.add(
+              CartItemModel(
+                id: addition['sku'] ?? 'unknown_sku_${DateTime.now().millisecondsSinceEpoch}',
+                name: itemName,
+                price: itemPrice,
+                quantity: itemQty,
+                details: "Injected via AI Agent Analysis",
+                imageUrl: "",
+              ),
+            );
+          }
+        }
+
+        // 3. Absolute Persistence Enforcement
+        await _persist();
+        
+        // 4. Force background synchronization to Supabase if session exists
+        if (_supabase.auth.currentUser != null) {
+          await _syncActiveCart();
+        }
+
+        // 5. Broadcast critical state alteration to redraw every UI element bound to this provider
+        notifyListeners();
+        return data;
+
+      } else {
+        debugPrint('❌ [ARCHITECT BRIDGE FLIGHT ERROR]: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('🚨 [ARCHITECT BRIDGE CRITICAL EXCEPTION]: $e');
+      return null;
     }
   }
 
@@ -176,6 +256,27 @@ class CartService extends ChangeNotifier {
 
   // ─────────────────────────── CRUD ──────────────────────────────────────────
 
+  void removeItemBySkuOrName(String sku, String name) {
+    final index = _items.indexWhere((e) => e.id == sku || e.name == name);
+    if (index != -1) {
+      removeItem(index);
+    }
+  }
+
+  void removeOrDecrementItemBySkuOrName(String sku, String name, int quantity) {
+    final index = _items.indexWhere((e) => e.id == sku || e.name == name);
+    if (index != -1) {
+      final currentQty = _items[index].quantity;
+      if (currentQty > quantity) {
+        for (int i = 0; i < quantity; i++) {
+          decrementQuantity(index);
+        }
+      } else {
+        removeItem(index);
+      }
+    }
+  }
+
   /// Adds [item] to the cart. If an item with the same [name] already exists,
   /// its quantity is incremented instead of adding a duplicate.
   void addItem(CartItemModel item) {
@@ -226,6 +327,22 @@ class CartService extends ChangeNotifier {
           .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
     } else {
       _scheduleSync();
+    }
+    notifyListeners();
+  }
+
+  void clearCart() {
+    _items.clear();
+    _persist();
+    final user = _supabase.auth.currentUser;
+    if (user != null) {
+      _syncTimer?.cancel();
+      _supabase
+          .from('user_carts')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
     }
     notifyListeners();
   }

@@ -14,19 +14,19 @@ class ChatbotScreen extends StatefulWidget {
   State<ChatbotScreen> createState() => _ChatbotScreenState();
 }
 
-class ChatSession {
+class _ChatSession {
   final String title;
-  final List<_ChatMessage> messages;
+  final List<ChatMessage> messages;
 
-  ChatSession({required this.title, required this.messages});
+  _ChatSession({required this.title, required this.messages});
 }
 
-class _ChatMessage {
+class ChatMessage {
   final bool isUser;
   final String? text;
   final Map<String, dynamic>? recipe;
 
-  const _ChatMessage({required this.isUser, this.text, this.recipe});
+  const ChatMessage({required this.isUser, this.text, this.recipe});
 }
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
@@ -38,8 +38,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final ScrollController _scrollController = ScrollController();
 
   bool _loading = false;
-  final List<_ChatMessage> _messages = [];
-  final List<ChatSession> _chatHistory = [];
+  final List<ChatMessage> _messages = [];
+  final List<_ChatSession> _chatHistory = [];
   String _currentChatTitle = 'New Chat';
 
   static const String _storageKey = 'chat_history_v1';
@@ -50,7 +50,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     var clean = raw.replaceAll(RegExp(r'/health$'), '');
     clean = clean.replaceAll(RegExp(r'/detect$'), '');
     clean = clean.replaceAll(RegExp(r'/embed$'), '');
-    clean = clean.replaceAll(RegExp(r'/recipe-agent$'), '');
+    clean = clean.replaceAll(RegExp(r'/chat/message/$'), '');
     clean = clean.replaceAll(RegExp(r'/$'), '');
     return clean.isEmpty ? 'http://127.0.0.1:8000' : clean;
   })();
@@ -72,7 +72,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         final data = entry as Map<String, dynamic>;
         final messages = (data['messages'] as List<dynamic>).map((messageData) {
           final map = messageData as Map<String, dynamic>;
-          return _ChatMessage(
+          return ChatMessage(
             isUser: map['isUser'] as bool,
             text: map['text'] as String?,
             recipe: map['recipe'] == null
@@ -81,7 +81,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           );
         }).toList();
 
-        return ChatSession(
+        return _ChatSession(
           title: data['title'] as String,
           messages: messages,
         );
@@ -90,7 +90,16 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       setState(() {
         _chatHistory.clear();
         _chatHistory.addAll(restored);
+        if (_chatHistory.isNotEmpty) {
+          final mostRecent = _chatHistory.first;
+          _messages.clear();
+          _messages.addAll(mostRecent.messages);
+          _currentChatTitle = mostRecent.title;
+        }
       });
+      if (restored.isNotEmpty) {
+        _scrollToBottom();
+      }
     } catch (e) {
       debugPrint('[ChatbotScreen] load history error: $e');
     }
@@ -125,7 +134,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     Navigator.pop(context);
   }
 
-  void _openChatSession(ChatSession session) {
+  void _openChatSession(_ChatSession session) {
     setState(() {
       _messages.clear();
       _messages.addAll(session.messages);
@@ -145,9 +154,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
     _chatHistory.insert(
       0,
-      ChatSession(
+      _ChatSession(
         title: title,
-        messages: List<_ChatMessage>.from(_messages),
+        messages: List<ChatMessage>.from(_messages),
       ),
     );
   });
@@ -159,72 +168,99 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final prompt = _controller.text.trim();
   if (prompt.isEmpty || _loading) return;
 
+  if (_selectedFileName != null || _selectedImage != null || _selectedFile != null) {
+    debugPrint('[ChatbotScreen] Attachment selected: ${_selectedFileName ?? _selectedFile?.name ?? _selectedImage?.path}');
+  }
+
   setState(() {
-    _messages.add(_ChatMessage(isUser: true, text: prompt));
+    _messages.add(ChatMessage(isUser: true, text: prompt));
 
     if (_messages.length == 1) {
       _currentChatTitle = prompt;
     }
 
     _loading = true;
+    _selectedFileName = null;
+    _selectedFile = null;
+    _selectedImage = null;
   });
 
   _saveCurrentChat();
   _controller.clear();
   _scrollToBottom();
 
+  final client = http.Client();
   try {
-    final response = await http
-        .post(
-          Uri.parse('$baseUrl/recipe-agent'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'dish': prompt,
-            'servings': 2,
-          }),
-        )
-        .timeout(const Duration(seconds: 10));
+    final request = http.Request(
+      'POST',
+      Uri.parse('$baseUrl/chat/message-stream'),
+    )
+      ..headers['Content-Type'] = 'application/json'
+      ..body = jsonEncode({
+        'dish': prompt,
+        'servings': 2,
+      });
 
-    dynamic data;
-    try {
-      data = jsonDecode(response.body);
-    } catch (_) {
-      data = null;
-    }
+    final streamedResponse = await client.send(request).timeout(const Duration(seconds: 60));
 
-    if (response.statusCode == 200 && data is Map<String, dynamic>) {
-      if (data['status'] == 'success') {
-        setState(() {
-          _messages.add(
-            _ChatMessage(isUser: false, recipe: data),
-          );
-        });
-      } else {
-        setState(() {
-          _messages.add(
-            _ChatMessage(
-              isUser: false,
-              text: data['message'] ?? 'Recipe not found',
-            ),
-          );
-        });
-      }
+    if (streamedResponse.statusCode == 200) {
+      // Add a placeholder message for the assistant's response
+      setState(() {
+        _messages.add(const ChatMessage(isUser: false, text: ""));
+      });
+      final messageIndex = _messages.length - 1;
+
+      String accumulatedText = "";
+      
+      await streamedResponse.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        if (line.trim().isEmpty) return;
+        try {
+          final chunk = jsonDecode(line);
+          if (chunk.containsKey('text_chunk')) {
+            accumulatedText += chunk['text_chunk'] as String;
+            setState(() {
+              _messages[messageIndex] = ChatMessage(
+                isUser: false,
+                text: accumulatedText,
+              );
+            });
+            _scrollToBottom();
+          } else {
+            // Final metadata chunk containing recipe data
+            if (chunk.containsKey('recipe') && chunk['recipe'] != null) {
+              setState(() {
+                _messages[messageIndex] = ChatMessage(
+                  isUser: false,
+                  recipe: Map<String, dynamic>.from(chunk['recipe'] as Map),
+                );
+              });
+              _scrollToBottom();
+            }
+          }
+        } catch (e) {
+          debugPrint('[ChatbotScreen] Error decoding stream chunk: $e');
+        }
+      }).asFuture();
+      
+      _saveCurrentChat();
     } else {
       setState(() {
         _messages.add(
-          _ChatMessage(
+          ChatMessage(
             isUser: false,
-            text: 'Server error: ${response.statusCode}',
+            text: 'Server error: ${streamedResponse.statusCode}',
           ),
         );
       });
+      _saveCurrentChat();
     }
-
-    _saveCurrentChat();
   } on TimeoutException {
     setState(() {
       _messages.add(
-        const _ChatMessage(
+        const ChatMessage(
           isUser: false,
           text: 'Request timed out. Please try again.',
         ),
@@ -235,7 +271,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   } catch (e) {
     setState(() {
       _messages.add(
-        const _ChatMessage(
+        const ChatMessage(
           isUser: false,
           text: 'Unable to connect to recipe service.',
         ),
@@ -327,7 +363,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     );
   }
 
-  Widget _buildMessage(_ChatMessage message) {
+  Widget _buildMessage(ChatMessage message) {
     return Align(
       alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -458,139 +494,177 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               ),
             ),
           Container(
-  padding: const EdgeInsets.all(16),
-  decoration: const BoxDecoration(
-    color: Colors.white,
-  ),
-  child: Row(
-    children: [
-      Expanded(
-        child: TextField(
-          controller: _controller,
-          onSubmitted: _loading ? null : (_) => _sendMessage(),
-          decoration: InputDecoration(
-  hintText: 'Ask for a recipe...',
-  filled: true,
-  fillColor: const Color(0xFFF3F4F6),
-
-  border: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(28),
-    borderSide: BorderSide.none,
-  ),
-
-  enabledBorder: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(28),
-    borderSide: BorderSide.none,
-  ),
-
-  focusedBorder: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(28),
-    borderSide: BorderSide.none,
-  ),
-
-  prefixIcon: Padding(
-    padding: const EdgeInsets.only(left: 8),
-    child: Center(
-      widthFactor: 1,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.grey.shade400,
-          ),
-        ),
-        child: IconButton(
-          padding: EdgeInsets.zero,
-          icon: const Icon(
-            Icons.add,
-            size: 18,
-          ),
-          onPressed: () async {
-            showModalBottomSheet(
-              context: context,
-              builder: (context) => SafeArea(
-                child: Wrap(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.image),
-                      title: const Text('Choose Image'),
-                      onTap: () async {
-                        Navigator.pop(context);
-
-                        final image =
-                            await _imagePicker.pickImage(
-                          source: ImageSource.gallery,
-                        );
-
-                        if (image != null) {
-                          setState(() {
-                            _selectedImage = image;
-                          });
-                        }
-                      },
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_selectedImage != null || _selectedFileName != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        if (_selectedImage != null)
+                          InputChip(
+                            avatar: const Icon(Icons.image, size: 16),
+                            label: Text(_selectedImage!.name.split('/').last),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedImage = null;
+                              });
+                            },
+                          ),
+                        if (_selectedFileName != null)
+                          InputChip(
+                            avatar: const Icon(Icons.attach_file, size: 16),
+                            label: Text(_selectedFileName!),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedFile = null;
+                                _selectedFileName = null;
+                              });
+                            },
+                          ),
+                      ],
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.attach_file),
-                      title: const Text('Choose File'),
-                      onTap: () async {
-                        Navigator.pop(context);
+                  ),
+                ],
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        onSubmitted: _loading ? null : (_) => _sendMessage(),
+                        decoration: InputDecoration(
+                          hintText: 'Ask for a recipe...',
+                          filled: true,
+                          fillColor: const Color(0xFFF3F4F6),
 
-                        final result =
-                            await FilePicker.platform.pickFiles();
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(28),
+                            borderSide: BorderSide.none,
+                          ),
 
-                        if (result != null &&
-                            result.files.isNotEmpty) {
-                          setState(() {
-                            _selectedFile =
-                                result.files.first;
-                            _selectedFileName =
-                                result.files.first.name;
-                          });
-                        }
-                      },
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(28),
+                            borderSide: BorderSide.none,
+                          ),
+
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(28),
+                            borderSide: BorderSide.none,
+                          ),
+
+                          prefixIcon: Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Center(
+                              widthFactor: 1,
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ),
+                                child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  icon: const Icon(
+                                    Icons.add,
+                                    size: 18,
+                                  ),
+                                  onPressed: () async {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      builder: (context) => SafeArea(
+                                        child: Wrap(
+                                          children: [
+                                            ListTile(
+                                              leading: const Icon(Icons.image),
+                                              title: const Text('Choose Image'),
+                                              onTap: () async {
+                                                Navigator.pop(context);
+
+                                                final image =
+                                                    await _imagePicker.pickImage(
+                                                  source: ImageSource.gallery,
+                                                );
+
+                                                if (image != null) {
+                                                  setState(() {
+                                                    _selectedImage = image;
+                                                  });
+                                                }
+                                              },
+                                            ),
+                                            ListTile(
+                                              leading: const Icon(Icons.attach_file),
+                                              title: const Text('Choose File'),
+                                              onTap: () async {
+                                                Navigator.pop(context);
+
+                                                final result =
+                                                    await FilePicker.platform.pickFiles();
+
+                                                if (result != null &&
+                                                    result.files.isNotEmpty) {
+                                                  setState(() {
+                                                    _selectedFile =
+                                                        result.files.first;
+                                                    _selectedFileName =
+                                                        result.files.first.name;
+                                                  });
+                                                }
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          suffixIcon: IconButton(
+                            icon: const Icon(
+                              Icons.mic_none_rounded,
+                              size: 22,
+                            ),
+                            onPressed: () {
+                              // Speech-to-text later
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor: Colors.black,
+                      child: IconButton(
+                        onPressed: _loading ? null : _sendMessage,
+                        icon: const Icon(
+                          Icons.arrow_upward,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-            );
-          },
-        ),
-      ),
-    ),
-  ),
-
-  suffixIcon: IconButton(
-    icon: const Icon(
-      Icons.mic_none_rounded,
-      size: 22,
-    ),
-    onPressed: () {
-      // Speech-to-text later
-    },
-  ),
-),
-        ),
-      ),
-
-      const SizedBox(width: 10),
-
-      CircleAvatar(
-        radius: 22,
-        backgroundColor: Colors.black,
-        child: IconButton(
-          onPressed: _loading ? null : _sendMessage,
-          icon: const Icon(
-            Icons.arrow_upward,
-            color: Colors.white,
-            size: 18,
-          ),
-        ),
-      ),
-    ],
-  ),
-),
+              ],
+            ),
+          )
         ],
       ),
     );

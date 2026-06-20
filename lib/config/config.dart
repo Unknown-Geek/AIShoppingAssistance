@@ -63,6 +63,13 @@ class FontConfig {
     family: 'Outfit',
     source: FontSource.googleFont,
   );
+
+  factory FontConfig.fromJson(String family, String? sourceStr) {
+    final source = (sourceStr != null && sourceStr.toLowerCase().contains('google'))
+        ? FontSource.googleFont
+        : FontSource.asset;
+    return FontConfig(family: family, source: source);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -188,6 +195,34 @@ class BrandColors {
       onError: onError ?? this.onError,
     );
   }
+
+  static Color _parseColor(String? hexStr, Color defaultColor) {
+    if (hexStr == null || hexStr.trim().isEmpty) return defaultColor;
+    var clean = hexStr.replaceAll('#', '').trim().toUpperCase();
+    if (clean.length == 6) {
+      return Color(int.parse('FF$clean', radix: 16));
+    } else if (clean.length == 8) {
+      return Color(int.parse(clean, radix: 16));
+    }
+    return defaultColor;
+  }
+
+  factory BrandColors.fromJson(Map<String, dynamic> json) {
+    return BrandColors(
+      primary: _parseColor(json['color_primary'], BrandColors.qless.primary),
+      onPrimary: _parseColor(json['color_on_primary'], BrandColors.qless.onPrimary),
+      secondary: _parseColor(json['color_secondary'], BrandColors.qless.secondary),
+      onSecondary: _parseColor(json['color_on_secondary'], BrandColors.qless.onSecondary),
+      background: _parseColor(json['color_background'], BrandColors.qless.background),
+      surface: _parseColor(json['color_surface'], BrandColors.qless.surface),
+      surfaceContainer: _parseColor(json['color_surface_container'], BrandColors.qless.surfaceContainer),
+      onBackground: _parseColor(json['color_on_background'], BrandColors.qless.onBackground),
+      onSurface: _parseColor(json['color_on_surface'], BrandColors.qless.onSurface),
+      onSurfaceVariant: _parseColor(json['color_on_surface_variant'], BrandColors.qless.onSurfaceVariant),
+      error: _parseColor(json['color_error'], BrandColors.qless.error),
+      onError: _parseColor(json['color_on_error'], BrandColors.qless.onError),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -248,6 +283,21 @@ class BrandTypography {
       displayFont: displayFont ?? this.displayFont,
       bodyFont: bodyFont ?? this.bodyFont,
       fontSizeScale: fontSizeScale ?? this.fontSizeScale,
+    );
+  }
+
+  factory BrandTypography.fromJson(Map<String, dynamic> json) {
+    final double scale = double.tryParse(json['font_size_scale']?.toString() ?? '') ?? 1.0;
+    return BrandTypography(
+      displayFont: FontConfig.fromJson(
+        json['display_font_family'] ?? 'ClashDisplay',
+        json['display_font_source'],
+      ),
+      bodyFont: FontConfig.fromJson(
+        json['body_font_family'] ?? 'ClashGrotesk',
+        json['body_font_source'],
+      ),
+      fontSizeScale: scale,
     );
   }
 }
@@ -319,6 +369,16 @@ class BrandIdentity {
       logoAssetPath: logoAssetPath ?? this.logoAssetPath,
       logoNetworkUrl: logoNetworkUrl ?? this.logoNetworkUrl,
       tagline: tagline ?? this.tagline,
+    );
+  }
+
+  factory BrandIdentity.fromJson(Map<String, dynamic> json) {
+    return BrandIdentity(
+      appName: json['app_name'] ?? '',
+      tenantId: json['tenant_id'] ?? '',
+      logoAssetPath: json['logo_asset_path'],
+      logoNetworkUrl: json['logo_network_url'],
+      tagline: json['tagline'],
     );
   }
 }
@@ -450,6 +510,14 @@ class BrandConfig {
       identity: identity ?? this.identity,
       colors: colors ?? this.colors,
       typography: typography ?? this.typography,
+    );
+  }
+
+  factory BrandConfig.fromJson(Map<String, dynamic> json) {
+    return BrandConfig(
+      identity: BrandIdentity.fromJson(json),
+      colors: BrandColors.fromJson(json),
+      typography: BrandTypography.fromJson(json),
     );
   }
 }

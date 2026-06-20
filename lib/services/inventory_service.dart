@@ -35,8 +35,55 @@ class InventoryService {
     }
   }
 
+  Future<void> syncCatalogWithSupabase() async {
+    // First, run initLocalCatalog so we have a local fallback catalog ready immediately.
+    await initLocalCatalog();
+
+    if (!_hasCredentials()) {
+      debugPrint('[InventoryService] Cannot sync catalog: Supabase credentials not configured.');
+      return;
+    }
+
+    try {
+      debugPrint('[InventoryService] Fetching dynamic catalog from Supabase...');
+      final response = await _supabase
+          .from('inventory')
+          .select('sku, slug, name, price_rupees, staging_dirs, thumbnail_url');
+
+      if (response.isNotEmpty) {
+        final List<dynamic> items = response;
+        int count = 0;
+        for (var item in items) {
+          final slug = item['slug'] as String?;
+          if (slug != null) {
+            _localProducts[slug] = Map<String, dynamic>.from(item);
+            final imageUrl = item['thumbnail_url'] as String?;
+            if (imageUrl != null && imageUrl.isNotEmpty) {
+              _thumbnailUrls[slug] = imageUrl;
+            }
+            count++;
+          }
+        }
+        debugPrint('[InventoryService] Successfully synchronized $count products from Supabase.');
+      } else {
+        debugPrint('[InventoryService] Supabase catalog query returned empty.');
+      }
+    } catch (e) {
+      debugPrint('[InventoryService] Failed to sync catalog with Supabase (using local catalog): $e');
+    }
+  }
+
   Map<String, dynamic>? getProductFromLocal(String slug) {
     return _localProducts[slug];
+  }
+
+  String? getSlugByName(String name) {
+    for (var entry in _localProducts.entries) {
+      if (entry.value['name'] == name) {
+        return entry.key;
+      }
+    }
+    return null;
   }
 
   String getImageUrl(String slug) {

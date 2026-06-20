@@ -1,15 +1,19 @@
+import 'dart:io';
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'widgets/cart_item.dart';
-import 'widgets/chatbot_screen.dart';
+import '../chatbot/chatbot_screen.dart';
 import '../../models/cart_item_model.dart';
 import '../../services/chromadb_client.dart';
 import '../../services/cart_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/product_detection_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'widgets/dashboard_app_bar.dart';
 import 'widgets/camera_viewport.dart';
@@ -27,7 +31,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final ChromaDbClient _chromaClient = ChromaDbClient();
   final ProductDetectionService _detectionService =
       HuggingFaceProxyDetectionService();
@@ -44,9 +48,23 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   DbConnectionStatus _dbStatus = DbConnectionStatus.unknown;
 
+  // Background scanning & locking state variables
+  Timer? _backgroundScanTimer;
+  bool _isCameraBusy = false;
+  CartItemModel? _cachedDetectedItem;
+  DateTime? _cachedDetectionTime;
+  bool _isConfirmSheetOpen = false;
+  bool _isDashboardActive = true;
+
+  // Timestamp tracking to prevent stale background scan race conditions
+  DateTime? _lastActionTime;
+  DateTime? _backgroundScanPauseUntil;
+
   @override
   void initState() {
     super.initState();
+    _lastActionTime = DateTime.now();
+    WidgetsBinding.instance.addObserver(this);
     _cursorController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -59,10 +77,21 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     _initializeCamera();
     _refreshDbStatus();
+    _startBackgroundScanning();
   }
 
   Future<void> _initializeCamera() async {
     if (widget.cameras.isEmpty) return;
+
+    // Clean up any existing controller to prevent leaks and camera locking
+    if (_cameraController != null) {
+      try {
+        await _cameraController!.dispose();
+      } catch (e) {
+        debugPrint("Error disposing camera controller: $e");
+      }
+      _cameraController = null;
+    }
 
     const resolution = kIsWeb ? ResolutionPreset.medium : ResolutionPreset.low;
     _cameraController = CameraController(
@@ -74,6 +103,20 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     try {
       await _cameraController!.initialize();
+
+      // Laptop webcams or web/desktop platforms generally don't support torch/flash.
+      // We check if we are on a mobile platform (Android or iOS) first.
+      final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+      if (isMobile) {
+        try {
+          await _cameraController!.setFlashMode(FlashMode.off);
+        } catch (flashError) {
+          debugPrint(
+            "Failed to set flash mode to off (not supported): $flashError",
+          );
+        }
+      }
+
       if (mounted) {
         setState(() => _isCameraInitialized = true);
       }
@@ -84,10 +127,116 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _stopBackgroundScanning();
     _cameraController?.dispose();
     _cursorController.dispose();
     _cartExpandController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final CameraController? cameraController = _cameraController;
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _stopBackgroundScanning();
+      if (cameraController != null) {
+        setState(() => _isCameraInitialized = false);
+        cameraController.dispose();
+        _cameraController = null;
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      _initializeCamera();
+      _startBackgroundScanning();
+    }
+  }
+
+  void _startBackgroundScanning() {
+    if (!_isDashboardActive) return;
+    _backgroundScanTimer?.cancel();
+    _backgroundScanTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _performBackgroundScan();
+    });
+    debugPrint("[DashboardScreen] Background scanning started.");
+  }
+
+  void _stopBackgroundScanning() {
+    _backgroundScanTimer?.cancel();
+    _backgroundScanTimer = null;
+    debugPrint("[DashboardScreen] Background scanning stopped.");
+  }
+
+  Future<void> _performBackgroundScan() async {
+    // Requirements:
+    // 1. Camera must be initialized and NOT busy
+    // 2. Cart must be collapsed (expanded controller value == 0)
+    // 3. Shutter must NOT be actively searching/loading a manual scan
+    // 4. Confirmation sheet must NOT be open
+    // 5. Background scanning must not be paused
+    if (_backgroundScanPauseUntil != null &&
+        DateTime.now().isBefore(_backgroundScanPauseUntil!)) {
+      return;
+    }
+    if (!_isCameraInitialized || _cameraController == null || _isCameraBusy) {
+      return;
+    }
+    if (_cartExpandController.value > 0.0) return;
+    if (_isSearchingImage) return;
+    if (_isConfirmSheetOpen) return;
+
+    _isCameraBusy = true;
+
+    final DateTime captureTime = DateTime.now();
+    XFile? capturedPhoto;
+    try {
+      capturedPhoto = await _cameraController!.takePicture().timeout(
+        const Duration(seconds: 2),
+      );
+
+      // Release camera lock early so manual shutter is not blocked by backend API latency
+      _isCameraBusy = false;
+
+      final CartItemModel? item = await _detectionService.detectItem(
+        capturedPhoto,
+      );
+
+      if (item != null && mounted) {
+        // Discard background scan if the photo was captured before the last user interaction/action
+        if (_lastActionTime != null && captureTime.isBefore(_lastActionTime!)) {
+          debugPrint(
+            "[DashboardScreen] Discarding stale background scan result (captured before last action).",
+          );
+          return;
+        }
+
+        setState(() {
+          _cachedDetectedItem = item;
+          _cachedDetectionTime = DateTime.now();
+        });
+        debugPrint("[DashboardScreen] Pre-emptive scan detected: ${item.name}");
+      }
+    } catch (e) {
+      _isCameraBusy = false;
+      debugPrint("[DashboardScreen] Background scanning exception: $e");
+    } finally {
+      if (capturedPhoto != null && !kIsWeb) {
+        try {
+          final file = File(capturedPhoto.path);
+          if (await file.exists()) {
+            await file.delete();
+            debugPrint(
+              "[DashboardScreen] Cleaned up background temporary file: ${capturedPhoto.path}",
+            );
+          }
+        } catch (e) {
+          debugPrint(
+            "[DashboardScreen] Failed to delete temp background file: $e",
+          );
+        }
+      }
+    }
   }
 
   Future<void> _checkoutCart() async {
@@ -204,42 +353,115 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     setState(() => _isCheckingOut = true);
 
-    // Simulate brief payment processing
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    await _cartService.checkout();
-
-    if (!mounted) return;
-    setState(() => _isCheckingOut = false);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.fixed,
-        content: Row(
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              color: theme.colorScheme.secondary,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Order placed! ₹${total.toStringAsFixed(2)} charged.',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+    // Open the premium payment sheet
+    await DashboardSheets.showPaymentSheet(
+      context,
+      amount: total,
+      onPaymentSuccess: () async {
+        await _cartService.checkout();
+        if (mounted) {
+          setState(() => _isCheckingOut = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.fixed,
+              content: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    color: theme.colorScheme.secondary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Order placed! ₹${total.toStringAsFixed(2)} charged.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
+              backgroundColor: theme.colorScheme.primary,
+              duration: const Duration(seconds: 3),
             ),
-          ],
-        ),
-        backgroundColor: theme.colorScheme.primary,
-        duration: const Duration(seconds: 3),
-      ),
+          );
+        }
+      },
     );
+
+    // Reset checking out state if they cancel or close the sheet
+    if (mounted) {
+      setState(() => _isCheckingOut = false);
+    }
+  }
+
+  bool _isCacheValid() {
+    if (_cachedDetectedItem == null || _cachedDetectionTime == null) {
+      return false;
+    }
+    final age = DateTime.now().difference(_cachedDetectionTime!);
+    return age < const Duration(seconds: 3);
   }
 
   Future<void> _takePictureAndSearch() async {
     if (_isSearchingImage) return;
+
+    if (_isCacheValid()) {
+      debugPrint(
+        "[DashboardScreen] Using valid pre-emptive scan cache for instant confirm sheet.",
+      );
+      final item = _cachedDetectedItem!;
+
+      // Clear the cache after consuming it to prevent double actions
+      setState(() {
+        _cachedDetectedItem = null;
+        _cachedDetectionTime = null;
+        _isConfirmSheetOpen = true;
+      });
+
+      final confirmed = await DashboardSheets.showItemConfirmSheet(
+        context,
+        item: item,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isConfirmSheetOpen = false;
+          _lastActionTime = DateTime.now();
+          _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
+          _cachedDetectedItem = null;
+          _cachedDetectionTime = null;
+        });
+        if (confirmed == true) {
+          _cartService.addItem(item);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.fixed,
+              content: Text('${item.name} added to cart!'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+      return;
+    }
+
+    // Yield up to 500ms if the camera is busy with a background scan capture
+    int retryCount = 0;
+    while (_isCameraBusy && retryCount < 10) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      retryCount++;
+    }
+
+    if (!mounted) return;
+
+    if (_isSearchingImage || _isCameraBusy) {
+      debugPrint(
+        "[DashboardScreen] Shutter click dropped: camera remains busy.",
+      );
+      return;
+    }
 
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -253,10 +475,19 @@ class _DashboardScreenState extends State<DashboardScreen>
       return;
     }
 
-    setState(() => _isSearchingImage = true);
+    setState(() {
+      _isSearchingImage = true;
+      _lastActionTime = DateTime.now();
+      _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
+    });
+    _isCameraBusy = true;
 
+    XFile? capturedPhoto;
     try {
-      final XFile capturedPhoto = await _cameraController!.takePicture();
+      capturedPhoto = await _cameraController!.takePicture().timeout(
+        const Duration(seconds: 2),
+      );
+      _isCameraBusy = false; // Release lock early once capture succeeds
 
       final CartItemModel? item = await _detectionService.detectItem(
         capturedPhoto,
@@ -265,8 +496,20 @@ class _DashboardScreenState extends State<DashboardScreen>
       if (item != null && mounted) {
         // Show confirmation sheet — CLIP can confuse similar-looking products
         // (e.g. different Lays flavours). User verifies before cart is updated.
-        final confirmed =
-            await DashboardSheets.showItemConfirmSheet(context, item: item);
+        setState(() => _isConfirmSheetOpen = true);
+        final confirmed = await DashboardSheets.showItemConfirmSheet(
+          context,
+          item: item,
+        );
+        if (mounted) {
+          setState(() {
+            _isConfirmSheetOpen = false;
+            _lastActionTime = DateTime.now();
+            _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
+            _cachedDetectedItem = null;
+            _cachedDetectionTime = null;
+          });
+        }
         if (confirmed == true && mounted) {
           _cartService.addItem(item);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -307,17 +550,26 @@ class _DashboardScreenState extends State<DashboardScreen>
         );
       }
     } finally {
+      _isCameraBusy = false;
+      if (capturedPhoto != null && !kIsWeb) {
+        try {
+          final file = File(capturedPhoto.path);
+          if (await file.exists()) {
+            await file.delete();
+            debugPrint(
+              "[DashboardScreen] Cleaned up temporary photo file: ${capturedPhoto.path}",
+            );
+          }
+        } catch (e) {
+          debugPrint("[DashboardScreen] Failed to delete temp photo file: $e");
+        }
+      }
       if (mounted) setState(() => _isSearchingImage = false);
     }
   }
 
-
-
   void _showRagSheet() {
-    DashboardSheets.showRagSheet(
-      context,
-      onSubmitted: _askChefRag,
-    );
+    DashboardSheets.showRagSheet(context, onSubmitted: _askChefRag);
   }
 
   Future<void> _askChefRag(String prompt) async {
@@ -334,21 +586,70 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
+  Future<String> _checkBackendStatus() async {
+    final primary = dotenv.env['PRIMARY_DETECTION_URL']?.trim() ?? '';
+    final backup = dotenv.env['BACKUP_DETECTION_URL']?.trim() ?? '';
+    
+    if (primary.isEmpty && backup.isEmpty) {
+      return "Not Configured";
+    }
+
+    List<String> activeBackends = [];
+
+    // Clean and check primary
+    if (primary.isNotEmpty) {
+      final cleanPrimary = primary.replaceAll(RegExp(r'/health$'), '').replaceAll(RegExp(r'/$'), '');
+      try {
+        final response = await http.get(Uri.parse('$cleanPrimary/health')).timeout(const Duration(seconds: 2));
+        if (response.statusCode == 200) {
+          activeBackends.add("Oracle (Active)");
+        }
+      } catch (_) {
+        // Silent fail for primary
+      }
+    }
+
+    // Clean and check backup
+    if (backup.isNotEmpty) {
+      final cleanBackup = backup.replaceAll(RegExp(r'/health$'), '').replaceAll(RegExp(r'/$'), '');
+      try {
+        final response = await http.get(Uri.parse('$cleanBackup/health')).timeout(const Duration(seconds: 2));
+        if (response.statusCode == 200) {
+          activeBackends.add("HF Space (Active)");
+        }
+      } catch (_) {
+        // Silent fail for backup
+      }
+    }
+
+    if (activeBackends.isNotEmpty) {
+      return activeBackends.join(", ");
+    } else {
+      return "Disconnected (All Offline)";
+    }
+  }
+
   /// Silent background check — updates the indicator, no snackbar.
   Future<void> _refreshDbStatus() async {
     final results = await Future.wait([
       _chromaClient.checkConnectivity(),
       InventoryService().checkConnectivity(),
+      _checkBackendStatus(),
     ]);
     final chromaStatus = results[0];
     final supabaseStatus = results[1];
+    final backendStatus = results[2];
 
     if (!mounted) return;
     final allOk =
         chromaStatus.startsWith('Connected') &&
-        supabaseStatus.startsWith('Connected');
-    setState(() => _dbStatus =
-        allOk ? DbConnectionStatus.live : DbConnectionStatus.error);
+        supabaseStatus.startsWith('Connected') &&
+        !backendStatus.startsWith('Disconnected');
+    setState(
+      () => _dbStatus = allOk
+          ? DbConnectionStatus.live
+          : DbConnectionStatus.error,
+    );
   }
 
   Future<void> _checkDbStatus() async {
@@ -357,7 +658,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       const SnackBar(
         behavior: SnackBarBehavior.fixed,
         content: Text(
-          'Checking database connections...',
+          'Checking database and backend connections...',
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Color(0xFF001A23),
@@ -368,13 +669,16 @@ class _DashboardScreenState extends State<DashboardScreen>
     final results = await Future.wait([
       _chromaClient.checkConnectivity(),
       InventoryService().checkConnectivity(),
+      _checkBackendStatus(),
     ]);
     final chromaStatus = results[0];
     final supabaseStatus = results[1];
+    final backendStatus = results[2];
 
     if (mounted) {
       final isChromaOk = chromaStatus.startsWith("Connected");
       final isSupabaseOk = supabaseStatus.startsWith("Connected");
+      final isBackendOk = !backendStatus.startsWith("Disconnected");
 
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -399,9 +703,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 4),
+              Text(
+                'Backend: $backendStatus',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
-          backgroundColor: (isChromaOk && isSupabaseOk)
+          backgroundColor: (isChromaOk && isSupabaseOk && isBackendOk)
               ? Theme.of(context).colorScheme.primary
               : const Color(0xFFEF4444),
           duration: const Duration(seconds: 4),
@@ -409,7 +721,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
       // Also update the indicator
       setState(
-        () => _dbStatus = (isChromaOk && isSupabaseOk)
+        () => _dbStatus = (isChromaOk && isSupabaseOk && isBackendOk)
             ? DbConnectionStatus.live
             : DbConnectionStatus.error,
       );
@@ -445,7 +757,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                 gradient: LinearGradient(
                   colors: [
                     theme.scaffoldBackgroundColor,
-                    Color.lerp(theme.scaffoldBackgroundColor, Colors.white, 0.5) ?? Colors.white,
+                    Color.lerp(
+                          theme.scaffoldBackgroundColor,
+                          Colors.white,
+                          0.5,
+                        ) ??
+                        Colors.white,
                     theme.scaffoldBackgroundColor,
                   ],
                   begin: Alignment.topLeft,
@@ -489,12 +806,13 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
           ),
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-              child: Container(color: Colors.transparent),
+          if (_isDashboardActive)
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                child: Container(color: Colors.transparent),
+              ),
             ),
-          ),
           // AnimatedBuilder isolates redraws to only the camera+cart layout
           // on each animation frame instead of rebuilding the entire screen.
           AnimatedBuilder(
@@ -506,6 +824,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   isCameraInitialized: _isCameraInitialized,
                   isSearchingImage: _isSearchingImage,
                   progress: _cartExpandController.value,
+                  hasDetectedProduct: _isCacheValid(),
                 ),
                 Expanded(child: _buildShoppingZone()),
               ],
@@ -518,8 +837,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               final progress = _cartExpandController.value;
               return Positioned(
                 bottom: 20 - (120 * progress),
-                left: MediaQuery.of(context).size.width * 0.05,
-                right: MediaQuery.of(context).size.width * 0.05,
+                left: 16,
+                right: 16,
                 child: Opacity(
                   opacity: (1.0 - progress).clamp(0.0, 1.0),
                   child: IgnorePointer(ignoring: progress > 0.5, child: child!),
@@ -527,28 +846,70 @@ class _DashboardScreenState extends State<DashboardScreen>
               );
             },
             child: BottomNavBar(
-              onChatTap: () {
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    pageBuilder: (_, animation, __) => const ChatbotScreen(),
-                    transitionsBuilder: (_, animation, __, child) {
-                      return SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(-1, 0), // ← slide from left
-                            end: Offset.zero,
-                          ).animate(CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutCubic,
-                          )),
-                          child: child,
-                        );
-                      },
-                      transitionDuration: const Duration(milliseconds: 350),
-                    ),
-                  );
-                },
-              onVoiceTap: () {},
+              onChatTap: () async {
+                setState(() => _isDashboardActive = false);
+                _stopBackgroundScanning();
+
+                final route = PageRouteBuilder(
+                  pageBuilder: (_, animation, __) => const ChatbotScreen(),
+                  transitionsBuilder: (_, animation, secondaryAnimation, child) {
+                    final slideAnimation = Tween<Offset>(
+                      begin: const Offset(-1.0, 0.0),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.fastOutSlowIn,
+                        reverseCurve: Curves.fastOutSlowIn.flipped,
+                      ),
+                    );
+
+                    return SlideTransition(
+                      position: slideAnimation,
+                      child: Material(
+                        elevation: 16,
+                        shadowColor: Colors.black38,
+                        child: child,
+                      ),
+                    );
+                  },
+                  transitionDuration: const Duration(milliseconds: 300),
+                  reverseTransitionDuration: const Duration(milliseconds: 250),
+                );
+
+                final pushFuture = Navigator.push(context, route);
+
+                route.animation?.addStatusListener((status) async {
+                  if (status == AnimationStatus.completed) {
+                    if (_cameraController != null && _cameraController!.value.isInitialized) {
+                      try {
+                        await _cameraController!.pausePreview();
+                        debugPrint("[DashboardScreen] Paused camera preview.");
+                      } catch (e) {
+                        debugPrint("Error pausing camera: $e");
+                      }
+                    }
+                  } else if (status == AnimationStatus.reverse) {
+                    if (_cameraController != null && _cameraController!.value.isInitialized) {
+                      try {
+                        await _cameraController!.resumePreview();
+                        debugPrint("[DashboardScreen] Resumed camera preview.");
+                      } catch (e) {
+                        debugPrint("Error resuming camera: $e");
+                      }
+                    }
+                  }
+                });
+
+                await pushFuture;
+
+                setState(() => _isDashboardActive = true);
+                if (_cameraController == null || !_cameraController!.value.isInitialized) {
+                  await _initializeCamera();
+                }
+                _startBackgroundScanning();
+              },
+              onVoiceTap: _showRagSheet,
               isSearchingImage: _isSearchingImage,
               onShutterTap: _takePictureAndSearch,
             ),
@@ -590,11 +951,14 @@ class _DashboardScreenState extends State<DashboardScreen>
               GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onVerticalDragUpdate: (details) {
-                  final cameraViewportHeight = MediaQuery.of(context).size.height * 0.33;
+                  final cameraViewportHeight =
+                      MediaQuery.of(context).size.height * 0.33;
                   if (cameraViewportHeight > 0) {
-                    _cartExpandController.value = (_cartExpandController.value -
-                            (details.primaryDelta ?? 0) / cameraViewportHeight)
-                        .clamp(0.0, 1.0);
+                    _cartExpandController.value =
+                        (_cartExpandController.value -
+                                (details.primaryDelta ?? 0) /
+                                    cameraViewportHeight)
+                            .clamp(0.0, 1.0);
                   }
                 },
                 onVerticalDragEnd: (details) {
@@ -664,7 +1028,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           Text(
                             'My Cart',
                             style: TextStyle(
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.primary,
                             ),
@@ -678,7 +1042,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.secondary.withValues(alpha: 0.3),
+                                  color: theme.colorScheme.secondary.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -721,7 +1087,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         height: 72,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                                          color: theme.colorScheme.primary
+                                              .withValues(alpha: 0.05),
                                         ),
                                         child: Icon(
                                           Icons.shopping_cart_outlined,
@@ -754,7 +1121,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 RepaintBoundary(
                                   child: ListView.builder(
                                     shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
                                     itemCount: _cartService.items.length,
                                     itemBuilder: (context, index) {
                                       final item = _cartService.items[index];
@@ -762,12 +1130,18 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         key: Key(item.id),
                                         direction: DismissDirection.endToStart,
                                         background: Container(
-                                          margin: const EdgeInsets.only(bottom: 12),
+                                          margin: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
                                           alignment: Alignment.centerRight,
-                                          padding: const EdgeInsets.only(right: 20),
+                                          padding: const EdgeInsets.only(
+                                            right: 20,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFEF4444),
-                                            borderRadius: BorderRadius.circular(18),
+                                            borderRadius: BorderRadius.circular(
+                                              18,
+                                            ),
                                           ),
                                           child: const Icon(
                                             Icons.delete_outline,
@@ -776,16 +1150,24 @@ class _DashboardScreenState extends State<DashboardScreen>
                                           ),
                                         ),
                                         onDismissed: (_) => _removeItem(index),
-                                        child: CartItem(
-                                          imageUrl: item.imageUrl,
-                                          name: item.name,
-                                          details:
-                                              "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
-                                          quantity: item.quantity,
-                                          onIncrement: () => _incrementQuantity(index),
-                                          onDecrement: () => _decrementQuantity(index),
-                                          onRemove: () => _removeItem(index),
-                                        ),
+                                        child: () {
+                                          final slug = InventoryService().getSlugByName(item.name);
+                                          final displayImageUrl = (item.imageUrl.startsWith('http') && !item.imageUrl.contains('string'))
+                                              ? item.imageUrl
+                                              : (slug != null ? InventoryService().getImageUrl(slug) : item.imageUrl);
+                                          return CartItem(
+                                            imageUrl: displayImageUrl,
+                                            name: item.name,
+                                            details:
+                                                "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
+                                            quantity: item.quantity,
+                                            onIncrement: () =>
+                                                _incrementQuantity(index),
+                                            onDecrement: () =>
+                                                _decrementQuantity(index),
+                                            onRemove: () => _removeItem(index),
+                                          );
+                                        }(),
                                       );
                                     },
                                   ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/cart_item_model.dart';
+import '../../../services/inventory_service.dart';
+import 'payment_sheet.dart';
 
 class DashboardSheets {
   static Future<void> showProfileSheet(
@@ -170,9 +172,36 @@ class DashboardSheets {
                       color: const Color(0xFFF3F4F6),
                     ),
                     clipBehavior: Clip.antiAlias,
-                    child: CachedNetworkImage(
-                      imageUrl: item.imageUrl,
-                      fit: BoxFit.cover,
+                    child: FutureBuilder<Map<String, dynamic>?>(
+                      future: () async {
+                        final inventoryService = InventoryService();
+                        final slug = inventoryService.getSlugByName(item.name);
+                        if (slug != null) {
+                          return await inventoryService.getProductBySlug(slug);
+                        }
+                        return null;
+                      }(),
+                      builder: (context, snapshot) {
+                        String displayUrl = item.imageUrl;
+                        if (snapshot.hasData && snapshot.data != null) {
+                          final thumbnail = snapshot.data!['thumbnail_url'] as String?;
+                          if (thumbnail != null && thumbnail.isNotEmpty) {
+                            displayUrl = thumbnail;
+                          }
+                        }
+                        return CachedNetworkImage(
+                          imageUrl: displayUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 1.5),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => const Icon(Icons.image, size: 20),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -253,6 +282,24 @@ class DashboardSheets {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  static Future<void> showPaymentSheet(
+    BuildContext context, {
+    required double amount,
+    required VoidCallback onPaymentSuccess,
+  }) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return PaymentSheet(
+          amount: amount,
+          onPaymentSuccess: onPaymentSuccess,
         );
       },
     );
