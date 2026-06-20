@@ -7,7 +7,7 @@ import '../models/cart_item_model.dart';
 import '../models/chatbot_models.dart';
 import 'cart_service.dart';
 
-class RecipeAgentService {
+class ChatAgentService {
   /// Resolves the active user's ID from Supabase auth.
   /// Falls back to "anonymous_user" when no session is present.
   String get _resolvedUserId =>
@@ -52,7 +52,7 @@ class RecipeAgentService {
     }).where((url) => url.isNotEmpty).toList();
   }
 
-  Future<Map<String, dynamic>> analyzeAndGetMissing(
+  Future<Map<String, dynamic>> sendChatMessage(
     List<String> cartSlugs,
     List<Map<String, dynamic>> currentCart,
     String dish,
@@ -71,12 +71,12 @@ class RecipeAgentService {
 
     for (final url in urls) {
       try {
-        debugPrint('[RecipeAgentService] Attempting request to backend: $url/recipe/analyze-ingredients');
+        debugPrint('[ChatAgentService] Attempting request to backend: $url/chat/message');
         final response = await http.post(
-          Uri.parse('$url/recipe/analyze-ingredients'),
+          Uri.parse('$url/chat/message'),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({
-            "user_id": _resolvedUserId, // Preserved from abhinav's branch
+            "user_id": _resolvedUserId,
             "current_cart_slugs": cartSlugs,
             "dish_query": dish,
             "servings": servings,
@@ -89,28 +89,28 @@ class RecipeAgentService {
           final Map<String, dynamic> data = jsonDecode(response.body);
           if (data.containsKey('error') && data['error'] != null) {
             final errorMsg = 'Server $url returned application error: ${data['error']}';
-            debugPrint('[RecipeAgentService] $errorMsg');
+            debugPrint('[ChatAgentService] $errorMsg');
             errors.add(errorMsg);
           } else {
-            debugPrint('[RecipeAgentService] Success using backend: $url');
+            debugPrint('[ChatAgentService] Success using backend: $url');
             return data;
           }
         } else {
           final errorMsg = 'Server $url returned status code: ${response.statusCode}';
-          debugPrint('[RecipeAgentService] $errorMsg');
+          debugPrint('[ChatAgentService] $errorMsg');
           errors.add(errorMsg);
         }
       } catch (e) {
         final errorMsg = 'Failed to connect to $url: $e';
-        debugPrint('[RecipeAgentService] $errorMsg');
+        debugPrint('[ChatAgentService] $errorMsg');
         errors.add(errorMsg);
       }
     }
 
-    throw Exception("Failed to process recipe orchestration layer. Errors: ${errors.join(', ')}");
+    throw Exception("Failed to process chat orchestration layer. Errors: ${errors.join(', ')}");
   }
 
-  Future<http.StreamedResponse> analyzeAndGetMissingStream(
+  Future<http.StreamedResponse> sendChatMessageStream(
     List<String> cartSlugs,
     List<Map<String, dynamic>> currentCart,
     String dish,
@@ -130,10 +130,10 @@ class RecipeAgentService {
 
     for (final url in urls) {
       try {
-        debugPrint('[RecipeAgentService] Attempting streaming request to backend: $url/recipe/analyze-ingredients-stream');
+        debugPrint('[ChatAgentService] Attempting streaming request to backend: $url/chat/message-stream');
         final request = http.Request(
           'POST',
-          Uri.parse('$url/recipe/analyze-ingredients-stream'),
+          Uri.parse('$url/chat/message-stream'),
         )
           ..headers["Content-Type"] = "application/json"
           ..body = jsonEncode({
@@ -149,34 +149,29 @@ class RecipeAgentService {
         final response = await http.Client().send(request).timeout(const Duration(seconds: 60));
         
         if (response.statusCode == 200) {
-          debugPrint('[RecipeAgentService] Success starting stream using backend: $url');
+          debugPrint('[ChatAgentService] Success starting stream using backend: $url');
           return response;
         } else {
           final errorMsg = 'Server $url returned status code: ${response.statusCode}';
-          debugPrint('[RecipeAgentService] $errorMsg');
+          debugPrint('[ChatAgentService] $errorMsg');
           errors.add(errorMsg);
         }
       } catch (e) {
         final errorMsg = 'Failed to connect to $url for stream: $e';
-        debugPrint('[RecipeAgentService] $errorMsg');
+        debugPrint('[ChatAgentService] $errorMsg');
         errors.add(errorMsg);
       }
     }
 
-    throw Exception("Failed to start recipe orchestration stream. Errors: ${errors.join(', ')}");
+    throw Exception("Failed to start chat orchestration stream. Errors: ${errors.join(', ')}");
   }
 
   /// Fetches the agent-committed cart state from the backend in-memory store.
-  ///
-  /// The agent's [add_to_cart] tool writes SKUs to a process-scoped memory
-  /// store on the backend. This endpoint lets Flutter reconcile any items the
-  /// agent committed that were not returned in [cart_additions] (e.g. after a
-  /// server restart). Returns an empty list on failure — non-fatal.
   Future<List<Map<String, dynamic>>> fetchAgentCart() async {
     final userId = _resolvedUserId;
     try {
       final response = await http.get(
-        Uri.parse('$backendUrl/recipe/cart/$userId'),
+        Uri.parse('$backendUrl/chat/cart/$userId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -194,24 +189,19 @@ class RecipeAgentService {
   }
 
   /// Injects matched missing ingredients into [cartService].
-  ///
-  /// Only items with a known SKU (not "UNKNOWN") are added. Each triggers an
-  /// immediate SharedPreferences write + a debounced Supabase background sync
-  /// via [CartService.addItem].
-  void addMissingIngredientsToCart(
+  void addIngredientsToCart(
     List<dynamic> missingIngredients,
     CartService cartService,
   ) {
     for (final item in missingIngredients) {
       if (item['sku'] != 'UNKNOWN') {
-        // Instantiate using your model mappings
         CartItemModel missingItem = CartItemModel(
           id: 'recipe_${DateTime.now().millisecondsSinceEpoch}_${(item['slug'] ?? item['name'] ?? 'item').hashCode}',
           name: item['name'] ?? 'Unknown Item',
           details: 'SKU: ${item['sku'] ?? 'UNKNOWN'} • Price: ₹${(item['price_rupees'] ?? 0.0).toStringAsFixed(2)}',
           imageUrl: item['thumbnail_url'] ?? '',
           price: (item['price_rupees'] as num?)?.toDouble() ?? 0.0,
-          quantity: 1, // Add default increment unit
+          quantity: 1,
         );
         cartService.addItem(missingItem);
       }

@@ -1,3 +1,3 @@
-from .recipe import RecipeRequest
+from .chat import ChatRequest
 
-__all__ = ["RecipeRequest"]
+__all__ = ["ChatRequest"]

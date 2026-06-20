@@ -163,18 +163,6 @@ class ChatInputField extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Mic / Voice Button
-                IconButton(
-                  icon: Icon(
-                    Icons.mic_none_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 24,
-                  ),
-                  onPressed: () {
-                    // Speech to text integration placeholder
-                  },
-                ),
-                const SizedBox(width: 8),
                 // Send Button
                 AnimSendButton(
                   onTap: loading ? null : onSend,

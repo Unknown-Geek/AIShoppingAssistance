@@ -96,7 +96,7 @@ Future<Map<String, dynamic>?> analyzeAndInjectRecipeIngredients({
   }) async {
     // 1. Resolve identity gracefully
     final currentUserId = _supabase.auth.currentUser?.id ?? "anonymous_user";
-    final url = Uri.parse("$_agentBaseUrl/recipe/analyze-ingredients/");
+    final url = Uri.parse("$_agentBaseUrl/chat/message");
 
     try {
       debugPrint("📡 [ARCHITECT BRIDGE] Dispatching agent payload for user: $currentUserId");
