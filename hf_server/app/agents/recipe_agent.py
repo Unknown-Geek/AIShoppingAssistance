@@ -4,6 +4,8 @@ import re
 from typing import Dict, Any, List
 from groq import Groq
 from dotenv import load_dotenv
+from app.services.nutrition_service import NutritionService
+from app.services.quantity_normalizer_service import QuantityNormalizerService
 
 # Explicitly load .env file from the hf_server directory
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -32,12 +34,31 @@ class RecipeAgent:
             api_key = "gsk_mock_key_placeholder_for_verification_only"
         self.client = Groq(api_key=api_key)
         self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+        self.nutrition_service = NutritionService()
+        self.quantity_normalizer = QuantityNormalizerService(
+            os.getenv("USDA_API_KEY")
+        )
+    
+        
+
 
     async def generate(self, dish_query: str, servings: int) -> Dict[str, Any]:
         """
         Generates a detailed recipe using Groq forced output structures.
         """
         prompt = f"""Generate a detailed recipe for {dish_query} for {servings} servings.
+        IMPORTANT:
+- quantity must be a NUMBER only.
+- Never include units inside quantity.
+- Correct:
+  quantity: 1, unit: "cups"
+  quantity: 2, unit: "tablespoons"
+  quantity: 3, unit: "cloves"
+- Incorrect:
+  quantity: "1 cup"
+  quantity: "2 tablespoons"
+  quantity: "3 cloves"
+
 
 Return ONLY valid JSON in this exact format (no markdown strings, no code fences):
 {{
@@ -72,6 +93,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
 
         try:
             return json.loads(content)
+
         except json.JSONDecodeError:
             return {
                 "raw_response": content,
@@ -284,7 +306,30 @@ Return ONLY valid JSON in this exact format (no markdown strings, no code fences
         content = content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
 
         try:
-            return json.loads(content)
+            result = json.loads(content)
+            print("\n===== RAW RECIPE INGREDIENTS =====")
+            for x in result.get("ingredients", []):
+                print(x)
+            print("=================================\n")
+            async with self.quantity_normalizer as normalizer:
+                normalized_ingredients, skipped = (
+                    await normalizer.normalize_ingredients(
+                        result.get("ingredients", [])
+                    )
+                )
+
+            print("NORMALIZED:", normalized_ingredients)
+            print("SKIPPED:", skipped)
+
+            nutrition = await self.nutrition_service.calculate_recipe_nutrition(
+                normalized_ingredients,
+                result.get("servings", servings),
+            )
+            print("NUTRITION RESULT:", nutrition)
+
+            result["nutrition"] = nutrition
+
+            return result
         except json.JSONDecodeError:
             return {
                 "dish": dish_query,
