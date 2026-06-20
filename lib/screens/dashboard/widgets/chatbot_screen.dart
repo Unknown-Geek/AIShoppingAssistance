@@ -90,7 +90,16 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       setState(() {
         _chatHistory.clear();
         _chatHistory.addAll(restored);
+        if (_chatHistory.isNotEmpty) {
+          final mostRecent = _chatHistory.first;
+          _messages.clear();
+          _messages.addAll(mostRecent.messages);
+          _currentChatTitle = mostRecent.title;
+        }
       });
+      if (restored.isNotEmpty) {
+        _scrollToBottom();
+      }
     } catch (e) {
       debugPrint('[ChatbotScreen] load history error: $e');
     }
