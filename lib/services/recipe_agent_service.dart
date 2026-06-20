@@ -83,7 +83,7 @@ class RecipeAgentService {
             "chat_history": historyList,
             "current_cart": currentCart,
           }),
-        ).timeout(const Duration(seconds: 8));
+        ).timeout(const Duration(seconds: 60));
 
         if (response.statusCode == 200) {
           final Map<String, dynamic> data = jsonDecode(response.body);
