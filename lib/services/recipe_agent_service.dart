@@ -110,6 +110,60 @@ class RecipeAgentService {
     throw Exception("Failed to process recipe orchestration layer. Errors: ${errors.join(', ')}");
   }
 
+  Future<http.StreamedResponse> analyzeAndGetMissingStream(
+    List<String> cartSlugs,
+    List<Map<String, dynamic>> currentCart,
+    String dish,
+    int servings,
+    List<ChatMessage> chatHistory,
+  ) async {
+    final urls = backendUrls;
+    List<String> errors = [];
+
+    final historyList = chatHistory.map((m) {
+      return {
+        "is_user": m.isUser,
+        "text": m.text ?? "",
+      };
+    }).toList();
+
+    for (final url in urls) {
+      try {
+        debugPrint('[RecipeAgentService] Attempting streaming request to backend: $url/recipe/analyze-ingredients-stream');
+        final request = http.Request(
+          'POST',
+          Uri.parse('$url/recipe/analyze-ingredients-stream'),
+        )
+          ..headers["Content-Type"] = "application/json"
+          ..body = jsonEncode({
+            "user_id": _resolvedUserId,
+            "current_cart_slugs": cartSlugs,
+            "dish_query": dish,
+            "servings": servings,
+            "chat_history": historyList,
+            "current_cart": currentCart,
+          });
+
+        final response = await http.Client().send(request).timeout(const Duration(seconds: 60));
+        
+        if (response.statusCode == 200) {
+          debugPrint('[RecipeAgentService] Success starting stream using backend: $url');
+          return response;
+        } else {
+          final errorMsg = 'Server $url returned status code: ${response.statusCode}';
+          debugPrint('[RecipeAgentService] $errorMsg');
+          errors.add(errorMsg);
+        }
+      } catch (e) {
+        final errorMsg = 'Failed to connect to $url for stream: $e';
+        debugPrint('[RecipeAgentService] $errorMsg');
+        errors.add(errorMsg);
+      }
+    }
+
+    throw Exception("Failed to start recipe orchestration stream. Errors: ${errors.join(', ')}");
+  }
+
   /// Fetches the agent-committed cart state from the backend in-memory store.
   ///
   /// The agent's [add_to_cart] tool writes SKUs to a process-scoped memory
