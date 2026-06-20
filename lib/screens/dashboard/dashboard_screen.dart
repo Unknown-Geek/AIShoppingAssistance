@@ -643,7 +643,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (!mounted) return;
     final allOk =
         chromaStatus.startsWith('Connected') &&
-        supabaseStatus.startsWith('Connected');
+        supabaseStatus.startsWith('Connected') &&
+        !backendStatus.startsWith('Disconnected');
     setState(
       () => _dbStatus = allOk
           ? DbConnectionStatus.live
@@ -712,7 +713,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ],
           ),
-          backgroundColor: (isChromaOk && isSupabaseOk)
+          backgroundColor: (isChromaOk && isSupabaseOk && isBackendOk)
               ? Theme.of(context).colorScheme.primary
               : const Color(0xFFEF4444),
           duration: const Duration(seconds: 4),
@@ -720,7 +721,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
       // Also update only the DB indicator
       setState(
-        () => _dbStatus = (isChromaOk && isSupabaseOk)
+        () => _dbStatus = (isChromaOk && isSupabaseOk && isBackendOk)
             ? DbConnectionStatus.live
             : DbConnectionStatus.error,
       );
