@@ -10,7 +10,11 @@ import 'widgets/message_bubble.dart';
 import 'widgets/chat_input_field.dart';
 import 'widgets/chat_cart_sheet.dart';
 import 'widgets/history_drawer.dart';
-import 'widgets/animated_orb.dart';
+import 'widgets/chat_header_pill.dart';
+import 'widgets/fade_content.dart';
+import 'widgets/welcome_card.dart';
+import 'widgets/suggestion_pill.dart';
+import 'widgets/gradual_blur.dart';
 import '../../services/chat_agent_service.dart';
 import '../../services/cart_service.dart';
 
