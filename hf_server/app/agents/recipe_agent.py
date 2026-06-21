@@ -32,6 +32,29 @@ class RecipeAgent:
             api_key = "gsk_mock_key_placeholder_for_verification_only"
         self.client = Groq(api_key=api_key)
         self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+        self.fallback_model = os.getenv("GROQ_FALLBACK_MODEL", "llama-3.3-70b-versatile")
+
+    def _create_chat_completion(self, messages, max_tokens=1024, temperature=0.2, response_format=None):
+        try:
+            return self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                response_format=response_format
+            )
+        except Exception as e:
+            if self.fallback_model:
+                print(f"⚠️ [RECIPE AGENT FALLBACK] Main model {self.model} failed: {e}. Falling back to {self.fallback_model}...")
+                return self.client.chat.completions.create(
+                    model=self.fallback_model,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    response_format=response_format
+                )
+            else:
+                raise e
 
     async def generate(self, dish_query: str, servings: int) -> Dict[str, Any]:
         """
@@ -59,8 +82,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
             {"role": "user", "content": prompt}
         ]
 
-        response = self.client.chat.completions.create(
-            model=self.model,
+        response = self._create_chat_completion(
             messages=messages,
             max_tokens=1024,
             temperature=0.2,
@@ -189,8 +211,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
         }}
         """
 
-        completion = self.client.chat.completions.create(
-            model=self.model,
+        completion = self._create_chat_completion(
             messages=[
                 {
                     "role": "system",
@@ -272,8 +293,7 @@ Return ONLY valid JSON in this exact format (no markdown strings, no code fences
             {"role": "user", "content": prompt}
         ]
 
-        response = self.client.chat.completions.create(
-            model=self.model,
+        response = self._create_chat_completion(
             messages=messages,
             max_tokens=1536,
             temperature=0.2,
