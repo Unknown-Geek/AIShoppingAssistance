@@ -62,10 +62,11 @@ class ProductGridCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Image Area
-          Expanded(
-            child: Stack(
-              children: [
-                Container(
+          Stack(
+            children: [
+              AspectRatio(
+                aspectRatio: 1.15,
+                child: Container(
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: Color(0xFFF8FAFC),
@@ -100,89 +101,91 @@ class ProductGridCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Category Label Overlay
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+              ),
+              // Category Label Overlay
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badgeBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: badgeText.withValues(alpha: 0.15),
+                      width: 0.5,
                     ),
-                    decoration: BoxDecoration(
-                      color: badgeBg,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: badgeText.withValues(alpha: 0.15),
-                        width: 0.5,
-                      ),
-                    ),
-                    child: Text(
-                      category.toUpperCase(),
-                      style: TextStyle(
-                        fontFamily: theme.textTheme.labelSmall?.fontFamily,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w800,
-                        color: badgeText,
-                        letterSpacing: 0.6,
-                      ),
+                  ),
+                  child: Text(
+                    category.toUpperCase(),
+                    style: TextStyle(
+                      fontFamily: theme.textTheme.labelSmall?.fontFamily,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w800,
+                      color: badgeText,
+                      letterSpacing: 0.6,
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           // Product Info Section
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.primary,
-                    height: 1.3,
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: theme.colorScheme.primary,
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      '₹${price.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontFamily: theme.textTheme.titleMedium?.fontFamily,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: onAddToCart,
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        '₹${price.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontFamily: theme.textTheme.titleMedium?.fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
                           color: theme.colorScheme.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: 12,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      GestureDetector(
+                        onTap: onAddToCart,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.add,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
