@@ -58,7 +58,29 @@ class RecipeAgent:
   quantity: "1 cup"
   quantity: "2 tablespoons"
   quantity: "3 cloves"
+### CRITICAL INGREDIENT ISOLATION RULES:
 
+1. Every ingredient must be a single USDA-searchable ingredient.
+2. Never group multiple ingredients into one ingredient.
+3. Never use parentheses in ingredient names.
+4. Never include preparation details in ingredient names.
+
+BAD:
+- Vegetables (carrots, peas, cauliflower)
+- Spices (cumin, coriander, turmeric)
+- Rice (washed and soaked)
+- Onion (thinly sliced)
+
+GOOD:
+- Mixed Vegetables
+- Spices
+- Rice
+- Onion
+- Garlic
+- Ginger
+
+Ingredient names must be simple, singular, USDA-searchable names.
+Preparation details belong in recipe instructions, not ingredient names.
 
 Return ONLY valid JSON in this exact format (no markdown strings, no code fences):
 {{
@@ -259,8 +281,54 @@ Available Store Inventory Catalog (SKUs and Names):
    - "Flour" or any pizza ingredient -> "Quaker Oats" (oats are NOT a pizza ingredient)
    - "Cheese" or "Dough" -> "Oats" or "Cereal" (breakfast items are NOT pizza/bread ingredients)
 3. Only match when the product IS the ingredient (e.g. "Oil" -> "Gold Winner Refined Sunflower Oil" or "Idhayam Mantra Groundnut Oil", "Milk" -> "Amul Gold Standardised Milk", "Ginger" or "Garlic" -> "Aachi Ginger Garlic Paste").
-4. If no truly matching product exists in the catalog, you MUST return "sku": "UNKNOWN", "price_rupees": 0, "name": the ingredient name, and "slug": the ingredient name as a lowercase-slug. For UNKNOWN items, look at the catalog and provide up to 3 possible close substitutes that are available in our catalog under the "substitutes" key. If no substitutes are reasonable, return an empty list.
+4. If no truly matching product exists in the catalog, you MUST return "sku": "UNKNOWN", "price_rupees": 0, "name": the ingredient name, and "slug": the ingredient name as a lowercase-slug.
 
+For UNKNOWN items, only provide substitutes if they are the same type of cooking ingredient.
+
+Examples:
+- Oil -> another oil product
+- Milk -> another milk product
+- Ginger Garlic Paste -> another cooking paste
+- Rice -> another rice product
+
+Never suggest cereals, chocolates, chips, sweets, beverages, breakfast foods, baby foods, or instant noodles as substitutes for vegetables, rice, spices, meat, dairy, flour, dough, or cooking ingredients.
+
+If no closely related cooking ingredient exists in the catalog, return an empty list for "substitutes".
+### CRITICAL INGREDIENT ISOLATION RULES:
+
+- Every ingredient must be a single USDA-searchable ingredient.
+- Never group multiple ingredients into one ingredient.
+- Never use parentheses in ingredient names.
+- Never include preparation details in ingredient names.
+
+BAD:
+- Vegetables (carrots, peas, cauliflower)
+- Spices (cumin, coriander, turmeric)
+- Rice (washed and soaked)
+- Onion (thinly sliced)
+
+GOOD:
+- Mixed Vegetables
+- Spices
+- Rice
+- Onion
+- Garlic
+- Ginger
+
+Ingredient names must be simple USDA-searchable names.
+Preparation details belong in recipe instructions, not ingredient names.
+
+IMPORTANT:
+- quantity must be a NUMBER only.
+- Never include units inside quantity.
+
+Correct:
+quantity: 2, unit: "cups"
+quantity: 1, unit: "teaspoon"
+
+Incorrect:
+quantity: "2 cups"
+quantity: "1 teaspoon"
 Return ONLY valid JSON in this exact format (no markdown strings, no code fences):
 {{
   "dish": "{dish_query}",
@@ -269,7 +337,7 @@ Return ONLY valid JSON in this exact format (no markdown strings, no code fences
   "ingredients": [
     {{
       "name": "Ingredient Name",
-      "quantity": "amount",
+      "quantity": 1,
       "unit": "unit",
       "sku": "SKU_CODE_IF_MATCHED_OR_UNKNOWN",
       "slug": "product-slug",

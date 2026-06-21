@@ -68,6 +68,7 @@ class NutritionService:
                         "query": ingredient_name,
                         "pageSize": 10,
                         "api_key": self.api_key,
+                        "dataType": "SR Legacy,Foundation",
                     },
                 )
 
@@ -96,7 +97,12 @@ class NutritionService:
                 }
 
                 return {
-                    "calories": nutrients.get("Energy", 0),
+                    "calories": (
+                        nutrients.get("Energy")
+                        or nutrients.get("Energy (Atwater General Factors)")
+                        or nutrients.get("Energy (Atwater Specific Factors)")
+                        or 0
+                    ),
                     "protein": nutrients.get("Protein", 0),
                     "carbs": nutrients.get("Carbohydrate, by difference", 0),
                     "fat": nutrients.get("Total lipid (fat)", 0),
