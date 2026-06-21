@@ -65,7 +65,7 @@ class InventoryFilterBar extends StatelessWidget {
                         minHeight: 24,
                       ),
                       prefixIcon: Padding(
-                        padding: const EdgeInsets.only(left: 16.0, right: 8.0),
+                        padding: const EdgeInsets.only(left: 16.0, right: 4.0),
                         child: Icon(
                           Icons.search_rounded,
                           color: theme.colorScheme.primary.withValues(alpha: 0.6),

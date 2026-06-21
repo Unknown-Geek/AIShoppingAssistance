@@ -133,7 +133,7 @@ class ProductGridCard extends StatelessWidget {
                 Text(
                   name,
                   style: TextStyle(
-                    fontFamily: theme.textTheme.titleMedium?.fontFamily,
+                    fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: theme.colorScheme.primary,
