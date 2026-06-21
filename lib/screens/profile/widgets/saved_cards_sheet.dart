@@ -175,14 +175,14 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
                       color: const Color(0xFF001A23),
                     ),
                   ),
-                  if (!showAddForm)
+                  if (!showAddForm && cards.isNotEmpty)
                     IconButton(
-                      icon: Icon(Icons.add_circle_outline_rounded, color: theme.colorScheme.primary, size: 28),
+                      icon: Icon(Icons.add_circle_outline_rounded, color: theme.colorScheme.primary, size: 22),
                       onPressed: () {
                         setState(() => showAddForm = true);
                       },
                     )
-                  else
+                  else if (showAddForm)
                     IconButton(
                       icon: const Icon(Icons.close_rounded, color: Colors.grey, size: 24),
                       onPressed: () {
