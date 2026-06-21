@@ -8,6 +8,7 @@ class ChatInputField extends StatelessWidget {
   final XFile? selectedImage;
   final ValueChanged<XFile?> onImageSelected;
   final VoidCallback onClearImage;
+  final FocusNode? focusNode;
 
   const ChatInputField({
     super.key,
@@ -17,6 +18,7 @@ class ChatInputField extends StatelessWidget {
     required this.selectedImage,
     required this.onImageSelected,
     required this.onClearImage,
+    this.focusNode,
   });
 
   @override
@@ -148,6 +150,7 @@ class ChatInputField extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: TextField(
                       controller: controller,
+                      focusNode: focusNode,
                       onSubmitted: loading ? null : (_) => onSend(),
                       maxLines: null,
                       minLines: 1,

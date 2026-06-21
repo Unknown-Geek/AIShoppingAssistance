@@ -27,6 +27,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   XFile? _selectedImage;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _chatFocusNode = FocusNode();
 
   bool _loading = false;
   final List<ChatMessage> _messages = [];
@@ -55,6 +56,18 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   void initState() {
     super.initState();
+    _chatFocusNode.addListener(() {
+      if (_chatFocusNode.hasFocus) {
+        _scrollToBottom();
+        for (int ms in [100, 200, 300, 400, 500]) {
+          Future.delayed(Duration(milliseconds: ms), () {
+            if (mounted && _chatFocusNode.hasFocus) {
+              _scrollToBottom();
+            }
+          });
+        }
+      }
+    });
     _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
     _loadChatHistory();
     _scrollController.addListener(_onScroll);
@@ -589,6 +602,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     _routeAnimation?.removeStatusListener(_handleRouteStatus);
     _controller.dispose();
     _scrollController.dispose();
+    _chatFocusNode.dispose();
     super.dispose();
   }
 
@@ -897,6 +911,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       _selectedImage = null;
                     });
                   },
+                  focusNode: _chatFocusNode,
                 ),
               ],
             ),
