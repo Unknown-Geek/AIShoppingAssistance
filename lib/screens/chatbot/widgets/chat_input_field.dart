@@ -10,6 +10,7 @@ class ChatInputField extends StatelessWidget {
   final XFile? selectedImage;
   final ValueChanged<XFile?> onImageSelected;
   final VoidCallback onClearImage;
+  final bool showScrollDownButton;
 
   const ChatInputField({
     super.key,
@@ -19,6 +20,7 @@ class ChatInputField extends StatelessWidget {
     required this.selectedImage,
     required this.onImageSelected,
     required this.onClearImage,
+    required this.showScrollDownButton,
   });
 
   @override
@@ -189,8 +191,15 @@ class ChatInputField extends StatelessWidget {
                   ],
                 ),
               ),
-              Positioned(
-                top: topGap - 24,
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                top: topGap / 2 - 18,
+                left: showScrollDownButton
+                    ? 32.0
+                    : (MediaQuery.of(context).size.width - 64.0) / 2,
+                width: 64,
+                height: 36,
                 child: ListenableBuilder(
                   listenable: CartService(),
                   builder: (context, child) {

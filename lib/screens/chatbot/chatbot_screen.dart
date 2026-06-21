@@ -978,6 +978,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   loading: _loading,
                   onSend: _sendMessage,
                   selectedImage: _selectedImage,
+                  showScrollDownButton: _showScrollDownButton,
                   onImageSelected: (image) {
                     setState(() {
                       _selectedImage = image;
