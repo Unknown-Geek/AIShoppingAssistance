@@ -179,7 +179,7 @@ class ChatAgentService {
           details: 'SKU: ${item['sku'] ?? 'UNKNOWN'} • Price: ₹${(item['price_rupees'] ?? 0.0).toStringAsFixed(2)}',
           imageUrl: item['thumbnail_url'] ?? '',
           price: (item['price_rupees'] as num?)?.toDouble() ?? 0.0,
-          quantity: 1,
+          quantity: (item['quantity'] as num?)?.toInt() ?? 1,
         );
         cartService.addItem(missingItem);
       }

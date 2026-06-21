@@ -37,6 +37,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
 
         if (sku != 'UNKNOWN') {
           addedItems.add(name);
+          final int quantity = (item['quantity'] as num?)?.toInt() ?? 1;
           CartService().addItem(
             CartItemModel(
               id: sku,
@@ -44,7 +45,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
               details: 'Recipe Ingredient: $reqQty',
               imageUrl: thumbnail,
               price: price,
-              quantity: 1,
+              quantity: quantity,
             ),
           );
         } else {
