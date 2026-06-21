@@ -282,7 +282,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 leading: const CircleAvatar(
                   backgroundColor: Color(0xFFE8F1F2),
                   child: Icon(
-                    Icons.badge_outlined,
+                    Icons.badge_rounded,
                     color: Color(0xFF001A23),
                   ),
                 ),
@@ -308,7 +308,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 leading: const CircleAvatar(
                   backgroundColor: Color(0xFFE8F1F2),
                   child: Icon(
-                    Icons.photo_camera_outlined,
+                    Icons.camera_alt_rounded,
                     color: Color(0xFF001A23),
                   ),
                 ),
