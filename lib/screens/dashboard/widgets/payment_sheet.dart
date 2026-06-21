@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../config/config.dart';
 import '../../../services/payment_service.dart';
+import '../../../services/payment_notification_service.dart';
+import '../../../services/notification_storage_service.dart';
 
 class PaymentSheet extends StatefulWidget {
   final double amount;
@@ -142,6 +144,17 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
       if (!mounted) return;
 
       if (result.success) {
+        NotificationStorageService.saveNotification(
+          success: true,
+          message: result.message,
+          transactionId: result.transactionId,
+        );
+        PaymentNotificationService.show(
+          context,
+          success: true,
+          message: result.message,
+          transactionId: result.transactionId,
+        );
         setState(() {
           _isProcessing = false;
           _isSuccess = true;
@@ -156,6 +169,16 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           }
         });
       } else {
+        NotificationStorageService.saveNotification(
+          success: false,
+          message: result.message,
+          transactionId: '',
+        );
+        PaymentNotificationService.show(
+          context,
+          success: false,
+          message: result.message,
+        );
         setState(() {
           _isProcessing = false;
           _isError = true;
@@ -164,11 +187,22 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
         });
       }
     } catch (e) {
+      final String errMsg = e is UnsupportedError ? (e.message ?? 'Unsupported platform error.') : 'SDK Error: $e';
+      NotificationStorageService.saveNotification(
+        success: false,
+        message: errMsg,
+        transactionId: '',
+      );
+      PaymentNotificationService.show(
+        context,
+        success: false,
+        message: errMsg,
+      );
       if (mounted) {
         setState(() {
           _isProcessing = false;
           _isError = true;
-          _errorMessage = e is UnsupportedError ? e.message : 'SDK Error: $e';
+          _errorMessage = errMsg;
           _statusMessage = 'Cannot Launch SDK';
         });
       }
@@ -222,6 +256,17 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
       if (!mounted) return;
 
       if (result.success) {
+        NotificationStorageService.saveNotification(
+          success: true,
+          message: result.message,
+          transactionId: result.transactionId,
+        );
+        PaymentNotificationService.show(
+          context,
+          success: true,
+          message: result.message,
+          transactionId: result.transactionId,
+        );
         setState(() {
           _isProcessing = false;
           _isSuccess = true;
@@ -236,6 +281,16 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           }
         });
       } else {
+        NotificationStorageService.saveNotification(
+          success: false,
+          message: result.message,
+          transactionId: '',
+        );
+        PaymentNotificationService.show(
+          context,
+          success: false,
+          message: result.message,
+        );
         setState(() {
           _isProcessing = false;
           _isError = true;
@@ -244,11 +299,22 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
         });
       }
     } catch (e) {
+      final String errMsg = 'Simulation failed: $e';
+      NotificationStorageService.saveNotification(
+        success: false,
+        message: errMsg,
+        transactionId: '',
+      );
+      PaymentNotificationService.show(
+        context,
+        success: false,
+        message: errMsg,
+      );
       if (mounted) {
         setState(() {
           _isProcessing = false;
           _isError = true;
-          _errorMessage = 'Simulation failed: $e';
+          _errorMessage = errMsg;
           _statusMessage = 'Simulation Error';
         });
       }
