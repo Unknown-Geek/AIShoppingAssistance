@@ -10,8 +10,12 @@ import '../../models/cart_item_model.dart';
 import 'widgets/message_bubble.dart';
 import 'widgets/chat_input_field.dart';
 import 'widgets/history_drawer.dart';
-import 'widgets/animated_orb.dart';
 import 'widgets/chat_cart_sheet.dart';
+import 'widgets/chat_header_pill.dart';
+import 'widgets/welcome_card.dart';
+import 'widgets/suggestion_pill.dart';
+import 'widgets/fade_content.dart';
+import 'widgets/gradual_blur.dart';
 import '../../services/chat_agent_service.dart';
 import '../../services/cart_service.dart';
 
@@ -29,11 +33,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _chatFocusNode = FocusNode();
 
-  bool _loading = false;
-  final List<ChatMessage> _messages = [];
-  final List<ChatSession> _chatHistory = [];
-  String _currentChatTitle = 'New Chat';
-  String? _currentChatSessionId;
+  static bool _loading = false;
+  static final List<ChatMessage> _messages = [];
+  static final List<ChatSession> _chatHistory = [];
+  static String _currentChatTitle = 'New Chat';
+  static String? _currentChatSessionId;
+  static bool _isInitialized = false;
+  static final ValueNotifier<int> _updateNotifier = ValueNotifier(0);
 
   bool _showScrollDownButton = false;
   Animation<double>? _routeAnimation;
@@ -68,9 +74,19 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         }
       }
     });
-    _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
-    _loadChatHistory();
+    _updateNotifier.addListener(_onGlobalUpdate);
+    if (!_isInitialized) {
+      _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
+      _loadChatHistory();
+      _isInitialized = true;
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    }
     _scrollController.addListener(_onScroll);
+  }
+
+  void _onGlobalUpdate() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -253,7 +269,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         ? (_messages.first.text ?? 'New Chat')
         : _currentChatTitle;
 
-    setState(() {
+    void updateState() {
       if (_currentChatSessionId != null) {
         final index = _chatHistory.indexWhere((chat) => chat.id == _currentChatSessionId);
         final updatedSession = ChatSession(
@@ -282,7 +298,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       _currentChatTitle = title;
       // Sort history to keep newest on top
       _chatHistory.sort((a, b) => b.lastActive.compareTo(a.lastActive));
-    });
+    }
+
+    updateState();
+    _updateNotifier.value++;
 
     _saveChatHistory();
   }
@@ -426,25 +445,31 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         );
       }
 
-      setState(() {
+      if (mounted) {
+        setState(() {
+          _messages.add(assistantMessage);
+        });
+      } else {
         _messages.add(assistantMessage);
-      });
+      }
       _saveCurrentChat();
     } catch (e) {
       debugPrint('[ChatbotScreen] Send message error: $e');
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            isUser: false,
-            text: 'Unable to connect to assistant service.',
-          ),
-        );
-      });
+      final errorMsg = ChatMessage(
+        isUser: false,
+        text: 'Unable to connect to assistant service.',
+      );
+      if (mounted) {
+        setState(() {
+          _messages.add(errorMsg);
+        });
+      } else {
+        _messages.add(errorMsg);
+      }
       _saveCurrentChat();
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      _loading = false;
+      _updateNotifier.value++;
       _scrollToBottom();
     }
   }
@@ -492,28 +517,35 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         finalMessage += "\n\nNo missing regular items detected in your cart. You are all set!";
       }
 
-      setState(() {
-        _messages.add(ChatMessage(
-          isUser: false,
-          text: finalMessage,
-        ));
-      });
+      final successMsg = ChatMessage(
+        isUser: false,
+        text: finalMessage,
+      );
+      if (mounted) {
+        setState(() {
+          _messages.add(successMsg);
+        });
+      } else {
+        _messages.add(successMsg);
+      }
       _saveCurrentChat();
     } catch (e) {
       debugPrint('[ChatbotScreen] Cart analysis error: $e');
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            isUser: false,
-            text: 'Unable to perform cart analysis. Please try again later.',
-          ),
-        );
-      });
+      final errorMsg = ChatMessage(
+        isUser: false,
+        text: 'Unable to perform cart analysis. Please try again later.',
+      );
+      if (mounted) {
+        setState(() {
+          _messages.add(errorMsg);
+        });
+      } else {
+        _messages.add(errorMsg);
+      }
       _saveCurrentChat();
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      _loading = false;
+      _updateNotifier.value++;
       _scrollToBottom();
     }
   }
@@ -598,6 +630,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   @override
   void dispose() {
+    _updateNotifier.removeListener(_onGlobalUpdate);
     _scrollController.removeListener(_onScroll);
     _routeAnimation?.removeStatusListener(_handleRouteStatus);
     _controller.dispose();
@@ -922,577 +955,3 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     );
   }
 }
-
-class ChatHeaderPill extends StatelessWidget {
-  final VoidCallback onBackTap;
-  final VoidCallback onHistoryTap;
-
-  const ChatHeaderPill({
-    super.key,
-    required this.onBackTap,
-    required this.onHistoryTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      height: 64,
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Left action: Back
-          Align(
-            alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: onBackTap,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  border: Border.all(
-                    color: const Color(0xFFD2E4E6),
-                    width: 1.2,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.arrow_back_rounded,
-                    color: theme.colorScheme.primary,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Center Title
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 56),
-            child: Text(
-              'Qless Assistant',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: theme.textTheme.titleLarge?.fontFamily,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ),
-          // Right action: History
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: onHistoryTap,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  border: Border.all(
-                    color: const Color(0xFFD2E4E6),
-                    width: 1.2,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.history_rounded,
-                    color: theme.colorScheme.primary,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class WelcomeCard extends StatefulWidget {
-  const WelcomeCard({super.key});
-
-  @override
-  State<WelcomeCard> createState() => _WelcomeCardState();
-}
-
-class _WelcomeCardState extends State<WelcomeCard> {
-  bool _startSecondSentence = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        gradient: LinearGradient(
-          colors: [
-            Colors.white,
-            theme.colorScheme.secondary.withValues(alpha: 0.08),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: BorderRadius.circular(36),
-        border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withValues(alpha: 0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const SizedBox(
-                width: 56,
-                height: 56,
-                child: ClipOval(child: AnimatedOrb(size: 64)),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TypewriterText(
-                      text: 'Hi there!',
-                      style: TextStyle(
-                        fontFamily: theme.textTheme.titleLarge?.fontFamily,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                      ),
-                      onComplete: () {
-                        setState(() {
-                          _startSecondSentence = true;
-                        });
-                      },
-                    ),
-                    TypewriterText(
-                      text: "I'm your Qless Assistant.",
-                      startTyping: _startSecondSentence,
-                      style: TextStyle(
-                        fontFamily: theme.textTheme.titleLarge?.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Ask me questions, get item suggestions, update your cart, or find recipe ideas!',
-            style: TextStyle(
-              fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: theme.colorScheme.primary.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class TypewriterText extends StatefulWidget {
-  final String text;
-  final TextStyle style;
-  final Duration typingSpeed;
-  final Duration initialDelay;
-  final bool showCursor;
-  final String cursorCharacter;
-  final VoidCallback? onComplete;
-  final bool startTyping;
-
-  const TypewriterText({
-    super.key,
-    required this.text,
-    required this.style,
-    this.typingSpeed = const Duration(milliseconds: 60),
-    this.initialDelay = Duration.zero,
-    this.showCursor = true,
-    this.cursorCharacter = '|',
-    this.onComplete,
-    this.startTyping = true,
-  });
-
-  @override
-  State<TypewriterText> createState() => _TypewriterTextState();
-}
-
-class _TypewriterTextState extends State<TypewriterText> {
-  String _displayedText = '';
-  int _currentCharIndex = 0;
-  Timer? _typingTimer;
-  Timer? _cursorTimer;
-  bool _cursorVisible = true;
-  bool _isDone = false;
-  bool _hasStarted = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.showCursor) {
-      _cursorTimer = Timer.periodic(const Duration(milliseconds: 400), (timer) {
-        if (mounted) {
-          setState(() {
-            _cursorVisible = !_cursorVisible;
-          });
-        }
-      });
-    }
-    
-    if (widget.startTyping) {
-      _triggerStart();
-    }
-  }
-
-  @override
-  void didUpdateWidget(TypewriterText oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.startTyping && !oldWidget.startTyping && !_hasStarted) {
-      _triggerStart();
-    }
-  }
-
-  void _triggerStart() {
-    _hasStarted = true;
-    if (widget.initialDelay > Duration.zero) {
-      Timer(widget.initialDelay, _startTyping);
-    } else {
-      _startTyping();
-    }
-  }
-
-  void _startTyping() {
-    if (!mounted) return;
-    _typingTimer = Timer.periodic(widget.typingSpeed, (timer) {
-      if (!mounted) return;
-      if (_currentCharIndex < widget.text.length) {
-        setState(() {
-          _displayedText += widget.text[_currentCharIndex];
-          _currentCharIndex++;
-        });
-      } else {
-        _typingTimer?.cancel();
-        setState(() {
-          _isDone = true;
-        });
-        _cursorTimer?.cancel();
-        if (widget.onComplete != null) {
-          widget.onComplete!();
-        }
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _typingTimer?.cancel();
-    _cursorTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_hasStarted && _displayedText.isEmpty) {
-      return RichText(
-        text: TextSpan(
-          text: widget.text,
-          style: widget.style.copyWith(color: Colors.transparent),
-        ),
-      );
-    }
-
-    final typedPart = widget.text.substring(0, _currentCharIndex);
-    final remainingPart = widget.text.substring(_currentCharIndex);
-
-    return RichText(
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: typedPart,
-            style: widget.style,
-          ),
-          if (widget.showCursor && !_isDone && _cursorVisible)
-            TextSpan(
-              text: widget.cursorCharacter,
-              style: widget.style.copyWith(
-                color: widget.style.color?.withValues(alpha: 0.8) ?? Colors.black54,
-              ),
-            ),
-          TextSpan(
-            text: remainingPart,
-            style: widget.style.copyWith(color: Colors.transparent),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class SuggestionPill extends StatefulWidget {
-  final String text;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const SuggestionPill({
-    super.key,
-    required this.text,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  State<SuggestionPill> createState() => _SuggestionPillState();
-}
-
-class _SuggestionPillState extends State<SuggestionPill> {
-  bool _isPressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _isPressed ? 0.98 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          height: 76,
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withValues(
-                  alpha: _isPressed ? 0.03 : 0.05,
-                ),
-                blurRadius: 16,
-                offset: _isPressed ? const Offset(0, 4) : const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: theme.colorScheme.secondary.withValues(alpha: 0.2),
-                ),
-                child: Icon(
-                  widget.icon,
-                  color: theme.colorScheme.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  widget.text,
-                  style: TextStyle(
-                    fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: theme.colorScheme.primary,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class FadeContent extends StatefulWidget {
-  final Widget child;
-  final bool blur;
-  final Duration duration;
-  final Duration delay;
-  final Curve curve;
-
-  const FadeContent({
-    super.key,
-    required this.child,
-    this.blur = true,
-    this.duration = const Duration(milliseconds: 1000),
-    this.delay = Duration.zero,
-    this.curve = Curves.easeOut,
-  });
-
-  @override
-  State<FadeContent> createState() => _FadeContentState();
-}
-
-class _FadeContentState extends State<FadeContent> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    );
-
-    if (widget.delay == Duration.zero) {
-      _controller.forward();
-    } else {
-      Future.delayed(widget.delay, () {
-        if (mounted) {
-          _controller.forward();
-        }
-      });
-    }
-  }
-
-  // didUpdateWidget is removed to ensure the fade/blur animation only plays once on mounting (switching chats or creating a new chat) and not when sending messages.
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, childWidget) {
-        final double opacity = _animation.value;
-        final double sigma = widget.blur ? (1.0 - _animation.value) * 10.0 : 0.0;
-
-        Widget current = Opacity(
-          opacity: opacity,
-          child: childWidget,
-        );
-
-        if (sigma > 0.1) {
-          current = ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma, tileMode: TileMode.decal),
-            child: current,
-          );
-        }
-
-        return current;
-      },
-      child: widget.child,
-    );
-  }
-}
-
-class GradualBlur extends StatelessWidget {
-  final double strength;
-  final int divCount;
-  final double height;
-  final Alignment begin;
-  final Alignment end;
-
-  const GradualBlur({
-    super.key,
-    this.strength = 15.0,
-    this.divCount = 5,
-    this.height = 40.0,
-    this.begin = Alignment.topCenter,
-    this.end = Alignment.bottomCenter,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: SizedBox(
-        height: height,
-        child: Stack(
-          children: List.generate(divCount, (index) {
-            final double progress = (index + 1) / divCount;
-            final double blurValue = progress * strength;
-            
-            final double start = index / divCount;
-            final double endVal = progress;
-
-            return Positioned.fill(
-              child: ShaderMask(
-                shaderCallback: (rect) {
-                  return LinearGradient(
-                    begin: begin,
-                    end: end,
-                    colors: const [
-                      Colors.transparent,
-                      Colors.black,
-                    ],
-                    stops: [
-                      start,
-                      endVal,
-                    ],
-                  ).createShader(rect);
-                },
-                blendMode: BlendMode.dstIn,
-                child: ClipRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: blurValue, sigmaY: blurValue),
-                    child: Container(
-                      color: Colors.transparent,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }),
-        ),
-      ),
-    );
-  }
-}
-
