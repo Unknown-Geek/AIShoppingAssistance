@@ -141,6 +141,8 @@ def clean_ingredient_name(name: Any, unit: Any) -> str:
 class ShoppingAssistantAgent:
     def __init__(self):
         api_key = os.getenv("GROQ_API_KEY")
+        if api_key:
+            api_key = api_key.replace("your_groq_api_key_here", "").strip()
         if not api_key:
             print("[WARNING] GROQ_API_KEY not detected in environment, using mock key to prevent startup crash")
             api_key = "gsk_mock_key_placeholder_for_verification_only"

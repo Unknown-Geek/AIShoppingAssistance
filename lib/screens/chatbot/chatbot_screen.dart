@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 
 import '../../models/chatbot_models.dart';
@@ -54,7 +56,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Animation<double>? _routeAnimation;
   bool _isTransitioning = true;
 
-  static const String _storageKey = 'chat_history_v2'; // Changed key to differentiate updated model storage
+  static String get _storageKey {
+    final email = Supabase.instance.client.auth.currentUser?.email ?? 'guest';
+    return 'chat_history_v2_$email';
+  }
 
   /// Static helper to load chat history into memory before widget initialization.
   static Future<void> preloadHistory() async {
@@ -209,9 +214,16 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       final prefs = await SharedPreferences.getInstance();
       var raw = prefs.getString(_storageKey);
       
-      // Fallback to old storage key if new storage key doesn't exist yet
+      // Fallback hierarchy for legacy or dynamic v1 chat history migration
       if (raw == null || raw.isEmpty) {
-        raw = prefs.getString('chat_history_v1');
+        final email = Supabase.instance.client.auth.currentUser?.email ?? 'guest';
+        raw = prefs.getString('chat_history_v1_$email');
+      }
+      if (raw == null || raw.isEmpty) {
+        raw = prefs.getString('chat_history_v2'); // Legacy global v2 fallback
+      }
+      if (raw == null || raw.isEmpty) {
+        raw = prefs.getString('chat_history_v1'); // Legacy global v1 fallback
       }
       
       if (raw == null || raw.isEmpty) return;
@@ -554,18 +566,36 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       _saveCurrentChat();
     } catch (e) {
       debugPrint('[ChatbotScreen] Send message error: $e');
-      final errorMsg = ChatMessage(
+      final rawDetails = e.toString().replaceAll('Exception: ', '');
+      String errorMsg = 'Unable to connect to assistant service.';
+      
+      final isCorsError = rawDetails.contains('XMLHttpRequest error') || rawDetails.contains('XMLHttpRequest');
+      
+      if (kIsWeb && isCorsError) {
+        errorMsg += '\n\n🌐 **Browser CORS Restriction Detected**\n'
+            'The browser blocked the request to the assistant server because of Cross-Origin Resource Sharing (CORS).\n\n'
+            '👉 **How to fix this on Windows:**\n'
+            '1. Close all active Google Chrome windows.\n'
+            '2. Open **PowerShell** and run this command to launch a Chrome instance with security disabled:\n'
+            '   ```powershell\n'
+            '   & "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --disable-web-security --user-data-dir="C:\\tmp\\chrome_dev"\n'
+            '   ```\n'
+            '3. Paste the app URL (e.g. `http://localhost:8080` or `http://127.0.0.1:8080`) into that new Chrome window.';
+      } else {
+        errorMsg += '\nDetails: $rawDetails';
+      }
+      
+      final chatMessage = ChatMessage(
         isUser: false,
-        text: 'Unable to connect to assistant service.',
+        text: errorMsg,
       );
       if (mounted) {
         setState(() {
-          _messages.add(errorMsg);
+          _messages.add(chatMessage);
         });
       } else {
-        _messages.add(errorMsg);
+        _messages.add(chatMessage);
       }
-      _saveCurrentChat();
     } finally {
       _loading = false;
       _updateNotifier.value++;

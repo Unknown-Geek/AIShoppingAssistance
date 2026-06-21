@@ -22,6 +22,8 @@ import 'widgets/bottom_nav_bar.dart';
 import 'widgets/checkout_bar.dart';
 import 'widgets/dashboard_sheets.dart';
 import '../profile/profile_page.dart';
+import 'notifications_page.dart';
+import '../../services/notification_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/web_blur_helper_stub.dart'
     if (dart.library.js_interop) '../../utils/web_blur_helper_web.dart';
@@ -42,6 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   late AnimationController _cursorController;
   late AnimationController _cartExpandController;
   String? _profilePicBase64;
+  bool _hasNotifications = false;
 
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
@@ -84,6 +87,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     _refreshDbStatus();
     _startBackgroundScanning();
     _loadProfilePic();
+    _checkNotificationsStatus();
   }
 
   Future<void> _loadProfilePic() async {
@@ -824,6 +828,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         dbStatus: _dbStatus,
         onProfileTap: _showProfileSheet,
         onDbStatusTap: _checkDbStatus,
+        onNotificationsTap: _showNotificationsSheet,
+        hasNotifications: _hasNotifications,
       ),
       body: Stack(
         clipBehavior: Clip.none,
@@ -1317,7 +1323,6 @@ class _DashboardScreenState extends State<DashboardScreen>
             curve: Curves.fastOutSlowIn,
             reverseCurve: Curves.fastOutSlowIn.flipped,
           ));
-
           return SlideTransition(
             position: slideAnimation,
             child: Material(
@@ -1345,5 +1350,36 @@ class _DashboardScreenState extends State<DashboardScreen>
       _startBackgroundScanning();
       _loadProfilePic();
     });
+  }
+
+  Future<void> _checkNotificationsStatus() async {
+    final list = await NotificationStorageService.getNotifications();
+    if (mounted) {
+      setState(() {
+        _hasNotifications = list.isNotEmpty;
+      });
+    }
+  }
+
+  void _showNotificationsSheet() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, animation, __) => const NotificationsPage(),
+        transitionsBuilder: (_, animation, __, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0), // Slides in from right to left
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            )),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    ).then((_) => _checkNotificationsStatus());
   }
 }
