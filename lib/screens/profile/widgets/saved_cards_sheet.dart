@@ -90,10 +90,11 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('saved_payment_cards', jsonEncode(cards));
       if (mounted) {
+        final theme = Theme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Card added successfully!'),
-            backgroundColor: Color(0xFF006B70),
+          SnackBar(
+            content: const Text('Card added successfully!'),
+            backgroundColor: theme.colorScheme.primary,
             behavior: SnackBarBehavior.fixed,
           ),
         );
@@ -176,7 +177,7 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
                   ),
                   if (!showAddForm)
                     IconButton(
-                      icon: const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF006B70), size: 28),
+                      icon: Icon(Icons.add_circle_outline_rounded, color: theme.colorScheme.primary, size: 28),
                       onPressed: () {
                         setState(() => showAddForm = true);
                       },
@@ -234,8 +235,8 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
             icon: const Icon(Icons.add, size: 18),
             label: const Text('Add a Card', style: TextStyle(fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF006B70),
-              foregroundColor: Colors.white,
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
               shape: const StadiumBorder(),
             ),
           ),
@@ -458,10 +459,11 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
   }
 
   InputDecoration _inputDecoration(String label, IconData icon) {
+    final theme = Theme.of(context);
     return InputDecoration(
       labelText: label,
       labelStyle: const TextStyle(color: Colors.grey),
-      prefixIcon: Icon(icon, color: const Color(0xFF006B70), size: 20),
+      prefixIcon: Icon(icon, color: theme.colorScheme.primary.withValues(alpha: 0.6), size: 20),
       filled: true,
       fillColor: const Color(0xFFF3F4F6),
       border: OutlineInputBorder(
@@ -470,7 +472,7 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFF006B70), width: 1.5),
+        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
