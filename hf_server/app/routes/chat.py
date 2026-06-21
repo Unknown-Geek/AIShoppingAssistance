@@ -45,8 +45,16 @@ async def send_chat_message(payload: ChatRequest):
             current_cart=current_cart,
             image_base64=payload.image_base64
         )
-        
+
+        if result.get("llm_unavailable"):
+            raise HTTPException(
+                status_code=503,
+                detail="LLM rate limit exceeded. Please try again later."
+            )
+
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         print("\n=== CRITICAL API ROUTE ERROR TRACEBACK ===")
         traceback.print_exc()
