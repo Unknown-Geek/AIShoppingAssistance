@@ -11,6 +11,7 @@ import 'widgets/message_bubble.dart';
 import 'widgets/chat_input_field.dart';
 import 'widgets/history_drawer.dart';
 import 'widgets/animated_orb.dart';
+import 'widgets/chat_cart_sheet.dart';
 import '../../services/chat_agent_service.dart';
 import '../../services/cart_service.dart';
 
@@ -656,7 +657,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               children: [
                 // Floating Header Pill
                 ChatHeaderPill(
-                  onHomeTap: () {
+                  onBackTap: () {
                     Navigator.of(context).pop();
                   },
                   onHistoryTap: () {
@@ -819,6 +820,64 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                             ),
                           ),
                         ),
+                      Positioned(
+                        left: 16,
+                        bottom: 16,
+                        child: ListenableBuilder(
+                          listenable: CartService(),
+                          builder: (context, child) {
+                            final count = CartService().itemCount;
+                            return GestureDetector(
+                              onTap: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (ctx) => const ChatCartSheet(),
+                                );
+                              },
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color(0xFFD2E4E6),
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.08),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Badge(
+                                    label: Text(
+                                      '$count',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    isLabelVisible: count > 0,
+                                    backgroundColor: theme.colorScheme.secondary,
+                                    textColor: theme.colorScheme.primary,
+                                    child: Icon(
+                                      Icons.shopping_cart_outlined,
+                                      color: theme.colorScheme.primary,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -848,12 +907,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 }
 
 class ChatHeaderPill extends StatelessWidget {
-  final VoidCallback onHomeTap;
+  final VoidCallback onBackTap;
   final VoidCallback onHistoryTap;
 
   const ChatHeaderPill({
     super.key,
-    required this.onHomeTap,
+    required this.onBackTap,
     required this.onHistoryTap,
   });
 
@@ -879,11 +938,11 @@ class ChatHeaderPill extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Left action: History
+          // Left action: Back
           Align(
             alignment: Alignment.centerLeft,
             child: GestureDetector(
-              onTap: onHistoryTap,
+              onTap: onBackTap,
               child: Container(
                 width: 44,
                 height: 44,
@@ -897,7 +956,7 @@ class ChatHeaderPill extends StatelessWidget {
                 ),
                 child: Center(
                   child: Icon(
-                    Icons.history_rounded,
+                    Icons.arrow_back_rounded,
                     color: theme.colorScheme.primary,
                     size: 20,
                   ),
@@ -920,11 +979,11 @@ class ChatHeaderPill extends StatelessWidget {
               ),
             ),
           ),
-          // Right action: Home
+          // Right action: History
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
-              onTap: onHomeTap,
+              onTap: onHistoryTap,
               child: Container(
                 width: 44,
                 height: 44,
@@ -938,7 +997,7 @@ class ChatHeaderPill extends StatelessWidget {
                 ),
                 child: Center(
                   child: Icon(
-                    Icons.home_outlined,
+                    Icons.history_rounded,
                     color: theme.colorScheme.primary,
                     size: 20,
                   ),
