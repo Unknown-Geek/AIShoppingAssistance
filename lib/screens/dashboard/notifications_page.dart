@@ -71,6 +71,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         notifications = list;
         loading = false;
       });
+      await NotificationStorageService.markAllAsRead();
     }
   }
 

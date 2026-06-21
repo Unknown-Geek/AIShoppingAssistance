@@ -1356,7 +1356,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     final list = await NotificationStorageService.getNotifications();
     if (mounted) {
       setState(() {
-        _hasNotifications = list.isNotEmpty;
+        _hasNotifications = list.any((item) => !(item['read'] as bool? ?? false));
       });
     }
   }
