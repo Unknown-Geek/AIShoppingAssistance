@@ -778,16 +778,27 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     final theme = Theme.of(context);
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
     final bool isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final bool hasImage = _selectedImage != null;
+
+    final double topGap = hasImage
+        ? 60.0
+        : (isKeyboardOpen
+            ? 8.0
+            : (bottomPadding > 0 ? 24.0 : 16.0));
+    final double bottomGap = isKeyboardOpen
+        ? 8.0
+        : (bottomPadding > 0 ? bottomPadding : 16.0);
+
+    // Height from screen bottom to top of white input container
+    final double inputFieldHeight = topGap + 80.0 + bottomGap + MediaQuery.of(context).viewInsets.bottom;
 
     // Calculate the position of the scroll down button so it floats perfectly above the cart button
     final double scrollDownButtonBottom = isKeyboardOpen
         ? 150.0 + MediaQuery.of(context).viewInsets.bottom
         : 170.0 + (bottomPadding > 0 ? bottomPadding : 16.0);
 
-    // Calculate list view bottom padding to clear the floating input field and cart button
-    final double listBottomPadding = isKeyboardOpen
-        ? 160.0
-        : 200.0 + (bottomPadding > 0 ? bottomPadding : 16.0);
+    // Bottom padding for the list view to clear the cart button (and chips if image selected)
+    final double listBottomPadding = hasImage ? 96.0 : 56.0;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -856,7 +867,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 Expanded(
                   child: Stack(
                     children: [
-                      Positioned.fill(
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: inputFieldHeight,
                         child: FadeContent(
                           key: ValueKey(_currentChatSessionId ?? (_messages.isEmpty ? 'welcome' : 'new_chat')),
                           blur: false,
@@ -972,13 +987,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           end: Alignment.topCenter,
                         ),
                       ),
-                      const Positioned(
-                        bottom: 0,
+                      Positioned(
+                        bottom: inputFieldHeight,
                         left: 0,
                         right: 0,
-                        child: GradualBlur(
-                          height: 48.0,
-                          strength: 12,
+                        child: const GradualBlur(
+                          height: 40.0,
+                          strength: 8,
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                         ),
