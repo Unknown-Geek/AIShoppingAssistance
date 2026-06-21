@@ -8,11 +8,12 @@ class WebBlurHelper {
       final style = html.StyleElement()
         ..id = id
         ..text = '''
-          flt-platform-view {
-            transition: filter 0.3s ease-out;
+          flt-platform-view > * {
+            transition: filter 0.3s ease-out, transform 0.3s ease-out;
           }
-          body.dialog-blur-active flt-platform-view {
+          body.dialog-blur-active flt-platform-view > * {
             filter: blur(8px);
+            transform: scale(1.08);
           }
         ''';
       html.document.head?.append(style);
