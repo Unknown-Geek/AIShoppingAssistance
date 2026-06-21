@@ -129,9 +129,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.position.pixels;
-    final showButton = maxScroll - currentScroll > 200;
+    final showButton = currentScroll > 200;
     if (showButton != _showScrollDownButton) {
       setState(() {
         _showScrollDownButton = showButton;
@@ -653,7 +652,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          0.0,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
@@ -886,21 +885,28 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                 )
                               : ListView.builder(
                                   controller: _scrollController,
-                                  padding: const EdgeInsets.only(top: 12, bottom: 48),
+                                  reverse: true,
+                                  padding: const EdgeInsets.only(top: 12, bottom: 64),
                                   itemCount: _messages.length + (_loading ? 1 : 0),
                                   itemBuilder: (_, index) {
-                                    if (index == _messages.length) {
-                                      return Padding(
-                                        padding: const EdgeInsets.only(bottom: 8),
-                                        child: MessageBubble(
-                                          message: ChatMessage(
-                                            isUser: false,
-                                            text: null,
+                                    if (_loading) {
+                                      if (index == 0) {
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 8),
+                                          child: MessageBubble(
+                                            message: ChatMessage(
+                                              isUser: false,
+                                              text: null,
+                                            ),
                                           ),
-                                        ),
-                                      );
+                                        );
+                                      }
+                                      final msgIndex = _messages.length - index;
+                                      return MessageBubble(message: _messages[msgIndex]);
+                                    } else {
+                                      final msgIndex = _messages.length - 1 - index;
+                                      return MessageBubble(message: _messages[msgIndex]);
                                     }
-                                    return MessageBubble(message: _messages[index]);
                                   },
                                 ),
                         ),
