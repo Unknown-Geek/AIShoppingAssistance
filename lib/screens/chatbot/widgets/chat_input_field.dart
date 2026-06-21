@@ -190,7 +190,7 @@ class ChatInputField extends StatelessWidget {
                 ),
               ),
               Positioned(
-                top: topGap - 16,
+                top: topGap - 24,
                 child: ListenableBuilder(
                   listenable: CartService(),
                   builder: (context, child) {
@@ -205,11 +205,11 @@ class ChatInputField extends StatelessWidget {
                         );
                       },
                       child: Container(
-                        width: 56,
-                        height: 32,
+                        width: 64,
+                        height: 36,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(
                             color: const Color(0xFFD2E4E6),
                             width: 1.5,
@@ -227,7 +227,7 @@ class ChatInputField extends StatelessWidget {
                             label: Text(
                               '$count',
                               style: const TextStyle(
-                                fontSize: 9,
+                                fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -237,7 +237,7 @@ class ChatInputField extends StatelessWidget {
                             child: Icon(
                               Icons.shopping_cart_outlined,
                               color: Theme.of(context).colorScheme.primary,
-                              size: 16,
+                              size: 18,
                             ),
                           ),
                         ),
