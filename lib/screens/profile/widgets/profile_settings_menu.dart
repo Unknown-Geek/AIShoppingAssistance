@@ -84,23 +84,16 @@ class ProfileSettingsMenu extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Row(
             children: [
-              // Icon block
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: theme.colorScheme.primary.withValues(alpha: 0.05),
-                ),
-                child: Icon(
-                  icon,
-                  color: theme.colorScheme.primary,
-                  size: 20,
-                ),
+              // Icon block (no circle background)
+              Icon(
+                icon,
+                color: theme.colorScheme.primary,
+                size: 22,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               // Title text
               Expanded(
                 child: Text(
@@ -130,7 +123,7 @@ class ProfileSettingsMenu extends StatelessWidget {
     return const Divider(
       height: 1,
       thickness: 1,
-      indent: 68, // aligns perfectly with the start of the text now
+      indent: 58, // aligns perfectly with the start of the text now (20 padding + 22 icon + 16 spacing)
       endIndent: 20,
       color: Color(0xFFF3F4F6),
     );
