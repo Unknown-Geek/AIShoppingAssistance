@@ -40,7 +40,7 @@ class DashboardSheets {
                 child: Text(
                   initial,
                   style: TextStyle(
-                    fontFamily: 'ClashDisplay',
+                    fontFamily: theme.textTheme.titleLarge?.fontFamily,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
