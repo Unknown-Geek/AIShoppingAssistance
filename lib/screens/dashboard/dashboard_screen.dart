@@ -20,7 +20,7 @@ import 'widgets/camera_viewport.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'widgets/checkout_bar.dart';
 import 'widgets/dashboard_sheets.dart';
-import 'profile_page.dart';
+import '../profile/profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardScreen extends StatefulWidget {
