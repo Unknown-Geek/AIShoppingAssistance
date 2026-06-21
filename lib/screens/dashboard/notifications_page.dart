@@ -146,44 +146,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.primary.withValues(alpha: 0.04),
-                border: Border.all(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.06),
-                  width: 1.5,
-                ),
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.notifications_off_rounded,
-                  size: 32,
-                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                ),
-              ),
+            Icon(
+              Icons.notifications_off_rounded,
+              size: 64,
+              color: theme.colorScheme.primary.withValues(alpha: 0.2),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Text(
-              'No notifications yet',
+              'No notifications found',
               style: TextStyle(
-                fontFamily: theme.textTheme.titleLarge?.fontFamily,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'We will notify you when payment updates arrive',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                fontSize: 13,
+                fontFamily: 'ClashGrotesk',
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
               ),
             ),
           ],
