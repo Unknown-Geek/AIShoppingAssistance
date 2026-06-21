@@ -518,12 +518,15 @@ class ShoppingAssistantAgent:
         full_text = ""
         recipe_data = None
         mutations = None
+        llm_unavailable = False
         async for chunk_str in generator:
             if not chunk_str.strip():
                 continue
             try:
                 chunk = json.loads(chunk_str.strip())
-                if "text_chunk" in chunk:
+                if chunk.get("llm_unavailable"):
+                    llm_unavailable = True
+                elif "text_chunk" in chunk:
                     full_text += chunk["text_chunk"]
                 else:
                     if "recipe" in chunk:
@@ -545,7 +548,8 @@ class ShoppingAssistantAgent:
         return {
             "response_text": response_text,
             "recipe": recipe_data,
-            "cart_mutations": mutations
+            "cart_mutations": mutations,
+            "llm_unavailable": llm_unavailable
         }
 
     async def process_recipe_workflow_stream(
@@ -880,8 +884,16 @@ Available Store Catalog (SKUs and Names):
                                     tool_calls_dict[idx]["function"]["arguments"] += tc.function.arguments
             except Exception as e:
                 print(f"⚠️ [AGENT LLM FAULT] {e}")
+                # Detect rate-limit exhaustion — signal upstream so the route returns 503
+                # and the Flutter client falls over to the next backend URL.
+                is_rate_limited = hasattr(e, 'status_code') and e.status_code == 429
+                if not is_rate_limited:
+                    # Check string representation for 429 in case of wrapped exceptions
+                    is_rate_limited = '429' in str(e) and 'rate_limit_exceeded' in str(e)
                 if not content:
-                    if mutations:
+                    if is_rate_limited:
+                        yield json.dumps({"llm_unavailable": True}) + "\n"
+                    elif mutations:
                         details = []
                         for mut in mutations:
                             act = mut.get("action")

@@ -81,12 +81,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
     if (notifications.isEmpty) return;
 
     final backup = List<Map<String, dynamic>>.from(notifications);
+    // Capture context-dependent values before any async gap
+    final theme = Theme.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     await NotificationStorageService.clearNotifications();
 
-    final theme = Theme.of(context);
     if (mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(
           content: const Text('All notifications cleared'),
           action: SnackBarAction(
@@ -214,7 +217,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       opacity: animation,
       child: SizeTransition(
         sizeFactor: animation,
-        axisAlignment: 0.0,
+        alignment: 0.0,
         child: Padding(
           padding: const EdgeInsets.only(top: 0),
           child: itemWidget,
