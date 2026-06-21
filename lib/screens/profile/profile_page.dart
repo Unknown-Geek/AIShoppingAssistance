@@ -36,8 +36,15 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _displayName = widget.name;
-    _loadOrders();
-    _loadProfilePic();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Defer loading until after route transition completes (typically 300-350ms)
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (mounted) {
+          _loadOrders();
+          _loadProfilePic();
+        }
+      });
+    });
   }
 
   Future<void> _loadProfilePic() async {
