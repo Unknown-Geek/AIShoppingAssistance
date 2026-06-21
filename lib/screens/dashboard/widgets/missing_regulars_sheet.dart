@@ -8,10 +8,10 @@ class MissingRegularsSheet extends StatefulWidget {
   final VoidCallback onContinueToCheckout;
 
   const MissingRegularsSheet({
-    Key? key,
+    super.key,
     required this.missingItems,
     required this.onContinueToCheckout,
-  }) : super(key: key);
+  });
 
   @override
   State<MissingRegularsSheet> createState() => _MissingRegularsSheetState();
@@ -84,12 +84,12 @@ class _MissingRegularsSheetState extends State<MissingRegularsSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Based on your past orders, you usually buy these items.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: const Color(0xFF4A5568),
+              color: Color(0xFF4A5568),
             ),
           ),
           const SizedBox(height: 24),
