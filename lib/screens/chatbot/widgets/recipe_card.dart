@@ -257,7 +257,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                       borderRadius: BorderRadius.circular(26),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Got it!',
                     style: TextStyle(
                       fontFamily: theme.textTheme.labelLarge?.fontFamily,
