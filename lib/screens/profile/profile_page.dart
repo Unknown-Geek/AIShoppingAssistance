@@ -168,7 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   fontFamily: theme.textTheme.titleLarge?.fontFamily,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF001A23),
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -177,19 +177,19 @@ class _ProfilePageState extends State<ProfilePage> {
                   vertical: 8,
                   horizontal: 8,
                 ),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F1F2),
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.surfaceContainer,
                   child: Icon(
                     Icons.photo_library_rounded,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'Choose Image from Gallery',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 onTap: () {
@@ -203,19 +203,19 @@ class _ProfilePageState extends State<ProfilePage> {
                   vertical: 8,
                   horizontal: 8,
                 ),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F1F2),
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.surfaceContainer,
                   child: Icon(
                     Icons.camera_alt_rounded,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'Take Photo with Camera',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 onTap: () {
@@ -230,19 +230,19 @@ class _ProfilePageState extends State<ProfilePage> {
                     vertical: 8,
                     horizontal: 8,
                   ),
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFFFEBEE),
+                  leading: CircleAvatar(
+                    backgroundColor: theme.colorScheme.error.withValues(alpha: 0.1),
                     child: Icon(
                       Icons.delete_outline_rounded,
-                      color: Colors.redAccent,
+                      color: theme.colorScheme.error,
                     ),
                   ),
-                  title: const Text(
+                  title: Text(
                     'Remove Current Photo',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: Colors.redAccent,
+                      color: theme.colorScheme.error,
                     ),
                   ),
                   onTap: () {
@@ -290,7 +290,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   fontFamily: theme.textTheme.titleLarge?.fontFamily,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF001A23),
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -299,19 +299,19 @@ class _ProfilePageState extends State<ProfilePage> {
                   vertical: 8,
                   horizontal: 8,
                 ),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F1F2),
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.surfaceContainer,
                   child: Icon(
                     Icons.badge_rounded,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'Edit Display Name',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 onTap: () {
@@ -325,19 +325,19 @@ class _ProfilePageState extends State<ProfilePage> {
                   vertical: 8,
                   horizontal: 8,
                 ),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F1F2),
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.surfaceContainer,
                   child: Icon(
                     Icons.camera_alt_rounded,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'Change Profile Photo',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 onTap: () {
@@ -404,7 +404,7 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
+              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.5),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
@@ -425,7 +425,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       fontFamily: theme.textTheme.titleLarge?.fontFamily,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF001A23),
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -445,7 +445,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     enabled: !saving,
                     style: TextStyle(
                       fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                      color: const Color(0xFF001A23),
+                      color: theme.colorScheme.primary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -453,16 +453,16 @@ class _ProfilePageState extends State<ProfilePage> {
                       hintText: 'New Password',
                       hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
                       filled: true,
-                      fillColor: const Color(0xFFF9FAFB),
+                      fillColor: theme.colorScheme.surfaceContainer.withValues(alpha: 0.25),
                       prefixIcon: Icon(Icons.lock_outline_rounded, color: theme.colorScheme.primary, size: 20),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
+                        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
+                        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -483,7 +483,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     enabled: !saving,
                     style: TextStyle(
                       fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                      color: const Color(0xFF001A23),
+                      color: theme.colorScheme.primary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -491,16 +491,16 @@ class _ProfilePageState extends State<ProfilePage> {
                       hintText: 'Confirm Password',
                       hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
                       filled: true,
-                      fillColor: const Color(0xFFF9FAFB),
+                      fillColor: theme.colorScheme.surfaceContainer.withValues(alpha: 0.25),
                       prefixIcon: Icon(Icons.lock_outline_rounded, color: theme.colorScheme.primary, size: 20),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
+                        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
+                        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -525,12 +525,12 @@ class _ProfilePageState extends State<ProfilePage> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(24),
                             ),
-                            side: const BorderSide(color: Color(0xFFD2E4E6)),
+                            side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Cancel',
                             style: TextStyle(
-                              color: Color(0xFF4A5568),
+                              color: theme.colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                             ),
@@ -631,7 +631,7 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
+              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.5),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
@@ -650,7 +650,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     fontFamily: theme.textTheme.titleLarge?.fontFamily,
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -670,7 +670,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   enabled: !saving,
                   style: TextStyle(
                     fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                    color: const Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
@@ -678,16 +678,16 @@ class _ProfilePageState extends State<ProfilePage> {
                     hintText: 'Enter your name',
                     hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
                     filled: true,
-                    fillColor: const Color(0xFFF9FAFB),
+                    fillColor: theme.colorScheme.surfaceContainer.withValues(alpha: 0.25),
                     prefixIcon: Icon(Icons.person_outline_rounded, color: theme.colorScheme.primary, size: 20),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
+                      borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
+                      borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -706,12 +706,12 @@ class _ProfilePageState extends State<ProfilePage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                           ),
-                          side: const BorderSide(color: Color(0xFFD2E4E6)),
+                          side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Cancel',
                           style: TextStyle(
-                            color: Color(0xFF4A5568),
+                            color: theme.colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
@@ -895,7 +895,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       icon: const Icon(Icons.logout_rounded, size: 18),
                       label: const Text('Logout'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFEF4444),
+                        backgroundColor: theme.colorScheme.error,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: const StadiumBorder(),
