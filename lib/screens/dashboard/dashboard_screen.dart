@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -22,6 +23,8 @@ import 'widgets/checkout_bar.dart';
 import 'widgets/dashboard_sheets.dart';
 import '../profile/profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../utils/web_blur_helper_stub.dart'
+    if (dart.library.js_interop) '../../utils/web_blur_helper_web.dart';
 
 class DashboardScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
@@ -64,6 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void initState() {
     super.initState();
+    WebBlurHelper.initialize();
     _lastActionTime = DateTime.now();
     WidgetsBinding.instance.addObserver(this);
     _cursorController = AnimationController(
@@ -256,6 +260,46 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
+  Future<T?> _showBlurredDialog<T>({
+    required BuildContext context,
+    required WidgetBuilder builder,
+    bool barrierDismissible = true,
+  }) async {
+    WebBlurHelper.setBlurActive(true);
+    try {
+      return await showGeneralDialog<T>(
+        context: context,
+        barrierDismissible: barrierDismissible,
+        barrierLabel: 'Dismiss Dialog',
+        barrierColor: Colors.black.withValues(alpha: 0.25),
+        transitionDuration: const Duration(milliseconds: 350),
+        pageBuilder: (ctx, anim1, anim2) => builder(ctx),
+        transitionBuilder: (ctx, anim1, anim2, child) {
+          final curve = CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic);
+          return AnimatedBuilder(
+            animation: curve,
+            builder: (context, childWidget) {
+              final sigma = curve.value * 6.0;
+              return BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+                child: FadeTransition(
+                  opacity: curve,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.92, end: 1.0).animate(curve),
+                    child: childWidget,
+                  ),
+                ),
+              );
+            },
+            child: child,
+          );
+        },
+      );
+    } finally {
+      WebBlurHelper.setBlurActive(false);
+    }
+  }
+
   Future<void> _checkoutCart() async {
     if (_cartService.isEmpty || _isCheckingOut) return;
 
@@ -301,7 +345,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     final double total = _cartService.totalPrice;
 
     // Show confirmation dialog
-    final bool? confirmed = await showDialog<bool>(
+    final bool? confirmed = await _showBlurredDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => Dialog(
@@ -360,7 +404,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(ctx).pop(false),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 11),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
@@ -371,6 +415,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         style: TextStyle(
                           color: Color(0xFF4A5568),
                           fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
                       ),
                     ),
@@ -381,7 +426,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       onPressed: () => Navigator.of(ctx).pop(true),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 11),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
@@ -392,6 +437,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
                       ),
                     ),
@@ -875,6 +921,18 @@ class _DashboardScreenState extends State<DashboardScreen>
                 _isDashboardActive = false;
                 _stopBackgroundScanning();
 
+                // Pre-emptively pause camera preview to prevent rendering load during transition
+                if (_cameraController != null && _cameraController!.value.isInitialized) {
+                  try {
+                    await _cameraController!.pausePreview();
+                    debugPrint("[DashboardScreen] Pre-emptively paused camera preview for Chat transition.");
+                  } catch (e) {
+                    debugPrint("Error pausing camera: $e");
+                  }
+                }
+
+                if (!context.mounted) return;
+
                 final route = PageRouteBuilder(
                   pageBuilder: (_, animation, __) => const ChatbotScreen(),
                   transitionsBuilder: (_, animation, secondaryAnimation, child) {
@@ -904,33 +962,18 @@ class _DashboardScreenState extends State<DashboardScreen>
 
                 final pushFuture = Navigator.push(context, route);
 
-                route.animation?.addStatusListener((status) async {
-                  if (status == AnimationStatus.completed) {
-                    if (_cameraController != null && _cameraController!.value.isInitialized) {
-                      try {
-                        await _cameraController!.pausePreview();
-                        debugPrint("[DashboardScreen] Paused camera preview.");
-                      } catch (e) {
-                        debugPrint("Error pausing camera: $e");
-                      }
-                    }
-                  } else if (status == AnimationStatus.reverse) {
-                    if (_cameraController != null && _cameraController!.value.isInitialized) {
-                      try {
-                        await _cameraController!.resumePreview();
-                        debugPrint("[DashboardScreen] Resumed camera preview.");
-                      } catch (e) {
-                        debugPrint("Error resuming camera: $e");
-                      }
-                    }
-                  }
-                });
-
                 await pushFuture;
 
                 _isDashboardActive = true;
                 if (_cameraController == null || !_cameraController!.value.isInitialized) {
                   await _initializeCamera();
+                } else {
+                  try {
+                    await _cameraController!.resumePreview();
+                    debugPrint("[DashboardScreen] Resumed camera preview after Chat pop.");
+                  } catch (e) {
+                    debugPrint("Error resuming camera: $e");
+                  }
                 }
                 _startBackgroundScanning();
               },
@@ -1237,6 +1280,21 @@ class _DashboardScreenState extends State<DashboardScreen>
     final name = user?.userMetadata?['name'] as String? ?? 'User';
     final email = user?.email ?? 'Guest';
 
+    _isDashboardActive = false;
+    _stopBackgroundScanning();
+
+    // Pre-emptively pause camera preview to prevent rendering load during transition
+    if (_cameraController != null && _cameraController!.value.isInitialized) {
+      try {
+        _cameraController!.pausePreview().catchError((e) {
+          debugPrint("Error pausing camera for Profile transition: $e");
+        });
+        debugPrint("[DashboardScreen] Pre-emptively paused camera preview for Profile transition.");
+      } catch (e) {
+        debugPrint("Error pausing camera: $e");
+      }
+    }
+
     Navigator.push(
       context,
       PageRouteBuilder(
@@ -1250,20 +1308,42 @@ class _DashboardScreenState extends State<DashboardScreen>
             }
           },
         ),
-        transitionsBuilder: (_, animation, __, child) {
+        transitionsBuilder: (_, animation, secondaryAnimation, child) {
+          final slideAnimation = Tween<Offset>(
+            begin: const Offset(-1.0, 0.0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.fastOutSlowIn,
+            reverseCurve: Curves.fastOutSlowIn.flipped,
+          ));
+
           return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(-1.0, 0.0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOut,
-            )),
-            child: child,
+            position: slideAnimation,
+            child: Material(
+              elevation: 16,
+              shadowColor: Colors.black38,
+              child: child,
+            ),
           );
         },
         transitionDuration: const Duration(milliseconds: 300),
+        reverseTransitionDuration: const Duration(milliseconds: 250),
       ),
-    ).then((_) => _loadProfilePic());
+    ).then((_) async {
+      _isDashboardActive = true;
+      if (_cameraController == null || !_cameraController!.value.isInitialized) {
+        await _initializeCamera();
+      } else {
+        try {
+          await _cameraController!.resumePreview();
+          debugPrint("[DashboardScreen] Resumed camera preview after Profile pop.");
+        } catch (e) {
+          debugPrint("Error resuming camera: $e");
+        }
+      }
+      _startBackgroundScanning();
+      _loadProfilePic();
+    });
   }
 }

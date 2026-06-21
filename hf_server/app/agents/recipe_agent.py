@@ -40,6 +40,45 @@ class RecipeAgent:
         )
         self.fallback_model = os.getenv("GROQ_FALLBACK_MODEL", "llama-3.3-70b-versatile")
 
+    def _clean_dish_name(self, query: str) -> str:
+        q = str(query).lower().strip()
+        
+        # Strip common punctuation
+        q = re.sub(r"[?.,!]", "", q)
+        
+        # Regex replacement patterns for common recipe request prefixes
+        prefixes = [
+            r"\bgive me the recipe for a\b",
+            r"\bgive me the recipe for an\b",
+            r"\bgive me the recipe for\b",
+            r"\bgive me a recipe for\b",
+            r"\brecipe for a\b",
+            r"\brecipe for an\b",
+            r"\brecipe for\b",
+            r"\bhow to make a\b",
+            r"\bhow to make an\b",
+            r"\bhow to make\b",
+            r"\bhow to cook a\b",
+            r"\bhow to cook an\b",
+            r"\bhow to cook\b",
+            r"\bhow do i make a\b",
+            r"\bhow do i make an\b",
+            r"\bhow do i make\b",
+            r"\bhow do i cook a\b",
+            r"\bhow do i cook an\b",
+            r"\bhow do i cook\b",
+            r"\bi want to make a\b",
+            r"\bi want to make an\b",
+            r"\bi want to make\b",
+            r"\bi want a recipe for\b",
+        ]
+        
+        for pattern in prefixes:
+            q = re.sub(pattern, "", q).strip()
+            
+        # Capitalize words to make it look premium
+        return q.title()
+
     def _create_chat_completion(self, messages, max_tokens=1024, temperature=0.2, response_format=None):
         try:
             return self.client.chat.completions.create(
@@ -67,7 +106,8 @@ class RecipeAgent:
         """
         Generates a detailed recipe using Groq forced output structures.
         """
-        prompt = f"""Generate a detailed recipe for {dish_query} for {servings} servings.
+        clean_dish = self._clean_dish_name(dish_query)
+        prompt = f"""Generate a detailed recipe for {clean_dish} for {servings} servings.
         IMPORTANT:
 - quantity must be a NUMBER only.
 - Never include units inside quantity.
@@ -105,7 +145,7 @@ Preparation details belong in recipe instructions, not ingredient names.
 
 Return ONLY valid JSON in this exact format (no markdown strings, no code fences):
 {{
-  "dish": "{dish_query}",
+  "dish": "{clean_dish}",
   "servings": {servings},
   "instructions": ["step 1", "step 2"],
   "ingredients": [
@@ -139,7 +179,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
         except json.JSONDecodeError:
             return {
                 "raw_response": content,
-                "dish": dish_query,
+                "dish": clean_dish,
                 "servings": servings,
                 "instructions": [],
                 "ingredients": []
@@ -283,9 +323,10 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
         """
         Generates a detailed recipe and matches its ingredients to the store catalog in a single LLM call.
         """
+        clean_dish = self._clean_dish_name(dish_query)
         food_catalog = [item for item in inventory_catalog if not self._is_non_food(item)]
 
-        prompt = f"""Generate a detailed recipe for {dish_query} for {servings} servings, and match the required ingredients to our store's inventory catalog.
+        prompt = f"""Generate a detailed recipe for {clean_dish} for {servings} servings, and match the required ingredients to our store's inventory catalog.
 
 Available Store Inventory Catalog (SKUs and Names):
 {json.dumps(food_catalog, indent=2)}
@@ -350,7 +391,7 @@ quantity: "2 cups"
 quantity: "1 teaspoon"
 Return ONLY valid JSON in this exact format (no markdown strings, no code fences):
 {{
-  "dish": "{dish_query}",
+  "dish": "{clean_dish}",
   "servings": {servings},
   "instructions": ["step 1", "step 2"],
   "ingredients": [
@@ -418,7 +459,7 @@ Return ONLY valid JSON in this exact format (no markdown strings, no code fences
             return result
         except json.JSONDecodeError:
             return {
-                "dish": dish_query,
+                "dish": clean_dish,
                 "servings": servings,
                 "instructions": [],
                 "ingredients": []

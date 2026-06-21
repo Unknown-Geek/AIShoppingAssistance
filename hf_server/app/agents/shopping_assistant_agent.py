@@ -586,7 +586,7 @@ class ShoppingAssistantAgent:
                 dish_query=dish_query,
                 servings=servings
             )
-            yield json.dumps({"text_chunk": f"Here's your recipe for {dish_query}! I've matched the ingredients to our store catalog. Check the recipe card below 🍽️"}) + "\n"
+            yield json.dumps({"text_chunk": f"Here's your recipe for {dish_query}! I've matched the ingredients to our store catalog. Check the recipe card below."}) + "\n"
             yield json.dumps({"cart_mutations": mutations if mutations else None, "recipe": recipe_data}) + "\n"
             return
 
@@ -752,7 +752,7 @@ Current Cart Items:
 5. **Displaying Cart and Cart Quantities**:
    - When asked to show, display, or list the cart, list each item on a new line in a clear, user-friendly bulleted list showing its name and quantity (e.g., "- Product Name: 2"). Do not list the SKU to keep the response clean. Do not call any tools to list the cart; rely strictly on the "Current Cart Items" list provided above.
    - **CRITICAL**: The "Current Cart Items" block represents the absolute, exact, and up-to-date state of the user's cart. Past chat history requests (e.g., "add 4 items") are already fully processed and reflected in "Current Cart Items". Do NOT sum, add, or accumulate quantities from the chat history with the "Current Cart Items". Do NOT assume the user has items that are not explicitly present in the "Current Cart Items" list.
-5b. **Cart Action Confirmations**: After successfully adding, removing, or clearing items from the cart via a tool call, respond with a short, friendly confirmation message ONLY about what you just did (e.g., "Done! I've added 5 Lays to your cart 🛒", "All clear! Your cart is now empty 🧹"). **NEVER list the full cart state or say 'Current Cart Items:' after an action** — this creates stale data in the chat history that causes confusion on future requests. Only list cart contents if the user explicitly asks "what's in my cart?" or "show my cart".
+5b. **Cart Action Confirmations**: After successfully adding, removing, or clearing items from the cart via a tool call, respond with a short, friendly confirmation message ONLY about what you just did (e.g., "Done! I've added 5 Lays to your cart", "All clear! Your cart is now empty"). **NEVER list the full cart state or say 'Current Cart Items:' after an action** — this creates stale data in the chat history that causes confusion on future requests. Only list cart contents if the user explicitly asks "what's in my cart?" or "show my cart".
 6. **Displaying Search Results / Products**: When listing products from inventory searches or queries:
    - Always display them as a clean bulleted list on new lines (rather than inline or in paragraphs) for better readability.
    - Show only the human-friendly product names.
@@ -763,6 +763,7 @@ Current Cart Items:
    - Instead, respond conversationally using products that are available in the 'Available Store Catalog' list below (e.g., for breakfast suggest "Nestle Ceregrow Multigrain Cereal", "Standardised Milk", "Organic Eggs", etc.).
    - Only call the `generate_and_match_recipe` tool when the user is explicitly requesting a recipe or cooking instructions for a specific dish.
 9. **Parallel Tool Calls for Multiple Items**: When the user asks to add, remove, or search for multiple items in a single message (e.g., "add Lays, Snickers, and KitKat"), you MUST issue ALL required tool calls **in a single response as parallel calls** — not one-by-one across multiple turns. This ensures all items are processed reliably.
+10. **NO EMOJIS**: Do NOT use emojis anywhere in your final responses. Keep your language clean, professional, and strictly without any emojis (like 🛒, 🧹, 🍽️, 🥣, etc.).
 
 
 Available Store Catalog (SKUs and Names):
@@ -878,7 +879,22 @@ Available Store Catalog (SKUs and Names):
             except Exception as e:
                 print(f"⚠️ [AGENT LLM FAULT] {e}")
                 if not content:
-                    yield json.dumps({"text_chunk": "Sorry, I'm having trouble connecting right now. Please try again in a moment."}) + "\n"
+                    if mutations:
+                        details = []
+                        for mut in mutations:
+                            act = mut.get("action")
+                            name = mut.get("name", "items")
+                            qty = mut.get("quantity", 1)
+                            if act == "add":
+                                details.append(f"added {qty} {name}")
+                            elif act == "remove":
+                                details.append(f"removed {qty} {name}")
+                            elif act == "clear":
+                                details.append("cleared your cart")
+                        summary_str = ", ".join(details)
+                        yield json.dumps({"text_chunk": f"Done! I've successfully {summary_str}, but I'm having trouble generating the final reply. Please check your cart to verify."}) + "\n"
+                    else:
+                        yield json.dumps({"text_chunk": "Sorry, I'm having trouble connecting right now. Please try again in a moment."}) + "\n"
                 break
 
             # Reconstruct SimpleNamespace for internal checks
@@ -965,7 +981,7 @@ Available Store Catalog (SKUs and Names):
                         "tool_call_id": tool_call.id,
                         "name": tool_name,
                         "content": result_str,
-                        "__fast_path_response": "Done! Your cart has been cleared. 🧹 Let me know if you'd like to add anything!"
+                        "__fast_path_response": "Done! Your cart has been cleared. Let me know if you'd like to add anything!"
                     }
                 elif tool_name == "generate_and_match_recipe":
                     recipe_data = await self._generate_and_match_recipe_internal(

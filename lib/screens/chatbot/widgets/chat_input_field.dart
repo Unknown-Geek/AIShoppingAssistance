@@ -100,7 +100,7 @@ class ChatInputField extends StatelessWidget {
             alignment: Alignment.topCenter,
             children: [
               Padding(
-                padding: const EdgeInsets.only(top: 54),
+                padding: const EdgeInsets.only(top: 48),
                 child: Container(
                 constraints: const BoxConstraints(
                   minHeight: 80,
@@ -194,26 +194,31 @@ class ChatInputField extends StatelessWidget {
                 ),
               ),
               ),
-              Positioned(
-                top: topGap,
-                left: (MediaQuery.of(context).size.width - 72) / 2,
-                width: 72,
-                height: 40,
-                child: IgnorePointer(
-                  ignoring: showScrollDownButton,
-                  child: AnimatedOpacity(
-                    opacity: showScrollDownButton ? 0.0 : 1.0,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOut,
-                    child: AnimatedScale(
-                      scale: showScrollDownButton ? 0.3 : 1.0,
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOutBack,
-                      child: ListenableBuilder(
-                        listenable: CartService(),
-                        builder: (context, child) {
-                          final count = CartService().itemCount;
-                          return GestureDetector(
+              ListenableBuilder(
+                listenable: CartService(),
+                builder: (context, child) {
+                  final count = CartService().itemCount;
+                  const double btnWidth = 66;
+                  const double btnHeight = 32;
+
+                  return AnimatedPositioned(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    top: topGap + 4,
+                    left: (MediaQuery.of(context).size.width - btnWidth) / 2,
+                    width: btnWidth,
+                    height: btnHeight,
+                    child: IgnorePointer(
+                      ignoring: showScrollDownButton,
+                      child: AnimatedOpacity(
+                        opacity: showScrollDownButton ? 0.0 : 1.0,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        child: AnimatedScale(
+                          scale: showScrollDownButton ? 0.3 : 1.0,
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeOutBack,
+                          child: GestureDetector(
                             onTap: () {
                               showModalBottomSheet(
                                 context: context,
@@ -225,16 +230,16 @@ class ChatInputField extends StatelessWidget {
                             child: Container(
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: const Color(0xFFD2E4E6),
-                                  width: 1.5,
+                                  width: 1.2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
+                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
                                   ),
                                 ],
                               ),
@@ -246,36 +251,34 @@ class ChatInputField extends StatelessWidget {
                                     Icon(
                                       Icons.shopping_cart_rounded,
                                       color: Theme.of(context).colorScheme.primary,
-                                      size: 18,
+                                      size: 16,
                                     ),
-                                    if (count > 0) ...[
-                                      const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.secondary,
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Text(
-                                          '$count',
-                                          style: TextStyle(
-                                            color: Theme.of(context).colorScheme.primary,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                    const SizedBox(width: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.secondary,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '$count',
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.primary,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ],
                                 ),
                               ),
                             ),
-                          );
-                        },
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ],
           ),
