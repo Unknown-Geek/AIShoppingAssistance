@@ -879,7 +879,22 @@ Available Store Catalog (SKUs and Names):
             except Exception as e:
                 print(f"⚠️ [AGENT LLM FAULT] {e}")
                 if not content:
-                    yield json.dumps({"text_chunk": "Sorry, I'm having trouble connecting right now. Please try again in a moment."}) + "\n"
+                    if mutations:
+                        details = []
+                        for mut in mutations:
+                            act = mut.get("action")
+                            name = mut.get("name", "items")
+                            qty = mut.get("quantity", 1)
+                            if act == "add":
+                                details.append(f"added {qty} {name}")
+                            elif act == "remove":
+                                details.append(f"removed {qty} {name}")
+                            elif act == "clear":
+                                details.append("cleared your cart")
+                        summary_str = ", ".join(details)
+                        yield json.dumps({"text_chunk": f"Done! I've successfully {summary_str}, but I'm having trouble generating the final reply. Please check your cart to verify."}) + "\n"
+                    else:
+                        yield json.dumps({"text_chunk": "Sorry, I'm having trouble connecting right now. Please try again in a moment."}) + "\n"
                 break
 
             # Reconstruct SimpleNamespace for internal checks
