@@ -72,11 +72,12 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _pickImage(ImageSource source) async {
     try {
       final picker = ImagePicker();
+      // Use low max size and quality to ensure base64 fallback is small and safe
       final image = await picker.pickImage(
         source: source,
-        maxWidth: 200,
-        maxHeight: 200,
-        imageQuality: 70,
+        maxWidth: 120,
+        maxHeight: 120,
+        imageQuality: 50,
       );
 
       if (image == null) return;
@@ -84,15 +85,38 @@ class _ProfilePageState extends State<ProfilePage> {
       final bytes = await image.readAsBytes();
       final base64String = base64Encode(bytes);
 
+      String profilePicValue = base64String;
+
+      try {
+        final fileName = 'avatars/${widget.email.replaceAll('@', '_').replaceAll('.', '_')}.jpg';
+        await Supabase.instance.client.storage
+            .from('product-images')
+            .uploadBinary(
+              fileName,
+              bytes,
+              fileOptions: const FileOptions(
+                contentType: 'image/jpeg',
+                upsert: true,
+              ),
+            );
+        final publicUrl = Supabase.instance.client.storage
+            .from('product-images')
+            .getPublicUrl(fileName);
+        profilePicValue = publicUrl;
+        debugPrint('[ProfilePage] Uploaded profile picture to storage: $profilePicValue');
+      } catch (storageErr) {
+        debugPrint('[ProfilePage] Storage upload failed, falling back to base64: $storageErr');
+      }
+
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('profile_pic_${widget.email}', base64String);
+      await prefs.setString('profile_pic_${widget.email}', profilePicValue);
 
       setState(() {
-        _profilePicBase64 = base64String;
+        _profilePicBase64 = profilePicValue;
       });
 
       await Supabase.instance.client.auth.updateUser(
-        UserAttributes(data: {'profile_pic': base64String}),
+        UserAttributes(data: {'profile_pic': profilePicValue}),
       );
 
       if (mounted) {
