@@ -416,6 +416,7 @@ class ShoppingAssistantAgent:
 
                         if item_sku in missing_ingredients_map:
                             missing_ingredients_map[item_sku]["required_quantity"] += f" + {final_qty}"
+                            missing_ingredients_map[item_sku]["quantity"] = missing_ingredients_map[item_sku].get("quantity", 0) + _parse_qty(final_qty)
                         else:
                             missing_ingredients_map[item_sku] = {
                                 "sku": item_sku,
@@ -424,6 +425,7 @@ class ShoppingAssistantAgent:
                                 "price_rupees": float(actual_item.get("price_rupees", 0.0)),
                                 "thumbnail_url": actual_item.get("thumbnail_url", ""),
                                 "required_quantity": final_qty,
+                                "quantity": _parse_qty(final_qty),
                                 "agent_tool_status": "Committed to DB"
                             }
                         
@@ -462,6 +464,7 @@ class ShoppingAssistantAgent:
                         "price_rupees": 0.0,
                         "thumbnail_url": "",
                         "required_quantity": final_qty,
+                        "quantity": _parse_qty(final_qty),
                         "substitutes": cleaned_subs
                     }
 
