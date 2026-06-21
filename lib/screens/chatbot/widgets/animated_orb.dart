@@ -66,12 +66,16 @@ class _AnimatedOrbState extends State<AnimatedOrb>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final secondary = theme.colorScheme.secondary;
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         return CustomPaint(
           size: Size(widget.size, widget.size),
-          painter: _OrbPainter(_controller.value),
+          painter: _OrbPainter(_controller.value, primary, secondary),
         );
       },
     );
@@ -80,8 +84,10 @@ class _AnimatedOrbState extends State<AnimatedOrb>
 
 class _OrbPainter extends CustomPainter {
   final double progress;
+  final Color primaryColor;
+  final Color secondaryColor;
 
-  _OrbPainter(this.progress);
+  _OrbPainter(this.progress, this.primaryColor, this.secondaryColor);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -90,7 +96,7 @@ class _OrbPainter extends CustomPainter {
 
     final angle = progress * 2 * math.pi;
 
-    // 1. Primary Base: Deep Qless Navy
+    // 1. Primary Base: Deep Client Primary
     // Modulating with secondary harmonics for fluid/liquid motion
     final x1 = math.sin(angle) * 0.10 + math.cos(angle * 2.3) * 0.05;
     final y1 = math.cos(angle) * 0.10 + math.sin(angle * 1.7) * 0.05;
@@ -100,9 +106,9 @@ class _OrbPainter extends CustomPainter {
     final paint1 = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFF001A23),
-          const Color(0xFF001A23).withValues(alpha: 0.85),
-          const Color(0xFF001A23).withValues(alpha: 0.0),
+          primaryColor,
+          primaryColor.withValues(alpha: 0.85),
+          primaryColor.withValues(alpha: 0.0),
         ],
         stops: const [0.0, 0.55, 1.0],
       ).createShader(Rect.fromCircle(center: offset1, radius: rad1));
@@ -125,7 +131,7 @@ class _OrbPainter extends CustomPainter {
       ).createShader(Rect.fromCircle(center: offset2, radius: rad2));
     canvas.drawCircle(offset2, rad2, paint2);
 
-    // 3. Secondary Mint Green Accent (wobbly overlay)
+    // 3. Secondary Brand Accent (wobbly overlay)
     final x3 = math.sin(angle + math.pi) * 0.20 + math.cos(angle * 3.4) * 0.08;
     final y3 = math.cos(angle + math.pi) * 0.20 + math.sin(angle * 2.6) * 0.08;
     final offset3 = Offset(center.dx + x3 * radius, center.dy + y3 * radius);
@@ -134,9 +140,9 @@ class _OrbPainter extends CustomPainter {
     final paint3 = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFFB3EFB2), // Mint Green
-          const Color(0xFFB3EFB2).withValues(alpha: 0.75),
-          const Color(0xFFB3EFB2).withValues(alpha: 0.0),
+          secondaryColor,
+          secondaryColor.withValues(alpha: 0.75),
+          secondaryColor.withValues(alpha: 0.0),
         ],
         stops: const [0.0, 0.35, 1.0],
       ).createShader(Rect.fromCircle(center: offset3, radius: rad3));
@@ -145,6 +151,8 @@ class _OrbPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _OrbPainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return oldDelegate.progress != progress ||
+        oldDelegate.primaryColor != primaryColor ||
+        oldDelegate.secondaryColor != secondaryColor;
   }
 }

@@ -23,7 +23,7 @@ class ProfileSettingsMenu extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: theme.colorScheme.primary.withValues(alpha: 0.03),
@@ -42,21 +42,21 @@ class ProfileSettingsMenu extends StatelessWidget {
               title: 'Manage Profile',
               onTap: onManageProfileTap,
             ),
-            _buildDivider(),
+            _buildDivider(theme),
             _buildMenuItem(
               context: context,
               icon: Icons.lock_outline_rounded,
               title: 'Change Password',
               onTap: onChangePasswordTap,
             ),
-            _buildDivider(),
+            _buildDivider(theme),
             _buildMenuItem(
               context: context,
               icon: Icons.credit_card_outlined,
               title: 'Saved Cards',
               onTap: onSavedCardsTap,
             ),
-            _buildDivider(),
+            _buildDivider(theme),
             _buildMenuItem(
               context: context,
               icon: Icons.shopping_bag_outlined,
@@ -109,7 +109,7 @@ class ProfileSettingsMenu extends StatelessWidget {
                     fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                     height: 1.2,
                   ),
                 ),
@@ -133,13 +133,13 @@ class ProfileSettingsMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildDivider() {
-    return const Divider(
+  Widget _buildDivider(ThemeData theme) {
+    return Divider(
       height: 1,
       thickness: 1,
       indent: 20, // starts right under the icon at the left margin, covering the icon area
       endIndent: 20,
-      color: Color(0xFFF3F4F6),
+      color: theme.colorScheme.primary.withValues(alpha: 0.08),
     );
   }
 }
