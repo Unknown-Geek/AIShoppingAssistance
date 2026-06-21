@@ -744,14 +744,14 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _checkDbStatus() async {
     // Show a loading snackbar while checking
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         behavior: SnackBarBehavior.fixed,
-        content: Text(
+        content: const Text(
           'Checking database and backend connections...',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Color(0xFF001A23),
-        duration: Duration(milliseconds: 800),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        duration: const Duration(milliseconds: 800),
       ),
     );
 

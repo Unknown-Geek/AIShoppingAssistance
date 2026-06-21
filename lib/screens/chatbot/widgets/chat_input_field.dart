@@ -346,88 +346,90 @@ class ChatInputField extends StatelessWidget {
           topRight: Radius.circular(32),
         ),
       ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Add Attachment',
-                style: TextStyle(
-                  fontFamily: Theme.of(context).textTheme.titleLarge?.fontFamily,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF001A23),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 8,
-                ),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F1F2),
-                  child: Icon(
-                    Icons.photo_library_rounded,
-                    color: Color(0xFF001A23),
-                  ),
-                ),
-                title: const Text(
-                  'Choose Image from Gallery',
+      builder: (context) {
+        final theme = Theme.of(context);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Add Attachment',
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF001A23),
+                    fontFamily: theme.textTheme.titleLarge?.fontFamily,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final image = await imagePicker.pickImage(
-                    source: ImageSource.gallery,
-                  );
-                  if (image != null) {
-                    onImageSelected(image);
-                  }
-                },
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 8,
-                ),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F1F2),
-                  child: Icon(
-                    Icons.camera_alt_rounded,
-                    color: Color(0xFF001A23),
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 8,
                   ),
-                ),
-                title: const Text(
-                  'Take Photo with Camera',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF001A23),
+                  leading: CircleAvatar(
+                    backgroundColor: theme.colorScheme.surfaceContainer,
+                    child: Icon(
+                      Icons.photo_library_rounded,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
+                  title: Text(
+                    'Choose Image from Gallery',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final image = await imagePicker.pickImage(
+                      source: ImageSource.gallery,
+                    );
+                    if (image != null) {
+                      onImageSelected(image);
+                    }
+                  },
                 ),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final image = await imagePicker.pickImage(
-                    source: ImageSource.camera,
-                  );
-                  if (image != null) {
-                    onImageSelected(image);
-                  }
-                },
-              ),
-
-            ],
+                const SizedBox(height: 8),
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 8,
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor: theme.colorScheme.surfaceContainer,
+                    child: Icon(
+                      Icons.camera_alt_rounded,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  title: Text(
+                    'Take Photo with Camera',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final image = await imagePicker.pickImage(
+                      source: ImageSource.camera,
+                    );
+                    if (image != null) {
+                      onImageSelected(image);
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
