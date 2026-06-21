@@ -88,11 +88,17 @@ class ProfileSettingsMenu extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Icon block (no circle background, reduced size)
-              Icon(
-                icon,
-                color: theme.colorScheme.primary,
-                size: 18,
+              // Centered Icon block (no circle background, reduced size)
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: Center(
+                  child: Icon(
+                    icon,
+                    color: theme.colorScheme.primary,
+                    size: 18,
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
               // Title text
@@ -104,14 +110,21 @@ class ProfileSettingsMenu extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF001A23),
+                    height: 1.2,
                   ),
                 ),
               ),
-              // Arrow trailing icon
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 13,
-                color: theme.colorScheme.primary.withValues(alpha: 0.4),
+              // Centered Arrow trailing icon
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: Center(
+                  child: Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 13,
+                    color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                  ),
+                ),
               ),
             ],
           ),
@@ -124,7 +137,7 @@ class ProfileSettingsMenu extends StatelessWidget {
     return const Divider(
       height: 1,
       thickness: 1,
-      indent: 20, // starts right under the icon at the left margin
+      indent: 20, // starts right under the icon at the left margin, covering the icon area
       endIndent: 20,
       color: Color(0xFFF3F4F6),
     );
