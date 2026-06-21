@@ -17,6 +17,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   List<Map<String, dynamic>> notifications = [];
   bool loading = true;
   bool _isSimulating = false;
+  GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   Future<void> _simulateNotification() async {
     if (_isSimulating) return;
@@ -68,11 +69,158 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final list = await NotificationStorageService.getNotifications();
     if (mounted) {
       setState(() {
+        _listKey = GlobalKey<AnimatedListState>();
         notifications = list;
         loading = false;
       });
       await NotificationStorageService.markAllAsRead();
     }
+  }
+
+  Future<void> _clearAllNotifications() async {
+    if (notifications.isEmpty) return;
+
+    final backup = List<Map<String, dynamic>>.from(notifications);
+    await NotificationStorageService.clearNotifications();
+
+    final theme = Theme.of(context);
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('All notifications cleared'),
+          action: SnackBarAction(
+            label: 'Undo',
+            textColor: theme.colorScheme.inversePrimary,
+            onPressed: () async {
+              await NotificationStorageService.saveNotificationsList(backup);
+              _loadNotifications();
+            },
+          ),
+          behavior: SnackBarBehavior.fixed,
+        ),
+      );
+    }
+
+    final count = notifications.length;
+    for (int i = 0; i < count; i++) {
+      final item = notifications[0];
+      _listKey.currentState?.removeItem(
+        0,
+        (context, animation) => _buildAnimatedItem(item, animation, 0, isRemoving: true),
+        duration: const Duration(milliseconds: 250),
+      );
+      notifications.removeAt(0);
+      await Future.delayed(const Duration(milliseconds: 60));
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Widget _buildAnimatedItem(
+    Map<String, dynamic> item,
+    Animation<double> animation,
+    int index, {
+    bool isRemoving = false,
+  }) {
+    final theme = Theme.of(context);
+    final timestampStr = item['timestamp'] as String?;
+
+    String timeLabel = '';
+    if (timestampStr != null) {
+      try {
+        final time = DateTime.parse(timestampStr);
+        final diff = DateTime.now().difference(time);
+        if (diff.inMinutes < 1) {
+          timeLabel = 'Just now';
+        } else if (diff.inMinutes < 60) {
+          timeLabel = '1m ago';
+        } else if (diff.inHours < 24) {
+          timeLabel = '1h ago';
+        } else {
+          timeLabel = '1d ago';
+        }
+      } catch (_) {}
+    }
+
+    final card = NotificationCard(
+      notification: item,
+      timeLabel: timeLabel,
+    );
+
+    Widget itemWidget;
+    if (isRemoving) {
+      itemWidget = card;
+    } else {
+      itemWidget = Dismissible(
+        key: ValueKey(item['timestamp'] ?? index.toString()),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 24),
+          margin: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.error.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Icon(
+            Icons.delete_outline_rounded,
+            color: theme.colorScheme.error,
+          ),
+        ),
+        onDismissed: (direction) async {
+          if (index >= notifications.length) return;
+          final removedItem = notifications[index];
+          setState(() {
+            notifications.removeAt(index);
+          });
+          _listKey.currentState?.removeItem(
+            index,
+            (context, animation) => const SizedBox.shrink(),
+            duration: Duration.zero,
+          );
+          await NotificationStorageService.saveNotificationsList(notifications);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Notification cleared'),
+                action: SnackBarAction(
+                  label: 'Undo',
+                  textColor: theme.colorScheme.inversePrimary,
+                  onPressed: () async {
+                    if (index <= notifications.length) {
+                      setState(() {
+                        notifications.insert(index, removedItem);
+                        _listKey.currentState?.insertItem(index);
+                      });
+                      await NotificationStorageService.saveNotificationsList(notifications);
+                    }
+                  },
+                ),
+                behavior: SnackBarBehavior.fixed,
+              ),
+            );
+          }
+        },
+        child: card,
+      );
+    }
+
+    return FadeTransition(
+      opacity: animation,
+      child: SizeTransition(
+        sizeFactor: animation,
+        axisAlignment: 0.0,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 0),
+          child: itemWidget,
+        ),
+      ),
+    );
   }
 
   @override
@@ -129,12 +277,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   },
                   showClearAll: notifications.isNotEmpty,
                   onClearAllTap: () async {
-                    await NotificationStorageService.clearNotifications();
-                    if (mounted) {
-                      setState(() {
-                        notifications.clear();
-                      });
-                    }
+                    await _clearAllNotifications();
                   },
                 ),
                 const SizedBox(height: 12),
@@ -146,34 +289,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               physics: const BouncingScrollPhysics(),
                               child: _buildEmptyState(theme),
                             )
-                          : ListView.builder(
+                          : AnimatedList(
+                              key: _listKey,
                               physics: const BouncingScrollPhysics(),
                               padding: const EdgeInsets.only(top: 12, bottom: 24),
-                              itemCount: notifications.length,
-                              itemBuilder: (context, index) {
-                                final item = notifications[index];
-                                final timestampStr = item['timestamp'] as String?;
-                                
-                                String timeLabel = '';
-                                if (timestampStr != null) {
-                                  try {
-                                    final time = DateTime.parse(timestampStr);
-                                    final diff = DateTime.now().difference(time);
-                                    if (diff.inMinutes < 1) {
-                                      timeLabel = 'Just now';
-                                    } else if (diff.inMinutes < 60) {
-                                      timeLabel = '${diff.inMinutes}m ago';
-                                    } else if (diff.inHours < 24) {
-                                      timeLabel = '${diff.inHours}h ago';
-                                    } else {
-                                      timeLabel = '${diff.inDays}d ago';
-                                    }
-                                  } catch (_) {}
-                                }
-
-                                return NotificationCard(
-                                  notification: item,
-                                  timeLabel: timeLabel,
+                              initialItemCount: notifications.length,
+                              itemBuilder: (context, index, animation) {
+                                return _buildAnimatedItem(
+                                  notifications[index],
+                                  animation,
+                                  index,
                                 );
                               },
                             ),
