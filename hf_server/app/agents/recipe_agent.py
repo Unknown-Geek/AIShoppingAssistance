@@ -4,6 +4,8 @@ import re
 from typing import Dict, Any, List
 from groq import Groq
 from dotenv import load_dotenv
+from app.services.nutrition_service import NutritionService
+from app.services.quantity_normalizer_service import QuantityNormalizerService
 
 # Explicitly load .env file from the hf_server directory
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -32,6 +34,10 @@ class RecipeAgent:
             api_key = "gsk_mock_key_placeholder_for_verification_only"
         self.client = Groq(api_key=api_key)
         self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+        self.nutrition_service = NutritionService()
+        self.quantity_normalizer = QuantityNormalizerService(
+            os.getenv("USDA_API_KEY")
+        )
         self.fallback_model = os.getenv("GROQ_FALLBACK_MODEL", "llama-3.3-70b-versatile")
 
     def _create_chat_completion(self, messages, max_tokens=1024, temperature=0.2, response_format=None):
@@ -56,11 +62,46 @@ class RecipeAgent:
             else:
                 raise e
 
+
     async def generate(self, dish_query: str, servings: int) -> Dict[str, Any]:
         """
         Generates a detailed recipe using Groq forced output structures.
         """
         prompt = f"""Generate a detailed recipe for {dish_query} for {servings} servings.
+        IMPORTANT:
+- quantity must be a NUMBER only.
+- Never include units inside quantity.
+- Correct:
+  quantity: 1, unit: "cups"
+  quantity: 2, unit: "tablespoons"
+  quantity: 3, unit: "cloves"
+- Incorrect:
+  quantity: "1 cup"
+  quantity: "2 tablespoons"
+  quantity: "3 cloves"
+### CRITICAL INGREDIENT ISOLATION RULES:
+
+1. Every ingredient must be a single USDA-searchable ingredient.
+2. Never group multiple ingredients into one ingredient.
+3. Never use parentheses in ingredient names.
+4. Never include preparation details in ingredient names.
+
+BAD:
+- Vegetables (carrots, peas, cauliflower)
+- Spices (cumin, coriander, turmeric)
+- Rice (washed and soaked)
+- Onion (thinly sliced)
+
+GOOD:
+- Mixed Vegetables
+- Spices
+- Rice
+- Onion
+- Garlic
+- Ginger
+
+Ingredient names must be simple, singular, USDA-searchable names.
+Preparation details belong in recipe instructions, not ingredient names.
 
 Return ONLY valid JSON in this exact format (no markdown strings, no code fences):
 {{
@@ -94,6 +135,7 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
 
         try:
             return json.loads(content)
+
         except json.JSONDecodeError:
             return {
                 "raw_response": content,
@@ -258,8 +300,54 @@ Available Store Inventory Catalog (SKUs and Names):
    - "Flour" or any pizza ingredient -> "Quaker Oats" (oats are NOT a pizza ingredient)
    - "Cheese" or "Dough" -> "Oats" or "Cereal" (breakfast items are NOT pizza/bread ingredients)
 3. Only match when the product IS the ingredient (e.g. "Oil" -> "Gold Winner Refined Sunflower Oil" or "Idhayam Mantra Groundnut Oil", "Milk" -> "Amul Gold Standardised Milk", "Ginger" or "Garlic" -> "Aachi Ginger Garlic Paste").
-4. If no truly matching product exists in the catalog, you MUST return "sku": "UNKNOWN", "price_rupees": 0, "name": the ingredient name, and "slug": the ingredient name as a lowercase-slug. For UNKNOWN items, look at the catalog and provide up to 3 possible close substitutes that are available in our catalog under the "substitutes" key. If no substitutes are reasonable, return an empty list.
+4. If no truly matching product exists in the catalog, you MUST return "sku": "UNKNOWN", "price_rupees": 0, "name": the ingredient name, and "slug": the ingredient name as a lowercase-slug.
 
+For UNKNOWN items, only provide substitutes if they are the same type of cooking ingredient.
+
+Examples:
+- Oil -> another oil product
+- Milk -> another milk product
+- Ginger Garlic Paste -> another cooking paste
+- Rice -> another rice product
+
+Never suggest cereals, chocolates, chips, sweets, beverages, breakfast foods, baby foods, or instant noodles as substitutes for vegetables, rice, spices, meat, dairy, flour, dough, or cooking ingredients.
+
+If no closely related cooking ingredient exists in the catalog, return an empty list for "substitutes".
+### CRITICAL INGREDIENT ISOLATION RULES:
+
+- Every ingredient must be a single USDA-searchable ingredient.
+- Never group multiple ingredients into one ingredient.
+- Never use parentheses in ingredient names.
+- Never include preparation details in ingredient names.
+
+BAD:
+- Vegetables (carrots, peas, cauliflower)
+- Spices (cumin, coriander, turmeric)
+- Rice (washed and soaked)
+- Onion (thinly sliced)
+
+GOOD:
+- Mixed Vegetables
+- Spices
+- Rice
+- Onion
+- Garlic
+- Ginger
+
+Ingredient names must be simple USDA-searchable names.
+Preparation details belong in recipe instructions, not ingredient names.
+
+IMPORTANT:
+- quantity must be a NUMBER only.
+- Never include units inside quantity.
+
+Correct:
+quantity: 2, unit: "cups"
+quantity: 1, unit: "teaspoon"
+
+Incorrect:
+quantity: "2 cups"
+quantity: "1 teaspoon"
 Return ONLY valid JSON in this exact format (no markdown strings, no code fences):
 {{
   "dish": "{dish_query}",
@@ -268,7 +356,7 @@ Return ONLY valid JSON in this exact format (no markdown strings, no code fences
   "ingredients": [
     {{
       "name": "Ingredient Name",
-      "quantity": "amount",
+      "quantity": 1,
       "unit": "unit",
       "sku": "SKU_CODE_IF_MATCHED_OR_UNKNOWN",
       "slug": "product-slug",
@@ -304,7 +392,30 @@ Return ONLY valid JSON in this exact format (no markdown strings, no code fences
         content = content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
 
         try:
-            return json.loads(content)
+            result = json.loads(content)
+            print("\n===== RAW RECIPE INGREDIENTS =====")
+            for x in result.get("ingredients", []):
+                print(x)
+            print("=================================\n")
+            async with self.quantity_normalizer as normalizer:
+                normalized_ingredients, skipped = (
+                    await normalizer.normalize_ingredients(
+                        result.get("ingredients", [])
+                    )
+                )
+
+            print("NORMALIZED:", normalized_ingredients)
+            print("SKIPPED:", skipped)
+
+            nutrition = await self.nutrition_service.calculate_recipe_nutrition(
+                normalized_ingredients,
+                result.get("servings", servings),
+            )
+            print("NUTRITION RESULT:", nutrition)
+
+            result["nutrition"] = nutrition
+
+            return result
         except json.JSONDecodeError:
             return {
                 "dish": dish_query,
