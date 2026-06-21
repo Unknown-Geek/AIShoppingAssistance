@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -58,7 +57,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   DateTime? _cachedDetectionTime;
   bool _isConfirmSheetOpen = false;
   bool _isDashboardActive = true;
-
   // Timestamp tracking to prevent stale background scan race conditions
   DateTime? _lastActionTime;
   DateTime? _backgroundScanPauseUntil;
@@ -807,16 +805,16 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
           // Colorful glowing gradient bubbles (Orbs)
           Positioned(
-            top: 20,
-            right: -60,
+            top: -150,
+            right: -150,
             child: Container(
-              width: 220,
-              height: 220,
+              width: 500,
+              height: 500,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    theme.colorScheme.primary.withValues(alpha: 0.18),
+                    theme.colorScheme.primary.withValues(alpha: 0.08),
                     theme.colorScheme.primary.withValues(alpha: 0.0),
                   ],
                 ),
@@ -824,29 +822,22 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ),
           Positioned(
-            bottom: 100,
-            left: -40,
+            bottom: -50,
+            left: -200,
             child: Container(
-              width: 250,
-              height: 250,
+              width: 600,
+              height: 600,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    theme.colorScheme.secondary.withValues(alpha: 0.2),
+                    theme.colorScheme.secondary.withValues(alpha: 0.15),
                     theme.colorScheme.secondary.withValues(alpha: 0.0),
                   ],
                 ),
               ),
             ),
           ),
-          if (_isDashboardActive)
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                child: Container(color: Colors.transparent),
-              ),
-            ),
           // AnimatedBuilder isolates redraws to only the camera+cart layout
           // on each animation frame instead of rebuilding the entire screen.
           AnimatedBuilder(
@@ -881,7 +872,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             },
             child: BottomNavBar(
               onChatTap: () async {
-                setState(() => _isDashboardActive = false);
+                _isDashboardActive = false;
                 _stopBackgroundScanning();
 
                 final route = PageRouteBuilder(
@@ -937,7 +928,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
                 await pushFuture;
 
-                setState(() => _isDashboardActive = true);
+                _isDashboardActive = true;
                 if (_cameraController == null || !_cameraController!.value.isInitialized) {
                   await _initializeCamera();
                 }

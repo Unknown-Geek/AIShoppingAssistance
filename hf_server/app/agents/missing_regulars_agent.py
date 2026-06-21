@@ -21,6 +21,7 @@ class MissingRegularsAgent:
             api_key = "gsk_mock_key_placeholder"
         self.client = Groq(api_key=api_key)
         self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+        self.fallback_model = os.getenv("GROQ_FALLBACK_MODEL", "llama-3.3-70b-versatile")
         self.supabase = SupabaseQuerier()
 
     def _analyze_regularity(self, orders: List[Dict[str, Any]], current_cart_skus: List[str]) -> List[Dict[str, Any]]:
@@ -160,15 +161,27 @@ Do not mention the "90 days" or the algorithm. Just be natural and helpful, like
 Respond ONLY with the message text. No JSON, no extra formatting."""
 
         try:
-            completion = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=150,
-                temperature=0.4
-            )
+            try:
+                completion = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=150,
+                    temperature=0.4
+                )
+            except Exception as inner_e:
+                if self.fallback_model:
+                    print(f"[MissingRegularsAgent] Main model {self.model} failed: {inner_e}. Falling back to {self.fallback_model}...")
+                    completion = self.client.chat.completions.create(
+                        model=self.fallback_model,
+                        messages=[{"role": "user", "content": prompt}],
+                        max_tokens=150,
+                        temperature=0.4
+                    )
+                else:
+                    raise inner_e
             response_text = completion.choices[0].message.content.strip()
         except Exception as e:
-            print(f"[MissingRegularsAgent] LLM Generation failed: {e}")
+            print(f"[MissingRegularsAgent] LLM Generation failed completely: {e}")
             response_text = "It looks like you might have forgotten a few of your regular items. Would you like to add them?"
 
         return {
