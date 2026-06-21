@@ -884,16 +884,9 @@ Available Store Catalog (SKUs and Names):
                                     tool_calls_dict[idx]["function"]["arguments"] += tc.function.arguments
             except Exception as e:
                 print(f"⚠️ [AGENT LLM FAULT] {e}")
-                # Detect rate-limit exhaustion — signal upstream so the route returns 503
-                # and the Flutter client falls over to the next backend URL.
-                is_rate_limited = hasattr(e, 'status_code') and e.status_code == 429
-                if not is_rate_limited:
-                    # Check string representation for 429 in case of wrapped exceptions
-                    is_rate_limited = '429' in str(e) and 'rate_limit_exceeded' in str(e)
                 if not content:
-                    if is_rate_limited:
-                        yield json.dumps({"llm_unavailable": True}) + "\n"
-                    elif mutations:
+                    if mutations:
+                        # Cart was mutated but final reply failed — still report what was done.
                         details = []
                         for mut in mutations:
                             act = mut.get("action")
@@ -908,7 +901,10 @@ Available Store Catalog (SKUs and Names):
                         summary_str = ", ".join(details)
                         yield json.dumps({"text_chunk": f"Done! I've successfully {summary_str}, but I'm having trouble generating the final reply. Please check your cart to verify."}) + "\n"
                     else:
-                        yield json.dumps({"text_chunk": "Sorry, I'm having trouble connecting right now. Please try again in a moment."}) + "\n"
+                        # No content, no mutations — backend is unusable for this request.
+                        # Signal 503 so the Flutter client retries the next backend URL.
+                        print(f"⚠️ [AGENT LLM FAULT] No content produced — signalling llm_unavailable to trigger client failover")
+                        yield json.dumps({"llm_unavailable": True}) + "\n"
                 break
 
             # Reconstruct SimpleNamespace for internal checks
