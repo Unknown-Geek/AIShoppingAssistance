@@ -10,7 +10,11 @@ import '../../models/cart_item_model.dart';
 import 'widgets/message_bubble.dart';
 import 'widgets/chat_input_field.dart';
 import 'widgets/history_drawer.dart';
-import 'widgets/animated_orb.dart';
+import 'widgets/chat_header_pill.dart';
+import 'widgets/welcome_card.dart';
+import 'widgets/suggestion_pill.dart';
+import 'widgets/fade_content.dart';
+import 'widgets/gradual_blur.dart';
 import '../../services/chat_agent_service.dart';
 import '../../services/cart_service.dart';
 
@@ -27,11 +31,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  bool _loading = false;
-  final List<ChatMessage> _messages = [];
-  final List<ChatSession> _chatHistory = [];
-  String _currentChatTitle = 'New Chat';
-  String? _currentChatSessionId;
+  static bool _loading = false;
+  static final List<ChatMessage> _messages = [];
+  static final List<ChatSession> _chatHistory = [];
+  static String _currentChatTitle = 'New Chat';
+  static String? _currentChatSessionId;
+  static bool _isInitialized = false;
+  static final ValueNotifier<int> _updateNotifier = ValueNotifier(0);
 
   bool _showScrollDownButton = false;
   Animation<double>? _routeAnimation;
@@ -54,9 +60,19 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   void initState() {
     super.initState();
-    _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
-    _loadChatHistory();
+    _updateNotifier.addListener(_onGlobalUpdate);
+    if (!_isInitialized) {
+      _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
+      _loadChatHistory();
+      _isInitialized = true;
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    }
     _scrollController.addListener(_onScroll);
+  }
+
+  void _onGlobalUpdate() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -239,7 +255,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         ? (_messages.first.text ?? 'New Chat')
         : _currentChatTitle;
 
-    setState(() {
+    void updateState() {
       if (_currentChatSessionId != null) {
         final index = _chatHistory.indexWhere((chat) => chat.id == _currentChatSessionId);
         final updatedSession = ChatSession(
@@ -268,7 +284,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       _currentChatTitle = title;
       // Sort history to keep newest on top
       _chatHistory.sort((a, b) => b.lastActive.compareTo(a.lastActive));
-    });
+    }
+
+    updateState();
+    _updateNotifier.value++;
 
     _saveChatHistory();
   }
@@ -412,25 +431,31 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         );
       }
 
-      setState(() {
+      if (mounted) {
+        setState(() {
+          _messages.add(assistantMessage);
+        });
+      } else {
         _messages.add(assistantMessage);
-      });
+      }
       _saveCurrentChat();
     } catch (e) {
       debugPrint('[ChatbotScreen] Send message error: $e');
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            isUser: false,
-            text: 'Unable to connect to assistant service.',
-          ),
-        );
-      });
+      final errorMsg = ChatMessage(
+        isUser: false,
+        text: 'Unable to connect to assistant service.',
+      );
+      if (mounted) {
+        setState(() {
+          _messages.add(errorMsg);
+        });
+      } else {
+        _messages.add(errorMsg);
+      }
       _saveCurrentChat();
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      _loading = false;
+      _updateNotifier.value++;
       _scrollToBottom();
     }
   }
@@ -478,28 +503,35 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         finalMessage += "\n\nNo missing regular items detected in your cart. You are all set!";
       }
 
-      setState(() {
-        _messages.add(ChatMessage(
-          isUser: false,
-          text: finalMessage,
-        ));
-      });
+      final successMsg = ChatMessage(
+        isUser: false,
+        text: finalMessage,
+      );
+      if (mounted) {
+        setState(() {
+          _messages.add(successMsg);
+        });
+      } else {
+        _messages.add(successMsg);
+      }
       _saveCurrentChat();
     } catch (e) {
       debugPrint('[ChatbotScreen] Cart analysis error: $e');
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            isUser: false,
-            text: 'Unable to perform cart analysis. Please try again later.',
-          ),
-        );
-      });
+      final errorMsg = ChatMessage(
+        isUser: false,
+        text: 'Unable to perform cart analysis. Please try again later.',
+      );
+      if (mounted) {
+        setState(() {
+          _messages.add(errorMsg);
+        });
+      } else {
+        _messages.add(errorMsg);
+      }
       _saveCurrentChat();
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      _loading = false;
+      _updateNotifier.value++;
       _scrollToBottom();
     }
   }
@@ -584,6 +616,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   @override
   void dispose() {
+    _updateNotifier.removeListener(_onGlobalUpdate);
     _scrollController.removeListener(_onScroll);
     _routeAnimation?.removeStatusListener(_handleRouteStatus);
     _controller.dispose();
