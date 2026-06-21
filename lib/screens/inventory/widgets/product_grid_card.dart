@@ -68,8 +68,9 @@ class ProductGridCard extends StatelessWidget {
                 aspectRatio: 1.15,
                 child: Container(
                   width: double.infinity,
+                  padding: const EdgeInsets.all(8),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFF8FAFC),
+                    color: Colors.white,
                     borderRadius: BorderRadius.vertical(
                       top: Radius.circular(15),
                     ),
@@ -80,7 +81,7 @@ class ProductGridCard extends StatelessWidget {
                     ),
                     child: CachedNetworkImage(
                       imageUrl: imageUrl,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                       placeholder: (context, url) => Center(
                         child: SizedBox(
                           width: 24,
