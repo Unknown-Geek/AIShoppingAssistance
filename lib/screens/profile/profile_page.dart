@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -332,6 +333,41 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<T?> _showBlurredDialog<T>({
+    required BuildContext context,
+    required WidgetBuilder builder,
+    bool barrierDismissible = true,
+  }) {
+    return showGeneralDialog<T>(
+      context: context,
+      barrierDismissible: barrierDismissible,
+      barrierLabel: 'Dismiss Dialog',
+      barrierColor: Colors.black.withValues(alpha: 0.25),
+      transitionDuration: const Duration(milliseconds: 350),
+      pageBuilder: (ctx, anim1, anim2) => builder(ctx),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        final curve = CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic);
+        return AnimatedBuilder(
+          animation: curve,
+          builder: (context, childWidget) {
+            final sigma = curve.value * 6.0;
+            return BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+              child: FadeTransition(
+                opacity: curve,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.92, end: 1.0).animate(curve),
+                  child: childWidget,
+                ),
+              ),
+            );
+          },
+          child: child,
+        );
+      },
+    );
+  }
+
   Future<void> _showChangePasswordDialog() async {
     final theme = Theme.of(context);
     final controller = TextEditingController();
@@ -339,7 +375,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final formKey = GlobalKey<FormState>();
     bool saving = false;
 
-    showDialog(
+    _showBlurredDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (dialogCtx, setModalState) => Dialog(
@@ -464,7 +500,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       Expanded(
                         child: SizedBox(
-                          height: 48,
+                          height: 40,
                           child: OutlinedButton(
                             onPressed: saving ? null : () => Navigator.pop(ctx),
                             style: OutlinedButton.styleFrom(
@@ -474,7 +510,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             child: const Text(
                               'Cancel',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
@@ -482,7 +518,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: SizedBox(
-                          height: 48,
+                          height: 40,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF001A23),
@@ -539,7 +575,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   )
                                 : const Text(
                                     'Save',
-                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                                   ),
                           ),
                         ),
@@ -560,7 +596,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final controller = TextEditingController(text: _displayName);
     bool saving = false;
 
-    showDialog(
+    _showBlurredDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (dialogCtx, setModalState) => Dialog(
@@ -639,7 +675,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: [
                     Expanded(
                       child: SizedBox(
-                        height: 48,
+                        height: 40,
                         child: OutlinedButton(
                           onPressed: saving ? null : () => Navigator.pop(ctx),
                           style: OutlinedButton.styleFrom(
@@ -649,7 +685,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           child: const Text(
                             'Cancel',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -657,7 +693,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: SizedBox(
-                        height: 48,
+                        height: 40,
                         child: ElevatedButton(
                           onPressed: saving
                               ? null
@@ -718,7 +754,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 )
                               : const Text(
                                   'Save',
-                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                                 ),
                         ),
                       ),
