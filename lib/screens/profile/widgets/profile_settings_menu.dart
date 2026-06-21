@@ -86,6 +86,7 @@ class ProfileSettingsMenu extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Icon block (no circle background, reduced size)
               Icon(
@@ -123,7 +124,7 @@ class ProfileSettingsMenu extends StatelessWidget {
     return const Divider(
       height: 1,
       thickness: 1,
-      indent: 54, // aligns perfectly with the start of the text now (20 padding + 18 icon + 16 spacing)
+      indent: 20, // starts right under the icon at the left margin
       endIndent: 20,
       color: Color(0xFFF3F4F6),
     );
