@@ -100,9 +100,9 @@ class InventoryFilterBar extends StatelessWidget {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(
-                          color: theme.colorScheme.secondary,
-                          width: 1.8,
+                        borderSide: const BorderSide(
+                          color: Color(0xFFD2E4E6),
+                          width: 1.2,
                         ),
                       ),
                     ),
