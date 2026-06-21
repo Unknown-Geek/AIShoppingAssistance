@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import '../../../models/chatbot_models.dart';
 
 class HistoryDrawer extends StatefulWidget {
@@ -49,11 +50,46 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
     }
   }
 
+  Future<T?> _showBlurredDialog<T>({
+    required BuildContext context,
+    required WidgetBuilder builder,
+    bool barrierDismissible = true,
+  }) {
+    return showGeneralDialog<T>(
+      context: context,
+      barrierDismissible: barrierDismissible,
+      barrierLabel: 'Dismiss Dialog',
+      barrierColor: Colors.black.withValues(alpha: 0.25),
+      transitionDuration: const Duration(milliseconds: 350),
+      pageBuilder: (ctx, anim1, anim2) => builder(ctx),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        final curve = CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic);
+        return AnimatedBuilder(
+          animation: curve,
+          builder: (context, childWidget) {
+            final sigma = curve.value * 6.0;
+            return BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+              child: FadeTransition(
+                opacity: curve,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.92, end: 1.0).animate(curve),
+                  child: childWidget,
+                ),
+              ),
+            );
+          },
+          child: child,
+        );
+      },
+    );
+  }
+
   void _showRenameDialog(BuildContext context, ChatSession session) {
     final theme = Theme.of(context);
     final controller = TextEditingController(text: session.title);
 
-    showDialog(
+    _showBlurredDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -107,7 +143,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                 'Cancel',
                 style: TextStyle(
                   fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.primary.withValues(alpha: 0.7),
                 ),
@@ -120,7 +156,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
               onPressed: () {
                 final newTitle = controller.text.trim();
@@ -132,7 +168,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
               child: const Text(
                 'Rename',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -145,7 +181,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
 
   void _showDeleteDialog(BuildContext context, ChatSession session) {
     final theme = Theme.of(context);
-    showDialog(
+    _showBlurredDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -177,7 +213,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                 'Cancel',
                 style: TextStyle(
                   fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.primary.withValues(alpha: 0.7),
                 ),
@@ -190,7 +226,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
               onPressed: () {
                 widget.onDeleteChatSession(session);
@@ -199,7 +235,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
               child: const Text(
                 'Delete',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
