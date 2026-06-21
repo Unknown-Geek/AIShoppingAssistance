@@ -776,6 +776,19 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
+    final bool isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    // Calculate the position of the scroll down button so it floats perfectly above the cart button
+    final double scrollDownButtonBottom = isKeyboardOpen
+        ? 150.0 + MediaQuery.of(context).viewInsets.bottom
+        : 170.0 + (bottomPadding > 0 ? bottomPadding : 16.0);
+
+    // Calculate list view bottom padding to clear the floating input field and cart button
+    final double listBottomPadding = isKeyboardOpen
+        ? 160.0
+        : 200.0 + (bottomPadding > 0 ? bottomPadding : 16.0);
+
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -852,7 +865,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           child: _messages.isEmpty
                               ? SingleChildScrollView(
                                   physics: const BouncingScrollPhysics(),
-                                  padding: const EdgeInsets.only(top: 12, bottom: 48),
+                                  padding: EdgeInsets.only(top: 12, bottom: listBottomPadding),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -923,7 +936,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                               : ListView.builder(
                                   controller: _scrollController,
                                   reverse: true,
-                                  padding: const EdgeInsets.only(top: 12, bottom: 64),
+                                  padding: EdgeInsets.only(top: 12, bottom: listBottomPadding),
                                   itemCount: _messages.length + (_loading ? 1 : 0),
                                   itemBuilder: (_, index) {
                                     if (_loading) {
@@ -973,7 +986,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       if (_showScrollDownButton)
                         Positioned(
                           right: 16,
-                          bottom: 16,
+                          bottom: scrollDownButtonBottom,
                           child: GestureDetector(
                             onTap: _scrollToBottom,
                             child: Container(
@@ -1002,25 +1015,30 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                             ),
                           ),
                         ),
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: ChatInputField(
+                          controller: _controller,
+                          loading: _loading,
+                          onSend: _sendMessage,
+                          selectedImage: _selectedImage,
+                          showScrollDownButton: _showScrollDownButton,
+                          onImageSelected: (image) {
+                            setState(() {
+                              _selectedImage = image;
+                            });
+                          },
+                          onClearImage: () {
+                            setState(() {
+                              _selectedImage = null;
+                            });
+                          },
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                ChatInputField(
-                  controller: _controller,
-                  loading: _loading,
-                  onSend: _sendMessage,
-                  selectedImage: _selectedImage,
-                  showScrollDownButton: _showScrollDownButton,
-                  onImageSelected: (image) {
-                    setState(() {
-                      _selectedImage = image;
-                    });
-                  },
-                  onClearImage: () {
-                    setState(() {
-                      _selectedImage = null;
-                    });
-                  },
                 ),
               ],
             ),
