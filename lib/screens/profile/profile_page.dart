@@ -53,6 +53,17 @@ class _ProfilePageState extends State<ProfilePage> {
           _profilePicBase64 = saved;
         });
       }
+
+      final user = Supabase.instance.client.auth.currentUser;
+      final supabasePic = user?.userMetadata?['profile_pic'] as String?;
+      if (supabasePic != null && supabasePic != saved) {
+        await prefs.setString('profile_pic_${widget.email}', supabasePic);
+        if (mounted) {
+          setState(() {
+            _profilePicBase64 = supabasePic;
+          });
+        }
+      }
     } catch (e) {
       debugPrint('Error loading profile pic: $e');
     }
@@ -79,6 +90,10 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _profilePicBase64 = base64String;
       });
+
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(data: {'profile_pic': base64String}),
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -111,6 +126,10 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _profilePicBase64 = null;
       });
+
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(data: {'profile_pic': null}),
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

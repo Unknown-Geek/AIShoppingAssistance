@@ -100,6 +100,17 @@ class _DashboardScreenState extends State<DashboardScreen>
           _profilePicBase64 = saved;
         });
       }
+
+      final user = Supabase.instance.client.auth.currentUser;
+      final supabasePic = user?.userMetadata?['profile_pic'] as String?;
+      if (supabasePic != null && supabasePic != saved) {
+        await prefs.setString('profile_pic_$email', supabasePic);
+        if (mounted) {
+          setState(() {
+            _profilePicBase64 = supabasePic;
+          });
+        }
+      }
     } catch (e) {
       debugPrint('Error loading profile pic in dashboard: $e');
     }
