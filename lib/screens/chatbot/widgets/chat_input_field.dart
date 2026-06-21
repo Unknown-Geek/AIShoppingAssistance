@@ -99,7 +99,9 @@ class ChatInputField extends StatelessWidget {
             clipBehavior: Clip.none,
             alignment: Alignment.topCenter,
             children: [
-              Container(
+              Padding(
+                padding: const EdgeInsets.only(top: 54),
+                child: Container(
                 constraints: const BoxConstraints(
                   minHeight: 80,
                   maxHeight: 160,
@@ -191,8 +193,9 @@ class ChatInputField extends StatelessWidget {
                   ],
                 ),
               ),
+              ),
               Positioned(
-                top: topGap - 54,
+                top: topGap,
                 left: (MediaQuery.of(context).size.width - 72) / 2,
                 width: 72,
                 height: 40,
