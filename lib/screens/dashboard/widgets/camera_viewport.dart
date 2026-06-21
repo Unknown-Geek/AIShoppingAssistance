@@ -75,7 +75,8 @@ class _CameraViewportState extends State<CameraViewport> {
         widget.cameraController != null &&
         widget.isCameraInitialized) {
       try {
-        final targetZoom = _minHardwareZoom +
+        final targetZoom =
+            _minHardwareZoom +
             (level - 1.0) * ((_maxHardwareZoom - _minHardwareZoom) / 2.0);
         await widget.cameraController!.setZoomLevel(
           targetZoom.clamp(_minHardwareZoom, _maxHardwareZoom),
@@ -116,7 +117,8 @@ class _CameraViewportState extends State<CameraViewport> {
                 color: const Color(0xFF1A1A1A),
                 child: Stack(
                   children: [
-                    if (widget.isCameraInitialized && widget.cameraController != null)
+                    if (widget.isCameraInitialized &&
+                        widget.cameraController != null)
                       Positioned.fill(
                         child: RepaintBoundary(
                           child: AnimatedScale(
@@ -128,8 +130,15 @@ class _CameraViewportState extends State<CameraViewport> {
                               child: SizedBox(
                                 width: MediaQuery.of(context).size.width,
                                 child: AspectRatio(
-                                  aspectRatio: 1 / widget.cameraController!.value.aspectRatio,
-                                  child: CameraPreview(widget.cameraController!),
+                                  aspectRatio:
+                                      1 /
+                                      widget
+                                          .cameraController!
+                                          .value
+                                          .aspectRatio,
+                                  child: CameraPreview(
+                                    widget.cameraController!,
+                                  ),
                                 ),
                               ),
                             ),
@@ -156,7 +165,9 @@ class _CameraViewportState extends State<CameraViewport> {
                         child: CustomPaint(
                           painter: ReticlePainter(
                             color: widget.hasDetectedProduct
-                                ? const Color(0xFF34D399) // Dynamic vibrant green feedback
+                                ? const Color(
+                                    0xFF34D399,
+                                  ) // Dynamic vibrant green feedback
                                 : theme.colorScheme.secondary,
                             strokeWidth: 2.0,
                             borderRadius: 16,
@@ -182,7 +193,9 @@ class _CameraViewportState extends State<CameraViewport> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1A1A1A).withValues(alpha: 0.55),
+                              color: const Color(
+                                0xFF1A1A1A,
+                              ).withValues(alpha: 0.55),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: Colors.white.withValues(alpha: 0.2),
@@ -223,7 +236,9 @@ class _CameraViewportState extends State<CameraViewport> {
                                 right: _showZoomSlider ? 8 : 0,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1A1A1A).withValues(alpha: 0.6),
+                                color: const Color(
+                                  0xFF1A1A1A,
+                                ).withValues(alpha: 0.6),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               clipBehavior: Clip.antiAlias,
@@ -235,16 +250,18 @@ class _CameraViewportState extends State<CameraViewport> {
                                   width: 140,
                                   child: SliderTheme(
                                     data: SliderTheme.of(context).copyWith(
-                                      activeTrackColor: theme.colorScheme.secondary,
+                                      activeTrackColor:
+                                          theme.colorScheme.secondary,
                                       inactiveTrackColor: Colors.white24,
                                       thumbColor: Colors.white,
                                       trackHeight: 2,
                                       thumbShape: const RoundSliderThumbShape(
                                         enabledThumbRadius: 6,
                                       ),
-                                      overlayShape: const RoundSliderOverlayShape(
-                                        overlayRadius: 12,
-                                      ),
+                                      overlayShape:
+                                          const RoundSliderOverlayShape(
+                                            overlayRadius: 12,
+                                          ),
                                     ),
                                     child: Slider(
                                       value: _zoomLevel,
@@ -293,9 +310,9 @@ class _CameraViewportState extends State<CameraViewport> {
                                   details.globalPosition.dx - _dragStartPos.dx;
                               final double newZoom =
                                   (_zoomLevelAtStart - (dx / 70.0)).clamp(
-                                1.0,
-                                3.0,
-                              );
+                                    1.0,
+                                    3.0,
+                                  );
                               setState(() {
                                 _zoomLevel = newZoom;
                               });
@@ -320,11 +337,14 @@ class _CameraViewportState extends State<CameraViewport> {
                                   shape: BoxShape.circle,
                                   color: _showZoomSlider
                                       ? theme.colorScheme.secondary
-                                      : const Color(0xFF1A1A1A).withValues(alpha: 0.6),
+                                      : const Color(
+                                          0xFF1A1A1A,
+                                        ).withValues(alpha: 0.6),
                                   boxShadow: _showZoomSlider
                                       ? [
                                           BoxShadow(
-                                            color: theme.colorScheme.secondary.withValues(alpha: 0.4),
+                                            color: theme.colorScheme.secondary
+                                                .withValues(alpha: 0.4),
                                             blurRadius: 8,
                                             offset: const Offset(0, 2),
                                           ),

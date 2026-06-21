@@ -145,7 +145,8 @@ class MessageBubble extends StatelessWidget {
                               Text(
                                 message.text ?? 'Unknown error',
                                 style: TextStyle(
-                                  fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                  fontFamily:
+                                      theme.textTheme.bodyMedium?.fontFamily,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                   height: 1.5,
@@ -157,7 +158,8 @@ class MessageBubble extends StatelessWidget {
                               Text(
                                 _formatTime(message.timestamp),
                                 style: TextStyle(
-                                  fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                  fontFamily:
+                                      theme.textTheme.bodyMedium?.fontFamily,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w400,
                                   color: theme.colorScheme.primary.withValues(
