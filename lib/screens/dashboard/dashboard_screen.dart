@@ -23,6 +23,8 @@ import 'widgets/checkout_bar.dart';
 import 'widgets/dashboard_sheets.dart';
 import '../profile/profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../utils/web_blur_helper_stub.dart'
+    if (dart.library.js_interop) '../../utils/web_blur_helper_web.dart';
 
 class DashboardScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
@@ -65,6 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void initState() {
     super.initState();
+    WebBlurHelper.initialize();
     _lastActionTime = DateTime.now();
     WidgetsBinding.instance.addObserver(this);
     _cursorController = AnimationController(
@@ -261,35 +264,40 @@ class _DashboardScreenState extends State<DashboardScreen>
     required BuildContext context,
     required WidgetBuilder builder,
     bool barrierDismissible = true,
-  }) {
-    return showGeneralDialog<T>(
-      context: context,
-      barrierDismissible: barrierDismissible,
-      barrierLabel: 'Dismiss Dialog',
-      barrierColor: Colors.black.withValues(alpha: 0.25),
-      transitionDuration: const Duration(milliseconds: 350),
-      pageBuilder: (ctx, anim1, anim2) => builder(ctx),
-      transitionBuilder: (ctx, anim1, anim2, child) {
-        final curve = CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic);
-        return AnimatedBuilder(
-          animation: curve,
-          builder: (context, childWidget) {
-            final sigma = curve.value * 6.0;
-            return BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
-              child: FadeTransition(
-                opacity: curve,
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.92, end: 1.0).animate(curve),
-                  child: childWidget,
+  }) async {
+    WebBlurHelper.setBlurActive(true);
+    try {
+      return await showGeneralDialog<T>(
+        context: context,
+        barrierDismissible: barrierDismissible,
+        barrierLabel: 'Dismiss Dialog',
+        barrierColor: Colors.black.withValues(alpha: 0.25),
+        transitionDuration: const Duration(milliseconds: 350),
+        pageBuilder: (ctx, anim1, anim2) => builder(ctx),
+        transitionBuilder: (ctx, anim1, anim2, child) {
+          final curve = CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic);
+          return AnimatedBuilder(
+            animation: curve,
+            builder: (context, childWidget) {
+              final sigma = curve.value * 6.0;
+              return BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+                child: FadeTransition(
+                  opacity: curve,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.92, end: 1.0).animate(curve),
+                    child: childWidget,
+                  ),
                 ),
-              ),
-            );
-          },
-          child: child,
-        );
-      },
-    );
+              );
+            },
+            child: child,
+          );
+        },
+      );
+    } finally {
+      WebBlurHelper.setBlurActive(false);
+    }
   }
 
   Future<void> _checkoutCart() async {
