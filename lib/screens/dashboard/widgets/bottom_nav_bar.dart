@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 
 class BottomNavBar extends StatefulWidget {
   final VoidCallback onChatTap;
-  final VoidCallback onVoiceTap;
+  final VoidCallback onStoreTap;
   final bool isSearchingImage;
   final VoidCallback onShutterTap;
 
   const BottomNavBar({
     super.key,
     required this.onChatTap,
-    required this.onVoiceTap,
+    required this.onStoreTap,
     required this.isSearchingImage,
     required this.onShutterTap,
   });
@@ -78,18 +78,18 @@ class _BottomNavBarState extends State<BottomNavBar> {
                   const SizedBox(width: 74),
                   Expanded(
                     child: InkWell(
-                      onTap: widget.onVoiceTap,
+                      onTap: widget.onStoreTap,
                       child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.mic_none,
+                            Icons.storefront_outlined,
                             color: Color(0xFF4A5568),
                             size: 22,
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Voice',
+                            'Store',
                             style: TextStyle(
                               fontSize: 11,
                               color: Color(0xFF4A5568),
