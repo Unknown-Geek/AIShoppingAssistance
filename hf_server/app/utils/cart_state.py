@@ -7,6 +7,27 @@ class InMemoryCartStateManager:
         self._carts: Dict[str, Dict[str, int]] = {}
         self._lock = threading.Lock()
 
+    def sync_from_client(self, user_id: str, current_cart: List[Dict[str, Any]]) -> None:
+        """
+        Resets the server-side cart for a user to exactly match the authoritative
+        state sent by the Flutter client on every request.
+
+        Flutter's CartService is the single source of truth. This prevents the
+        server accumulating stale quantities when the cart is modified externally
+        (dashboard scanner, checkout, manual clear from outside the chatbot).
+        """
+        with self._lock:
+            if not current_cart:
+                # Cart was cleared externally — wipe server state entirely
+                self._carts[user_id] = {}
+            else:
+                # Rebuild map directly from client payload
+                self._carts[user_id] = {
+                    item["sku"]: int(item.get("quantity", 1))
+                    for item in current_cart
+                    if item.get("sku")
+                }
+
     def add_item(self, user_id: str, sku: str, quantity: int = 1) -> bool:
         """Thread-safe write operation to add or increment a SKU in a user's cart."""
         with self._lock:

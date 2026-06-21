@@ -33,16 +33,30 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   String _currentChatTitle = 'New Chat';
   String? _currentChatSessionId;
 
+  bool _showScrollDownButton = false;
   Animation<double>? _routeAnimation;
   bool _isTransitioning = true;
 
   static const String _storageKey = 'chat_history_v2'; // Changed key to differentiate updated model storage
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    final showButton = maxScroll - currentScroll > 200;
+    if (showButton != _showScrollDownButton) {
+      setState(() {
+        _showScrollDownButton = showButton;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
     _loadChatHistory();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
@@ -301,12 +315,33 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         };
       }).toList();
 
+      // Sanitize chat history: strip any assistant messages that echo cart state.
+      // Those are snapshots of a past moment — if the cart has since been cleared
+      // or modified via the dashboard scanner, they become stale and cause the LLM
+      // to double-count quantities across turns.
+      final rawHistory = _messages.sublist(0, _messages.length - 1);
+      final sanitizedHistory = rawHistory.map((msg) {
+        if (!msg.isUser &&
+            msg.text != null &&
+            (msg.text!.contains('Current Cart Items:') ||
+             msg.text!.startsWith('- ') && msg.text!.contains(':'))) {
+          // Replace stale cart listing with a neutral note so history context is preserved
+          // without the outdated quantity data polluting the LLM's reasoning.
+          return ChatMessage(
+            isUser: false,
+            text: '[Previous cart summary — refer to system prompt for current cart state]',
+            timestamp: msg.timestamp,
+          );
+        }
+        return msg;
+      }).toList();
+
       final response = await ChatAgentService().sendChatMessage(
         cartSlugs,
         currentCart,
         prompt,
         2, // servings
-        _messages.sublist(0, _messages.length - 1), // History without the latest message
+        sanitizedHistory,
         imageBase64: base64Image,
       );
 
@@ -356,10 +391,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           'summary': recipePayload['recipe_instructions'] != null && (recipePayload['recipe_instructions'] as List).isNotEmpty
               ? 'A delicious ${recipePayload['dish'] ?? prompt} crafted by your AI Chef.'
               : 'A custom recipe for ${recipePayload['dish'] ?? prompt}.',
-          'ingredients': (recipePayload['parsed_ingredients'] as List<dynamic>?)?.map((item) {
+          'ingredients': (recipePayload['ingredients'] as List<dynamic>?)?.map((item) {
+            final cleaned = _cleanIngredient(
+              item['quantity'] ?? '',
+              item['name'] ?? '',
+            );
             return {
-              'name': item['name'] ?? '',
-              'quantity': item['quantity'] ?? '1',
+              'name': cleaned['name'] ?? '',
+              'quantity': cleaned['quantity'] ?? '1',
             };
           }).toList() ?? [],
           'instructions': List<String>.from(recipePayload['recipe_instructions'] ?? []),
@@ -408,8 +447,75 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     });
   }
 
+  Map<String, String> _cleanIngredient(String quantity, String name) {
+    var qtyStr = quantity.trim();
+    var nameStr = name.trim();
+    
+    if (qtyStr.isEmpty) return {'quantity': '', 'name': nameStr};
+    if (nameStr.isEmpty) return {'quantity': qtyStr, 'name': ''};
+    
+    // 1. Clean the quantity if unit is duplicated in the quantity string itself (e.g. "2 cups cups" -> "2 cups")
+    final qtyWords = qtyStr.split(RegExp(r'\s+'));
+    if (qtyWords.length >= 2) {
+      final lastWord = qtyWords.last;
+      final secondLastWord = qtyWords[qtyWords.length - 2];
+      
+      String cleanWord(String w) {
+        var word = w.toLowerCase().trim();
+        if (word.endsWith('es')) {
+          word = word.substring(0, word.length - 2);
+        } else if (word.endsWith('s')) {
+          word = word.substring(0, word.length - 1);
+        }
+        return word;
+      }
+      
+      if (cleanWord(lastWord) == cleanWord(secondLastWord)) {
+        qtyStr = qtyWords.sublist(0, qtyWords.length - 1).join(' ').trim();
+      }
+    }
+    
+    // 2. Clean the name if it starts with a unit word already present in the quantity
+    final nameWords = nameStr.split(RegExp(r'\s+'));
+    if (nameWords.isNotEmpty) {
+      final firstWord = nameWords.first.toLowerCase().replaceAll(RegExp(r'[.,()]+'), '');
+      final qtyWordsForCheck = qtyStr.toLowerCase().split(RegExp(r'\s+'));
+      
+      String cleanWord(String w) {
+        var word = w.toLowerCase().trim();
+        if (word.endsWith('es')) {
+          word = word.substring(0, word.length - 2);
+        } else if (word.endsWith('s')) {
+          word = word.substring(0, word.length - 1);
+        }
+        return word;
+      }
+      
+      final cleanFirst = cleanWord(firstWord);
+      
+      bool matched = false;
+      for (final qWord in qtyWordsForCheck) {
+        if (cleanWord(qWord) == cleanFirst) {
+          matched = true;
+          break;
+        }
+      }
+      
+      if (matched) {
+        var cleaned = nameWords.sublist(1).join(' ').trim();
+        if (cleaned.toLowerCase().startsWith('of ')) {
+          cleaned = cleaned.substring(3).trim();
+        }
+        nameStr = cleaned;
+      }
+    }
+    
+    return {'quantity': qtyStr, 'name': nameStr};
+  }
+
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _routeAnimation?.removeStatusListener(_handleRouteStatus);
     _controller.dispose();
     _scrollController.dispose();
@@ -565,9 +671,21 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                               : ListView.builder(
                                   controller: _scrollController,
                                   padding: const EdgeInsets.only(top: 12, bottom: 48),
-                                  itemCount: _messages.length,
-                                  itemBuilder: (_, index) =>
-                                      MessageBubble(message: _messages[index]),
+                                  itemCount: _messages.length + (_loading ? 1 : 0),
+                                  itemBuilder: (_, index) {
+                                    if (index == _messages.length) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(bottom: 8),
+                                        child: MessageBubble(
+                                          message: ChatMessage(
+                                            isUser: false,
+                                            text: null,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return MessageBubble(message: _messages[index]);
+                                  },
                                 ),
                         ),
                       ),
@@ -593,19 +711,41 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           end: Alignment.bottomCenter,
                         ),
                       ),
+                      if (_showScrollDownButton)
+                        Positioned(
+                          right: 16,
+                          bottom: 16,
+                          child: GestureDetector(
+                            onTap: _scrollToBottom,
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFFD2E4E6),
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: theme.colorScheme.primary,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                if (_loading)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: MessageBubble(
-                      message: ChatMessage(
-                        isUser: false,
-                        text: null, // trigger typing indicator
-                      ),
-                    ),
-                  ),
                 ChatInputField(
                   controller: _controller,
                   loading: _loading,

@@ -1,17 +1,47 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/cart_item_model.dart';
 import '../models/chatbot_models.dart';
 import 'cart_service.dart';
 
 class ChatAgentService {
-  /// Resolves the active user's ID from Supabase auth.
-  /// Falls back to "anonymous_user" when no session is present.
-  String get _resolvedUserId =>
-      Supabase.instance.client.auth.currentUser?.id ?? 'anonymous_user';
+  static const String _anonIdKey = 'qless_anon_device_id';
+
+  /// Returns the active user's ID from Supabase auth.
+  /// For unauthenticated users, returns a persistent device-scoped UUID that is
+  /// generated once and stored in SharedPreferences. This prevents all anonymous
+  /// users from sharing the same backend cart key ('anonymous_user') and
+  /// corrupting each other's cart state.
+  Future<String> get resolvedUserId async {
+    final authedId = Supabase.instance.client.auth.currentUser?.id;
+    if (authedId != null) return authedId;
+
+    final prefs = await SharedPreferences.getInstance();
+    String? anonId = prefs.getString(_anonIdKey);
+    if (anonId == null || anonId.isEmpty) {
+      anonId = _generateUuid();
+      await prefs.setString(_anonIdKey, anonId);
+    }
+    return anonId;
+  }
+
+  /// Generates a random UUID v4 without external packages.
+  String _generateUuid() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+           '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
+           '${hex.substring(20)}';
+  }
+
 
   // Getter for backendUrl used by other methods like fetchAgentCart
   String get backendUrl {
@@ -60,6 +90,7 @@ class ChatAgentService {
     List<ChatMessage> chatHistory, {
     String? imageBase64,
   }) async {
+    final userId = await resolvedUserId;
     final urls = backendUrls;
     List<String> errors = [];
 
@@ -77,7 +108,7 @@ class ChatAgentService {
           Uri.parse('$url/chat/message'),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({
-            "user_id": _resolvedUserId,
+            "user_id": userId,
             "current_cart_slugs": cartSlugs,
             "dish_query": dish,
             "servings": servings,
@@ -115,7 +146,7 @@ class ChatAgentService {
 
   /// Fetches the agent-committed cart state from the backend in-memory store.
   Future<List<Map<String, dynamic>>> fetchAgentCart() async {
-    final userId = _resolvedUserId;
+    final userId = await resolvedUserId;
     try {
       final response = await http.get(
         Uri.parse('$backendUrl/chat/cart/$userId'),
@@ -148,7 +179,7 @@ class ChatAgentService {
           details: 'SKU: ${item['sku'] ?? 'UNKNOWN'} • Price: ₹${(item['price_rupees'] ?? 0.0).toStringAsFixed(2)}',
           imageUrl: item['thumbnail_url'] ?? '',
           price: (item['price_rupees'] as num?)?.toDouble() ?? 0.0,
-          quantity: 1,
+          quantity: (item['quantity'] as num?)?.toInt() ?? 1,
         );
         cartService.addItem(missingItem);
       }
