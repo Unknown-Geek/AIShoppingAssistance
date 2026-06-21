@@ -53,6 +53,17 @@ class _ProfilePageState extends State<ProfilePage> {
           _profilePicBase64 = saved;
         });
       }
+
+      final user = Supabase.instance.client.auth.currentUser;
+      final supabasePic = user?.userMetadata?['profile_pic'] as String?;
+      if (supabasePic != null && supabasePic != saved) {
+        await prefs.setString('profile_pic_${widget.email}', supabasePic);
+        if (mounted) {
+          setState(() {
+            _profilePicBase64 = supabasePic;
+          });
+        }
+      }
     } catch (e) {
       debugPrint('Error loading profile pic: $e');
     }
@@ -79,6 +90,10 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _profilePicBase64 = base64String;
       });
+
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(data: {'profile_pic': base64String}),
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -111,6 +126,10 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _profilePicBase64 = null;
       });
+
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(data: {'profile_pic': null}),
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -149,7 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   fontFamily: theme.textTheme.titleLarge?.fontFamily,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF001A23),
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -158,19 +177,19 @@ class _ProfilePageState extends State<ProfilePage> {
                   vertical: 8,
                   horizontal: 8,
                 ),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F1F2),
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.surfaceContainer,
                   child: Icon(
                     Icons.photo_library_rounded,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'Choose Image from Gallery',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 onTap: () {
@@ -184,19 +203,19 @@ class _ProfilePageState extends State<ProfilePage> {
                   vertical: 8,
                   horizontal: 8,
                 ),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F1F2),
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.surfaceContainer,
                   child: Icon(
                     Icons.camera_alt_rounded,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'Take Photo with Camera',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 onTap: () {
@@ -211,19 +230,19 @@ class _ProfilePageState extends State<ProfilePage> {
                     vertical: 8,
                     horizontal: 8,
                   ),
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFFFEBEE),
+                  leading: CircleAvatar(
+                    backgroundColor: theme.colorScheme.error.withValues(alpha: 0.1),
                     child: Icon(
                       Icons.delete_outline_rounded,
-                      color: Colors.redAccent,
+                      color: theme.colorScheme.error,
                     ),
                   ),
-                  title: const Text(
+                  title: Text(
                     'Remove Current Photo',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: Colors.redAccent,
+                      color: theme.colorScheme.error,
                     ),
                   ),
                   onTap: () {
@@ -271,7 +290,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   fontFamily: theme.textTheme.titleLarge?.fontFamily,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF001A23),
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -280,19 +299,19 @@ class _ProfilePageState extends State<ProfilePage> {
                   vertical: 8,
                   horizontal: 8,
                 ),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F1F2),
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.surfaceContainer,
                   child: Icon(
                     Icons.badge_rounded,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'Edit Display Name',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 onTap: () {
@@ -306,19 +325,19 @@ class _ProfilePageState extends State<ProfilePage> {
                   vertical: 8,
                   horizontal: 8,
                 ),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F1F2),
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.surfaceContainer,
                   child: Icon(
                     Icons.camera_alt_rounded,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'Change Profile Photo',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 onTap: () {
@@ -385,7 +404,7 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
+              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.5),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
@@ -406,7 +425,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       fontFamily: theme.textTheme.titleLarge?.fontFamily,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF001A23),
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -426,7 +445,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     enabled: !saving,
                     style: TextStyle(
                       fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                      color: const Color(0xFF001A23),
+                      color: theme.colorScheme.primary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -434,20 +453,20 @@ class _ProfilePageState extends State<ProfilePage> {
                       hintText: 'New Password',
                       hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
                       filled: true,
-                      fillColor: const Color(0xFFF9FAFB),
-                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF006B70), size: 20),
+                      fillColor: theme.colorScheme.surfaceContainer.withValues(alpha: 0.25),
+                      prefixIcon: Icon(Icons.lock_outline_rounded, color: theme.colorScheme.primary, size: 20),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
+                        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
+                        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFF006B70), width: 1.5),
+                        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                       ),
                     ),
                     validator: (val) {
@@ -464,7 +483,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     enabled: !saving,
                     style: TextStyle(
                       fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                      color: const Color(0xFF001A23),
+                      color: theme.colorScheme.primary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -472,20 +491,20 @@ class _ProfilePageState extends State<ProfilePage> {
                       hintText: 'Confirm Password',
                       hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
                       filled: true,
-                      fillColor: const Color(0xFFF9FAFB),
-                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF006B70), size: 20),
+                      fillColor: theme.colorScheme.surfaceContainer.withValues(alpha: 0.25),
+                      prefixIcon: Icon(Icons.lock_outline_rounded, color: theme.colorScheme.primary, size: 20),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
+                        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
+                        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFF006B70), width: 1.5),
+                        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                       ),
                     ),
                     validator: (val) {
@@ -499,85 +518,91 @@ class _ProfilePageState extends State<ProfilePage> {
                   Row(
                     children: [
                       Expanded(
-                        child: SizedBox(
-                          height: 40,
-                          child: OutlinedButton(
-                            onPressed: saving ? null : () => Navigator.pop(ctx),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
-                              shape: const StadiumBorder(),
-                              foregroundColor: const Color(0xFF4B5563),
+                        child: OutlinedButton(
+                          onPressed: saving ? null : () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
                             ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: SizedBox(
-                          height: 40,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF001A23),
-                              foregroundColor: Colors.white,
-                              shape: const StadiumBorder(),
-                              elevation: 0,
-                            ),
-                            onPressed: saving
-                                ? null
-                                : () async {
-                                    if (!formKey.currentState!.validate()) return;
-                                    final newPassword = controller.text.trim();
+                        child: ElevatedButton(
+                          onPressed: saving
+                              ? null
+                              : () async {
+                                  if (!formKey.currentState!.validate()) return;
+                                  final newPassword = controller.text.trim();
 
-                                    setModalState(() => saving = true);
+                                  setModalState(() => saving = true);
 
-                                    try {
-                                      await Supabase.instance.client.auth.updateUser(
-                                        UserAttributes(password: newPassword),
-                                      );
+                                  try {
+                                    await Supabase.instance.client.auth.updateUser(
+                                      UserAttributes(password: newPassword),
+                                    );
 
-                                      if (!mounted) return;
+                                    if (!mounted) return;
 
-                                      if (ctx.mounted) {
-                                        Navigator.pop(ctx);
-                                      }
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: const Text('Password updated successfully!'),
-                                          backgroundColor: theme.colorScheme.primary,
-                                          behavior: SnackBarBehavior.fixed,
-                                        ),
-                                      );
-                                    } catch (e) {
-                                      debugPrint('Error updating password: $e');
-                                      setModalState(() => saving = false);
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Failed to update password.'),
-                                          backgroundColor: Colors.redAccent,
-                                          behavior: SnackBarBehavior.fixed,
-                                        ),
-                                      );
+                                    if (ctx.mounted) {
+                                      Navigator.pop(ctx);
                                     }
-                                  },
-                            child: saving
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation(Colors.white),
-                                    ),
-                                  )
-                                : const Text(
-                                    'Save',
-                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                  ),
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Text('Password updated successfully!'),
+                                        backgroundColor: theme.colorScheme.primary,
+                                        behavior: SnackBarBehavior.fixed,
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    debugPrint('Error updating password: $e');
+                                    setModalState(() => saving = false);
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Failed to update password.'),
+                                        backgroundColor: Colors.redAccent,
+                                        behavior: SnackBarBehavior.fixed,
+                                      ),
+                                    );
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
                           ),
+                          child: saving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                                  ),
+                                )
+                              : const Text(
+                                  'Save',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
                         ),
                       ),
                     ],
@@ -606,7 +631,7 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
+              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.5),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
@@ -625,7 +650,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     fontFamily: theme.textTheme.titleLarge?.fontFamily,
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -645,28 +670,28 @@ class _ProfilePageState extends State<ProfilePage> {
                   enabled: !saving,
                   style: TextStyle(
                     fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                    color: const Color(0xFF001A23),
+                    color: theme.colorScheme.primary,
                     fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Enter your name',
                     hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
                     filled: true,
-                    fillColor: const Color(0xFFF9FAFB),
-                    prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF006B70), size: 20),
+                    fillColor: theme.colorScheme.surfaceContainer.withValues(alpha: 0.25),
+                    prefixIcon: Icon(Icons.person_outline_rounded, color: theme.colorScheme.primary, size: 20),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
+                      borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
+                      borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFF006B70), width: 1.5),
+                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                     ),
                   ),
                 ),
@@ -674,89 +699,95 @@ class _ProfilePageState extends State<ProfilePage> {
                 Row(
                   children: [
                     Expanded(
-                      child: SizedBox(
-                        height: 40,
-                        child: OutlinedButton(
-                          onPressed: saving ? null : () => Navigator.pop(ctx),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
-                            shape: const StadiumBorder(),
-                            foregroundColor: const Color(0xFF4B5563),
+                      child: OutlinedButton(
+                        onPressed: saving ? null : () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: SizedBox(
-                        height: 40,
-                        child: ElevatedButton(
-                          onPressed: saving
-                              ? null
-                              : () async {
-                                  final newName = controller.text.trim();
-                                  if (newName.isEmpty) return;
+                      child: ElevatedButton(
+                        onPressed: saving
+                            ? null
+                            : () async {
+                                final newName = controller.text.trim();
+                                if (newName.isEmpty) return;
 
-                                  setModalState(() => saving = true);
+                                setModalState(() => saving = true);
 
-                                  try {
-                                    await Supabase.instance.client.auth.updateUser(
-                                      UserAttributes(data: {'name': newName}),
-                                    );
+                                try {
+                                  await Supabase.instance.client.auth.updateUser(
+                                    UserAttributes(data: {'name': newName}),
+                                  );
 
-                                    if (!mounted) return;
+                                  if (!mounted) return;
 
-                                    setState(() {
-                                      _displayName = newName;
-                                    });
+                                  setState(() {
+                                    _displayName = newName;
+                                  });
 
-                                    if (ctx.mounted) {
-                                      Navigator.pop(ctx);
-                                    }
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Text('Name updated successfully!'),
-                                        backgroundColor: theme.colorScheme.primary,
-                                        behavior: SnackBarBehavior.fixed,
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    debugPrint('Error updating name: $e');
-                                    setModalState(() => saving = false);
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Failed to update name.'),
-                                        backgroundColor: Colors.redAccent,
-                                        behavior: SnackBarBehavior.fixed,
-                                      ),
-                                    );
+                                  if (ctx.mounted) {
+                                    Navigator.pop(ctx);
                                   }
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF001A23),
-                            foregroundColor: Colors.white,
-                            shape: const StadiumBorder(),
-                            elevation: 0,
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text('Name updated successfully!'),
+                                      backgroundColor: theme.colorScheme.primary,
+                                      behavior: SnackBarBehavior.fixed,
+                                    ),
+                                  );
+                                } catch (e) {
+                                  debugPrint('Error updating name: $e');
+                                  setModalState(() => saving = false);
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Failed to update name.'),
+                                      backgroundColor: Colors.redAccent,
+                                      behavior: SnackBarBehavior.fixed,
+                                    ),
+                                  );
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                          child: saving
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation(Colors.white),
-                                  ),
-                                )
-                              : const Text(
-                                  'Save',
-                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                ),
                         ),
+                        child: saving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Save',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
                       ),
                     ),
                   ],
@@ -864,7 +895,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       icon: const Icon(Icons.logout_rounded, size: 18),
                       label: const Text('Logout'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFEF4444),
+                        backgroundColor: theme.colorScheme.error,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: const StadiumBorder(),

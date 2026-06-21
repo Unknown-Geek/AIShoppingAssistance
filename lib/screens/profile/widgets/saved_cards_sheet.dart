@@ -113,9 +113,9 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
       await prefs.setString('saved_payment_cards', jsonEncode(cards));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Card removed.'),
-            backgroundColor: Color(0xFF001A23),
+          SnackBar(
+            content: const Text('Card removed.'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
             behavior: SnackBarBehavior.fixed,
           ),
         );
@@ -172,7 +172,7 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
                       fontFamily: theme.textTheme.titleLarge?.fontFamily,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF001A23),
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                   if (!showAddForm && cards.isNotEmpty)
@@ -281,14 +281,14 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
               borderRadius: BorderRadius.circular(24),
               gradient: LinearGradient(
                 colors: isPrimary
-                    ? [const Color(0xFF001A23), const Color(0xFF006B70)]
+                    ? [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.75)]
                     : [const Color(0xFF1E293B), const Color(0xFF475569)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: (isPrimary ? const Color(0xFF006B70) : const Color(0xFF1E293B)).withValues(alpha: 0.2),
+                  color: (isPrimary ? theme.colorScheme.primary : const Color(0xFF1E293B)).withValues(alpha: 0.2),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
@@ -391,7 +391,7 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
         children: [
           TextFormField(
             controller: _nameController,
-            style: const TextStyle(color: Color(0xFF001A23)),
+            style: TextStyle(color: theme.colorScheme.primary),
             decoration: _inputDecoration('Cardholder Name', Icons.person_outline_rounded),
             validator: (val) => val == null || val.trim().isEmpty ? 'Please enter name' : null,
           ),
@@ -399,7 +399,7 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
           TextFormField(
             controller: _numberController,
             keyboardType: TextInputType.number,
-            style: const TextStyle(color: Color(0xFF001A23)),
+            style: TextStyle(color: theme.colorScheme.primary),
             decoration: _inputDecoration('Card Number', Icons.credit_card_outlined),
             validator: (val) {
               if (val == null || val.trim().replaceAll(' ', '').length < 15) {
@@ -414,7 +414,7 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
               Expanded(
                 child: TextFormField(
                   controller: _expiryController,
-                  style: const TextStyle(color: Color(0xFF001A23)),
+                  style: TextStyle(color: theme.colorScheme.primary),
                   decoration: _inputDecoration('Expiry (MM/YY)', Icons.calendar_today_outlined),
                   validator: (val) {
                     if (val == null || !val.contains('/') || val.length < 5) {
@@ -430,7 +430,7 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
                   controller: _cvvController,
                   keyboardType: TextInputType.number,
                   obscureText: true,
-                  style: const TextStyle(color: Color(0xFF001A23)),
+                  style: TextStyle(color: theme.colorScheme.primary),
                   decoration: _inputDecoration('CVV', Icons.lock_outline_rounded),
                   validator: (val) {
                     if (val == null || val.length < 3) {
@@ -446,7 +446,7 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
           ElevatedButton(
             onPressed: _saveNewCard,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF001A23),
+              backgroundColor: theme.colorScheme.primary,
               foregroundColor: Colors.white,
               minimumSize: const Size.fromHeight(52),
               shape: const StadiumBorder(),
@@ -465,7 +465,7 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
       labelStyle: const TextStyle(color: Colors.grey),
       prefixIcon: Icon(icon, color: theme.colorScheme.primary.withValues(alpha: 0.6), size: 20),
       filled: true,
-      fillColor: const Color(0xFFF3F4F6),
+      fillColor: theme.colorScheme.surfaceContainer,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,

@@ -10,7 +10,6 @@ import '../../models/chatbot_models.dart';
 import '../../models/cart_item_model.dart';
 import 'widgets/message_bubble.dart';
 import 'widgets/chat_input_field.dart';
-import 'widgets/chat_cart_sheet.dart';
 import 'widgets/history_drawer.dart';
 import 'widgets/chat_header_pill.dart';
 import 'widgets/fade_content.dart';

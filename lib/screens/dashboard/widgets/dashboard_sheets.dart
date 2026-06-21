@@ -37,7 +37,9 @@ class DashboardSheets {
               ),
               CircleAvatar(
                 radius: 36,
-                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                backgroundColor: theme.colorScheme.primary.withValues(
+                  alpha: 0.1,
+                ),
                 child: Text(
                   initial,
                   style: TextStyle(
@@ -185,7 +187,8 @@ class DashboardSheets {
                       builder: (context, snapshot) {
                         String displayUrl = item.imageUrl;
                         if (snapshot.hasData && snapshot.data != null) {
-                          final thumbnail = snapshot.data!['thumbnail_url'] as String?;
+                          final thumbnail =
+                              snapshot.data!['thumbnail_url'] as String?;
                           if (thumbnail != null && thumbnail.isNotEmpty) {
                             displayUrl = thumbnail;
                           }
@@ -197,10 +200,13 @@ class DashboardSheets {
                             child: SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 1.5),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                              ),
                             ),
                           ),
-                          errorWidget: (context, url, error) => const Icon(Icons.image, size: 20),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.image, size: 20),
                         );
                       },
                     ),
@@ -298,10 +304,7 @@ class DashboardSheets {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return PaymentSheet(
-          amount: amount,
-          onPaymentSuccess: onPaymentSuccess,
-        );
+        return PaymentSheet(amount: amount, onPaymentSuccess: onPaymentSuccess);
       },
     );
   }
@@ -445,10 +448,7 @@ class _RagSheetContentState extends State<_RagSheetContent> {
                 ),
                 child: const Text(
                   'Ask',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                 ),
               ),
             ),

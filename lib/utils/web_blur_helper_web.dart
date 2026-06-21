@@ -1,9 +1,9 @@
-// ignore_for_file: avoid_web_libraries_in_flutter
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:html' as html;
 
 class WebBlurHelper {
   static void initialize() {
-    final id = 'qless-web-blur-css';
+    const id = 'qless-web-blur-css';
     if (html.document.getElementById(id) == null) {
       final style = html.StyleElement()
         ..id = id

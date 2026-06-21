@@ -1243,7 +1243,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                 ),
                 SelectableText(
                   _transactionId,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF001A23)),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
                 ),
               ],
             ),
