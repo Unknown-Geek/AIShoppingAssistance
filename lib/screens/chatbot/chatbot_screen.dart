@@ -587,7 +587,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               children: [
                 // Floating Header Pill
                 ChatHeaderPill(
-                  onBackTap: () {
+                  onHomeTap: () {
                     Navigator.of(context).pop();
                   },
                   onHistoryTap: () {
@@ -772,12 +772,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 }
 
 class ChatHeaderPill extends StatelessWidget {
-  final VoidCallback onBackTap;
+  final VoidCallback onHomeTap;
   final VoidCallback onHistoryTap;
 
   const ChatHeaderPill({
     super.key,
-    required this.onBackTap,
+    required this.onHomeTap,
     required this.onHistoryTap,
   });
 
@@ -803,11 +803,11 @@ class ChatHeaderPill extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Left action: Back
+          // Left action: History
           Align(
             alignment: Alignment.centerLeft,
             child: GestureDetector(
-              onTap: onBackTap,
+              onTap: onHistoryTap,
               child: Container(
                 width: 44,
                 height: 44,
@@ -821,7 +821,7 @@ class ChatHeaderPill extends StatelessWidget {
                 ),
                 child: Center(
                   child: Icon(
-                    Icons.arrow_back_rounded,
+                    Icons.history_rounded,
                     color: theme.colorScheme.primary,
                     size: 20,
                   ),
@@ -844,11 +844,11 @@ class ChatHeaderPill extends StatelessWidget {
               ),
             ),
           ),
-          // Right action: History
+          // Right action: Home
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
-              onTap: onHistoryTap,
+              onTap: onHomeTap,
               child: Container(
                 width: 44,
                 height: 44,
@@ -862,7 +862,7 @@ class ChatHeaderPill extends StatelessWidget {
                 ),
                 child: Center(
                   child: Icon(
-                    Icons.history_rounded,
+                    Icons.home_outlined,
                     color: theme.colorScheme.primary,
                     size: 20,
                   ),

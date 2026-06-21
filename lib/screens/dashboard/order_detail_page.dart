@@ -25,7 +25,6 @@ class OrderDetailPage extends StatelessWidget {
     final items = (order['items'] as List<dynamic>?) ?? [];
     final totalPrice = order['total_price'] ?? 0;
     final status = order['status'] ?? 'Unknown';
-    final orderId = order['id'] ?? order['order_id'] ?? 'N/A';
     final createdAt = _formatCreatedAt(order['vreated_at'] ?? order['created_at'] ?? order['createdAt']);
 
     return Scaffold(
@@ -47,9 +46,9 @@ class OrderDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Order #: $orderId',
-              style: const TextStyle(
+            const Text(
+              'Order Invoice',
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),

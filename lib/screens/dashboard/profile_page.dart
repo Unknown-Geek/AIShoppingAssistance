@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'order_detail_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -21,11 +24,148 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   List<Map<String, dynamic>> orders = [];
   bool loading = true;
+  String? _profilePicBase64;
 
   @override
   void initState() {
     super.initState();
     _loadOrders();
+    _loadProfilePic();
+  }
+
+  Future<void> _loadProfilePic() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('profile_pic_${widget.email}');
+      if (saved != null && saved.isNotEmpty) {
+        setState(() {
+          _profilePicBase64 = saved;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading profile pic: $e');
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final image = await picker.pickImage(
+        source: source,
+        maxWidth: 200,
+        maxHeight: 200,
+        imageQuality: 70,
+      );
+
+      if (image == null) return;
+
+      final bytes = await image.readAsBytes();
+      final base64String = base64Encode(bytes);
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profile_pic_${widget.email}', base64String);
+
+      setState(() {
+        _profilePicBase64 = base64String;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated successfully!')),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to pick image.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeImage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('profile_pic_${widget.email}');
+
+      setState(() {
+        _profilePicBase64 = null;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture removed.')),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error removing image: $e');
+    }
+  }
+
+  Future<void> _showPickImageOptions() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Profile Picture',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFE8F1F2),
+                  child: Icon(Icons.photo_library, color: Colors.black87),
+                ),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFE8F1F2),
+                  child: Icon(Icons.camera_alt, color: Colors.black87),
+                ),
+                title: const Text('Take a Photo'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              if (_profilePicBase64 != null)
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFFFECEB),
+                    child: Icon(Icons.delete, color: Colors.red),
+                  ),
+                  title: const Text('Remove Photo', style: TextStyle(color: Colors.red)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _removeImage();
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _loadOrders() async {
@@ -81,16 +221,45 @@ class _ProfilePageState extends State<ProfilePage> {
       body: Column(
         children: [
           const SizedBox(height: 20),
-          CircleAvatar(
-            radius: 45,
-            backgroundColor: Colors.grey.shade200,
-            child: Text(
-              initial,
-              style: const TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.bold,
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 45,
+                backgroundColor: Colors.grey.shade200,
+                backgroundImage: _profilePicBase64 != null
+                    ? MemoryImage(base64Decode(_profilePicBase64!))
+                    : null,
+                child: _profilePicBase64 == null
+                    ? Text(
+                        initial,
+                        style: const TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
               ),
-            ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _showPickImageOptions,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Text(

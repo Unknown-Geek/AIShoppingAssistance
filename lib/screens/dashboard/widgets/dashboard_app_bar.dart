@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 
 enum DbConnectionStatus { unknown, live, error }
 
 class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String userInitial;
+  final String? profilePicBase64;
   final DbConnectionStatus dbStatus;
   final VoidCallback onProfileTap;
   final VoidCallback onDbStatusTap;
@@ -11,6 +13,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   const DashboardAppBar({
     super.key,
     required this.userInitial,
+    this.profilePicBase64,
     required this.dbStatus,
     required this.onProfileTap,
     required this.onDbStatusTap,
@@ -53,18 +56,26 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                     shape: BoxShape.circle,
                     color: const Color(0xFFFFFFFF),
                     border: Border.all(color: const Color(0xFFD2E4E6)),
+                    image: profilePicBase64 != null
+                        ? DecorationImage(
+                            image: MemoryImage(base64Decode(profilePicBase64!)),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
                   ),
-                  child: Center(
-                    child: Text(
-                      userInitial,
-                      style: TextStyle(
-                        fontFamily: 'ClashDisplay',
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
+                  child: profilePicBase64 == null
+                      ? Center(
+                          child: Text(
+                            userInitial,
+                            style: TextStyle(
+                              fontFamily: 'ClashDisplay',
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        )
+                      : null,
                 ),
               ),
               GestureDetector(
