@@ -210,24 +210,27 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
             const SizedBox(height: 24),
             _isSimulating
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : OutlinedButton.icon(
-                    onPressed: _simulateNotification,
-                    icon: const Icon(Icons.bug_report_outlined, size: 16),
-                    label: const Text(
-                      'Simulate Backend Notification',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: theme.colorScheme.primary,
-                      side: BorderSide(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                ? SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        theme.colorScheme.primary.withValues(alpha: 0.4),
                       ),
-                      shape: const StadiumBorder(),
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: _simulateNotification,
+                    child: Text(
+                      'Simulate Notification',
+                      style: TextStyle(
+                        fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                        decoration: TextDecoration.underline,
+                      ),
                     ),
                   ),
           ],
