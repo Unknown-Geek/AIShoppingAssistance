@@ -105,7 +105,7 @@ class ChatInputField extends StatelessWidget {
                 right: 0,
                 bottom: 0,
                 child: Container(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: Theme.of(context).scaffoldBackgroundColor,
                 ),
               ),
               Padding(
