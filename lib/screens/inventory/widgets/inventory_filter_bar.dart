@@ -60,8 +60,12 @@ class InventoryFilterBar extends StatelessWidget {
                         color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                         fontSize: 14,
                       ),
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 24,
+                      ),
                       prefixIcon: Padding(
-                        padding: const EdgeInsets.only(left: 12.0, right: 8.0),
+                        padding: const EdgeInsets.only(left: 16.0, right: 8.0),
                         child: Icon(
                           Icons.search_rounded,
                           color: theme.colorScheme.primary.withValues(alpha: 0.6),
@@ -175,7 +179,7 @@ class InventoryFilterBar extends StatelessWidget {
                 children: categories.map((category) {
                 final isSelected = selectedCategory == category;
                 return Padding(
-                  padding: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.only(right: 4),
                   child: GestureDetector(
                     onTap: () => onCategorySelected(category),
                     child: AnimatedContainer(
