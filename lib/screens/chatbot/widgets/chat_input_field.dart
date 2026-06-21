@@ -236,13 +236,13 @@ class ChatInputField extends StatelessWidget {
                             color: const Color(0xFFD2E4E6),
                             width: 1.2,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                           boxShadow: [
+                             BoxShadow(
+                               color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                               blurRadius: 12,
+                               offset: const Offset(0, 4),
+                             ),
+                           ],
                         ),
                         child: Center(
                           child: Row(
@@ -307,9 +307,9 @@ class ChatInputField extends StatelessWidget {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
