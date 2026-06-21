@@ -454,7 +454,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
                       filled: true,
                       fillColor: const Color(0xFFF9FAFB),
-                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF006B70), size: 20),
+                      prefixIcon: Icon(Icons.lock_outline_rounded, color: theme.colorScheme.primary, size: 20),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -466,7 +466,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFF006B70), width: 1.5),
+                        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                       ),
                     ),
                     validator: (val) {
@@ -492,7 +492,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
                       filled: true,
                       fillColor: const Color(0xFFF9FAFB),
-                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF006B70), size: 20),
+                      prefixIcon: Icon(Icons.lock_outline_rounded, color: theme.colorScheme.primary, size: 20),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -504,7 +504,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFF006B70), width: 1.5),
+                        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                       ),
                     ),
                     validator: (val) {
@@ -679,7 +679,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
                     filled: true,
                     fillColor: const Color(0xFFF9FAFB),
-                    prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF006B70), size: 20),
+                    prefixIcon: Icon(Icons.person_outline_rounded, color: theme.colorScheme.primary, size: 20),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -691,7 +691,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFF006B70), width: 1.5),
+                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                     ),
                   ),
                 ),
