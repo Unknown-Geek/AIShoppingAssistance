@@ -651,9 +651,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               ),
             ),
           // Main content
-          SafeArea(
-            bottom: false,
-            child: Column(
+          Positioned.fill(
+            child: SafeArea(
+              bottom: false,
+              child: Column(
               children: [
                 // Floating Header Pill
                 ChatHeaderPill(
@@ -900,7 +901,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               ],
             ),
           ),
-        ],
+        ),
+      ],
       ),
     );
   }
