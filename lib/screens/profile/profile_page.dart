@@ -672,7 +672,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                     color: theme.colorScheme.primary,
                     fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Enter your name',
