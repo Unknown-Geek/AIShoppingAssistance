@@ -217,7 +217,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
       opacity: animation,
       child: SizeTransition(
         sizeFactor: animation,
-        alignment: 0.0,
         child: Padding(
           padding: const EdgeInsets.only(top: 0),
           child: itemWidget,
