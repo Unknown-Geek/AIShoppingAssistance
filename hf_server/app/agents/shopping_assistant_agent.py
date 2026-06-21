@@ -145,6 +145,7 @@ class ShoppingAssistantAgent:
             api_key = "gsk_mock_key_placeholder_for_verification_only"
         self.client = Groq(api_key=api_key)
         self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+        self.fallback_model = os.getenv("GROQ_FALLBACK_MODEL", "llama-3.3-70b-versatile")
         self.recipe_agent = RecipeAgent()
         self.quantity_parser = QuantityParserTool()
         self.inventory = self._load_inventory()
@@ -808,9 +809,9 @@ Available Store Catalog (SKUs and Names):
             tool_calls_dict = {}
             try:
                 loop = asyncio.get_event_loop()
-                def get_stream():
+                def get_stream(m):
                     return self.client.chat.completions.create(
-                        model=model_to_use,
+                        model=m,
                         messages=messages,
                         tools=tools_definitions,
                         tool_choice="auto",
@@ -819,7 +820,15 @@ Available Store Catalog (SKUs and Names):
                         stream=True
                     )
                 
-                completion_stream = await loop.run_in_executor(None, get_stream)
+                try:
+                    completion_stream = await loop.run_in_executor(None, lambda: get_stream(model_to_use))
+                except Exception as stream_err:
+                    if model_to_use == self.model and self.fallback_model:
+                        print(f"⚠️ [AGENT LLM FALLBACK] Main model {model_to_use} failed: {stream_err}. Falling back to {self.fallback_model}...")
+                        model_to_use = self.fallback_model
+                        completion_stream = await loop.run_in_executor(None, lambda: get_stream(model_to_use))
+                    else:
+                        raise stream_err
                 
                 role = "assistant"
                 for chunk in completion_stream:

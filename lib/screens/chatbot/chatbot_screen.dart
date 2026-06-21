@@ -602,7 +602,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
       String finalMessage = responseText;
       if (missingItems.isNotEmpty) {
-        finalMessage += "\n\nBased on your past orders, we found the following missing items:";
+        if (finalMessage.isNotEmpty) {
+          finalMessage += "\n\n";
+        }
+        finalMessage += "Based on your past orders, we found the following missing items:";
         for (var item in missingItems) {
           final name = item['name'] ?? 'Unknown Item';
           final avgGap = item['avg_gap_days'] ?? 0;
@@ -612,7 +615,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           finalMessage += "\n• $name (₹${price.toStringAsFixed(2)}) - usually bought every $avgGap days, last bought $lastBought days ago.";
         }
       } else {
-        finalMessage += "\n\nNo missing regular items detected in your cart. You are all set!";
+        if (finalMessage.isNotEmpty) {
+          finalMessage += "\n\n";
+        }
+        finalMessage += "No missing regular items detected in your cart. You are all set!";
       }
 
       final successMsg = ChatMessage(
@@ -839,7 +845,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                         child: Column(
                                           children: [
                                             SuggestionPill(
-                                              text: 'Analyze my cart for missing items 🛒',
+                                              text: 'Analyze my cart for missing items.',
                                               icon: Icons.analytics_outlined,
                                               onTap: () {
                                                 _analyzeCart();
