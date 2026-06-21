@@ -315,12 +315,33 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         };
       }).toList();
 
+      // Sanitize chat history: strip any assistant messages that echo cart state.
+      // Those are snapshots of a past moment — if the cart has since been cleared
+      // or modified via the dashboard scanner, they become stale and cause the LLM
+      // to double-count quantities across turns.
+      final rawHistory = _messages.sublist(0, _messages.length - 1);
+      final sanitizedHistory = rawHistory.map((msg) {
+        if (!msg.isUser &&
+            msg.text != null &&
+            (msg.text!.contains('Current Cart Items:') ||
+             msg.text!.startsWith('- ') && msg.text!.contains(':'))) {
+          // Replace stale cart listing with a neutral note so history context is preserved
+          // without the outdated quantity data polluting the LLM's reasoning.
+          return ChatMessage(
+            isUser: false,
+            text: '[Previous cart summary — refer to system prompt for current cart state]',
+            timestamp: msg.timestamp,
+          );
+        }
+        return msg;
+      }).toList();
+
       final response = await ChatAgentService().sendChatMessage(
         cartSlugs,
         currentCart,
         prompt,
         2, // servings
-        _messages.sublist(0, _messages.length - 1), // History without the latest message
+        sanitizedHistory,
         imageBase64: base64Image,
       );
 
