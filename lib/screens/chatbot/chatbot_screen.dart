@@ -797,8 +797,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         ? 150.0 + MediaQuery.of(context).viewInsets.bottom
         : 170.0 + (bottomPadding > 0 ? bottomPadding : 16.0);
 
-    // Bottom padding for the list view to clear the cart button (and chips if image selected)
-    final double listBottomPadding = hasImage ? 96.0 : 56.0;
+    // Bottom padding for the list view to clear the floating input field and cart button
+    final double listBottomPadding = isKeyboardOpen
+        ? (hasImage ? 200.0 : 160.0)
+        : (hasImage ? 240.0 : 200.0) + (bottomPadding > 0 ? bottomPadding : 16.0);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -867,11 +869,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 Expanded(
                   child: Stack(
                     children: [
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: inputFieldHeight,
+                      Positioned.fill(
                         child: FadeContent(
                           key: ValueKey(_currentChatSessionId ?? (_messages.isEmpty ? 'welcome' : 'new_chat')),
                           blur: false,

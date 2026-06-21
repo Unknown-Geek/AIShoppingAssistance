@@ -99,6 +99,15 @@ class ChatInputField extends StatelessWidget {
             clipBehavior: Clip.none,
             alignment: Alignment.topCenter,
             children: [
+              Positioned(
+                top: 48 + topGap,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  color: Theme.of(context).colorScheme.surface,
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.only(top: 48),
                 child: Container(
