@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../../services/notification_storage_service.dart';
+import '../../services/chat_agent_service.dart';
+import '../../services/payment_notification_service.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -11,6 +15,47 @@ class NotificationsPage extends StatefulWidget {
 class _NotificationsPageState extends State<NotificationsPage> {
   List<Map<String, dynamic>> notifications = [];
   bool loading = true;
+  bool _isSimulating = false;
+
+  Future<void> _simulateNotification() async {
+    if (_isSimulating) return;
+    setState(() => _isSimulating = true);
+
+    try {
+      final chatService = ChatAgentService();
+      final response = await http.post(
+        Uri.parse('${chatService.backendUrl}/chat/test-notification'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final success = data['success'] as bool? ?? false;
+        final message = data['message'] as String? ?? '';
+        final txId = data['transactionId'] as String?;
+
+        await NotificationStorageService.saveNotification(
+          success: success,
+          message: message,
+          transactionId: txId,
+        );
+
+        if (mounted) {
+          PaymentNotificationService.show(
+            context,
+            success: success,
+            message: message,
+            transactionId: txId,
+          );
+          _loadNotifications();
+        }
+      }
+    } catch (e) {
+      debugPrint('[NotificationsPage] Simulation failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSimulating = false);
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -161,6 +206,28 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 color: theme.colorScheme.primary.withValues(alpha: 0.5),
               ),
             ),
+            const SizedBox(height: 24),
+            _isSimulating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : OutlinedButton.icon(
+                    onPressed: _simulateNotification,
+                    icon: const Icon(Icons.bug_report_outlined, size: 16),
+                    label: const Text(
+                      'Simulate Backend Notification',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.primary,
+                      side: BorderSide(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                      ),
+                      shape: const StadiumBorder(),
+                    ),
+                  ),
           ],
         ),
       ),
@@ -246,14 +313,14 @@ class NotificationsHeaderPill extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: Colors.white,
                   border: Border.all(
-                    color: Colors.red.withValues(alpha: 0.2),
+                    color: const Color(0xFFD2E4E6),
                     width: 1.2,
                   ),
                 ),
-                child: const Center(
+                child: Center(
                   child: Icon(
                     Icons.delete_sweep_rounded,
-                    color: Colors.red,
+                    color: theme.colorScheme.error,
                     size: 20,
                   ),
                 ),
