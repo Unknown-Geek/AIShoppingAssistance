@@ -60,10 +60,13 @@ class InventoryFilterBar extends StatelessWidget {
                         color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                         fontSize: 14,
                       ),
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.6),
-                        size: 20,
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.only(left: 12.0, right: 8.0),
+                        child: Icon(
+                          Icons.search_rounded,
+                          color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                          size: 20,
+                        ),
                       ),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
@@ -96,7 +99,7 @@ class InventoryFilterBar extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 6),
               // Sort PopupMenuButton
               Container(
                 width: 48,
@@ -174,10 +177,10 @@ class InventoryFilterBar extends StatelessWidget {
                     onTap: () => onCategorySelected(category),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: isSelected ? theme.colorScheme.primary : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isSelected ? theme.colorScheme.primary : const Color(0xFFD2E4E6),
                           width: 1.2,
@@ -195,7 +198,7 @@ class InventoryFilterBar extends StatelessWidget {
                         category,
                         style: TextStyle(
                           fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                           color: isSelected ? Colors.white : theme.colorScheme.primary.withValues(alpha: 0.8),
                         ),
