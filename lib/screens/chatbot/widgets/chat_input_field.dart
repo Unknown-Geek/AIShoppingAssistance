@@ -31,7 +31,7 @@ class ChatInputField extends StatelessWidget {
 
     // Calculate equal visual gaps above and below the floating white pill
     final double topGap = selectedImage != null
-        ? 6.0
+        ? 60.0
         : (isKeyboardOpen
             ? 8.0
             : (bottomPadding > 0 ? 24.0 : 16.0));
@@ -191,68 +191,81 @@ class ChatInputField extends StatelessWidget {
                   ],
                 ),
               ),
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOut,
-                top: topGap / 2 - 18,
-                left: showScrollDownButton
-                    ? 32.0
-                    : (MediaQuery.of(context).size.width - 64.0) / 2,
-                width: 64,
-                height: 36,
-                child: ListenableBuilder(
-                  listenable: CartService(),
-                  builder: (context, child) {
-                    final count = CartService().itemCount;
-                    return GestureDetector(
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (ctx) => const ChatCartSheet(),
-                        );
-                      },
-                      child: Container(
-                        width: 64,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: const Color(0xFFD2E4E6),
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
-                              blurRadius: 8,
-                              offset: const Offset(0, -2),
+              Positioned(
+                top: topGap - 54,
+                left: (MediaQuery.of(context).size.width - 72) / 2,
+                width: 72,
+                height: 40,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: showScrollDownButton ? 0.0 : 1.0,
+                  child: IgnorePointer(
+                    ignoring: showScrollDownButton,
+                    child: ListenableBuilder(
+                      listenable: CartService(),
+                      builder: (context, child) {
+                        final count = CartService().itemCount;
+                        return GestureDetector(
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (ctx) => const ChatCartSheet(),
+                            );
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(0xFFD2E4E6),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Badge(
-                            label: Text(
-                              '$count',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.shopping_cart_rounded,
+                                    color: Theme.of(context).colorScheme.primary,
+                                    size: 18,
+                                  ),
+                                  if (count > 0) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.secondary,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '$count',
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.primary,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
-                            isLabelVisible: count > 0,
-                            backgroundColor: Theme.of(context).colorScheme.secondary,
-                            textColor: Theme.of(context).colorScheme.primary,
-                            child: Icon(
-                              Icons.shopping_cart_outlined,
-                              color: Theme.of(context).colorScheme.primary,
-                              size: 18,
-                            ),
                           ),
-                        ),
-                      ),
-                    );
-                  },
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
             ],
