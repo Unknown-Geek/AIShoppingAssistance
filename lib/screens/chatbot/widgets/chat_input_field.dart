@@ -283,7 +283,7 @@ class ChatInputField extends StatelessWidget {
                 curve: Curves.easeOutCubic,
                 top: topGap + 4,
                 right: 16,
-                width: btnWidth,
+                width: btnHeight,
                 height: btnHeight,
                 child: IgnorePointer(
                   ignoring: !showScrollDownButton,
@@ -300,7 +300,7 @@ class ChatInputField extends StatelessWidget {
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
+                            shape: BoxShape.circle,
                             border: Border.all(
                               color: const Color(0xFFD2E4E6),
                               width: 1.2,
