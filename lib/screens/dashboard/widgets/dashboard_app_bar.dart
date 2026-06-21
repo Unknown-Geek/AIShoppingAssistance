@@ -9,6 +9,8 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final DbConnectionStatus dbStatus;
   final VoidCallback onProfileTap;
   final VoidCallback onDbStatusTap;
+  final VoidCallback onNotificationsTap;
+  final bool hasNotifications;
 
   const DashboardAppBar({
     super.key,
@@ -17,6 +19,8 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.dbStatus,
     required this.onProfileTap,
     required this.onDbStatusTap,
+    required this.onNotificationsTap,
+    required this.hasNotifications,
   });
 
   @override
@@ -123,35 +127,39 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               ),
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFFFFFFF),
-                  border: Border.all(color: const Color(0xFFD2E4E6)),
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(
-                      Icons.notifications_none_outlined,
-                      color: theme.colorScheme.primary,
-                      size: 22,
-                    ),
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: theme.colorScheme.secondary,
-                        ),
+              GestureDetector(
+                onTap: onNotificationsTap,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFFFFFFF),
+                    border: Border.all(color: const Color(0xFFD2E4E6)),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        Icons.notifications_none_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 22,
                       ),
-                    ),
-                  ],
+                      if (hasNotifications)
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: theme.colorScheme.secondary,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ],

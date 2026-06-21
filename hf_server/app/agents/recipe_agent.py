@@ -29,6 +29,8 @@ _NON_FOOD_SUBSTRINGS = [
 class RecipeAgent:
     def __init__(self):
         api_key = os.getenv("GROQ_API_KEY")
+        if api_key:
+            api_key = api_key.replace("your_groq_api_key_here", "").strip()
         if not api_key:
             print("[WARNING] GROQ_API_KEY not detected, using mock key")
             api_key = "gsk_mock_key_placeholder_for_verification_only"
