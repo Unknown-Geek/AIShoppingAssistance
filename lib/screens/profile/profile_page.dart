@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/profile_header_pill.dart';
 import 'widgets/profile_info_card.dart';
 import 'widgets/order_card.dart';
+import 'widgets/profile_skeleton_list.dart';
 
 class ProfilePage extends StatefulWidget {
   final String name;
@@ -286,6 +287,7 @@ class _ProfilePageState extends State<ProfilePage> {
               fontFamily: theme.textTheme.titleLarge?.fontFamily,
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,
+              fontSize: 20,
             ),
           ),
           content: TextField(
@@ -470,10 +472,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         // Past Orders List
                         loading
-                            ? const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 48),
-                                child: Center(child: CircularProgressIndicator()),
-                              )
+                            ? const ProfileSkeletonList()
                             : orders.isEmpty
                                 ? Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 64),

@@ -115,7 +115,7 @@ class ProfileInfoCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontFamily: theme.textTheme.titleLarge?.fontFamily,
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,
                         ),
