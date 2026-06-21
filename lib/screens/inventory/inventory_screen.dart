@@ -183,6 +183,16 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
     // 2. Sort
     temp.sort((a, b) {
+      final slugA = a['slug']?.toString() ?? '';
+      final slugB = b['slug']?.toString() ?? '';
+      final imageA = _inventoryService.getImageUrl(slugA);
+      final imageB = _inventoryService.getImageUrl(slugB);
+      final isPlaceholderA = imageA.contains('unsplash.com');
+      final isPlaceholderB = imageB.contains('unsplash.com');
+
+      if (isPlaceholderA && !isPlaceholderB) return 1;
+      if (!isPlaceholderA && isPlaceholderB) return -1;
+
       final nameA = a['name']?.toString() ?? '';
       final nameB = b['name']?.toString() ?? '';
       final priceA = (a['price_rupees'] as num?)?.toDouble() ?? 0.0;
