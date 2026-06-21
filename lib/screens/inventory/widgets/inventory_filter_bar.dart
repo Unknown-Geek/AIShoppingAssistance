@@ -148,6 +148,7 @@ class InventoryFilterBar extends StatelessWidget {
                       return PopupMenuItem<String>(
                         value: entry.key,
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Icon(
                               isSelected
