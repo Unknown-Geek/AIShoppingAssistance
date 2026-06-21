@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:async';
-import 'dart:ui';
 
 import '../../models/chatbot_models.dart';
 import '../../models/cart_item_model.dart';
@@ -22,6 +21,12 @@ import '../../services/cart_service.dart';
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
 
+  /// Pre-loads chatbot history from shared preferences at app startup
+  /// to prevent visual transition jank when the screen is first opened.
+  static Future<void> preloadHistory() async {
+    await _ChatbotScreenState.preloadHistory();
+  }
+
   @override
   State<ChatbotScreen> createState() => _ChatbotScreenState();
 }
@@ -31,6 +36,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   XFile? _selectedImage;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  List<ChatSession>? _pendingChatHistory;
+  List<ChatMessage>? _pendingMessages;
+  String? _pendingChatTitle;
+  String? _pendingChatSessionId;
 
   static bool _loading = false;
   static final List<ChatMessage> _messages = [];
@@ -45,6 +55,77 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   bool _isTransitioning = true;
 
   static const String _storageKey = 'chat_history_v2'; // Changed key to differentiate updated model storage
+
+  /// Static helper to load chat history into memory before widget initialization.
+  static Future<void> preloadHistory() async {
+    if (_isInitialized) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      var raw = prefs.getString(_storageKey);
+      
+      // Fallback to old storage key if new storage key doesn't exist yet
+      if (raw == null || raw.isEmpty) {
+        raw = prefs.getString('chat_history_v1');
+      }
+      
+      if (raw == null || raw.isEmpty) {
+        _isInitialized = true;
+        _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
+        return;
+      }
+
+      final List<dynamic> decoded = jsonDecode(raw);
+      final restored = decoded.map((entry) {
+        final data = entry as Map<String, dynamic>;
+        final messages = (data['messages'] as List<dynamic>).map((messageData) {
+          final map = messageData as Map<String, dynamic>;
+          return ChatMessage(
+            isUser: map['isUser'] as bool,
+            text: map['text'] as String?,
+            recipe: map['recipe'] == null
+                ? null
+                : Map<String, dynamic>.from(map['recipe'] as Map),
+            timestamp: map['timestamp'] == null
+                ? null
+                : DateTime.tryParse(map['timestamp'] as String),
+          );
+        }).toList();
+
+        final title = data['title'] as String? ?? 'New Chat';
+        final id = data['id'] as String? ?? 'session_${DateTime.now().microsecondsSinceEpoch}_${title.hashCode}';
+        
+        final lastActiveStr = data['lastActive'] as String?;
+        final lastActive = lastActiveStr != null
+            ? (DateTime.tryParse(lastActiveStr) ?? DateTime.now())
+            : (messages.isNotEmpty ? messages.last.timestamp : DateTime.now());
+
+        return ChatSession(
+          id: id,
+          title: title,
+          messages: messages,
+          lastActive: lastActive,
+        );
+      }).toList();
+
+      // Sort by lastActive descending
+      restored.sort((a, b) => b.lastActive.compareTo(a.lastActive));
+
+      _chatHistory.clear();
+      _chatHistory.addAll(restored);
+      if (_chatHistory.isNotEmpty) {
+        final mostRecent = _chatHistory.first;
+        _messages.clear();
+        _messages.addAll(mostRecent.messages);
+        _currentChatTitle = mostRecent.title;
+        _currentChatSessionId = mostRecent.id;
+      } else {
+        _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
+      }
+      _isInitialized = true;
+    } catch (e) {
+      debugPrint('[ChatbotScreen] preload history error: $e');
+    }
+  }
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
@@ -98,7 +179,28 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       if (mounted) {
         setState(() {
           _isTransitioning = transitioning;
+          if (!transitioning && _pendingChatHistory != null) {
+            _chatHistory.clear();
+            _chatHistory.addAll(_pendingChatHistory!);
+            if (_pendingMessages != null) {
+              _messages.clear();
+              _messages.addAll(_pendingMessages!);
+            }
+            if (_pendingChatTitle != null) {
+              _currentChatTitle = _pendingChatTitle!;
+            }
+            if (_pendingChatSessionId != null) {
+              _currentChatSessionId = _pendingChatSessionId!;
+            }
+            _pendingChatHistory = null;
+            _pendingMessages = null;
+            _pendingChatTitle = null;
+            _pendingChatSessionId = null;
+          }
         });
+        if (_chatHistory.isNotEmpty && !transitioning) {
+          _scrollToBottom();
+        }
       }
     }
   }
@@ -151,19 +253,29 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       // Sort by lastActive descending
       restored.sort((a, b) => b.lastActive.compareTo(a.lastActive));
 
-      setState(() {
-        _chatHistory.clear();
-        _chatHistory.addAll(restored);
-        if (_chatHistory.isNotEmpty) {
-          final mostRecent = _chatHistory.first;
-          _messages.clear();
-          _messages.addAll(mostRecent.messages);
-          _currentChatTitle = mostRecent.title;
-          _currentChatSessionId = mostRecent.id;
+      if (_isTransitioning) {
+        _pendingChatHistory = restored;
+        if (restored.isNotEmpty) {
+          final mostRecent = restored.first;
+          _pendingMessages = mostRecent.messages;
+          _pendingChatTitle = mostRecent.title;
+          _pendingChatSessionId = mostRecent.id;
         }
-      });
-      if (restored.isNotEmpty) {
-        _scrollToBottom();
+      } else {
+        setState(() {
+          _chatHistory.clear();
+          _chatHistory.addAll(restored);
+          if (_chatHistory.isNotEmpty) {
+            final mostRecent = _chatHistory.first;
+            _messages.clear();
+            _messages.addAll(mostRecent.messages);
+            _currentChatTitle = mostRecent.title;
+            _currentChatSessionId = mostRecent.id;
+          }
+        });
+        if (restored.isNotEmpty) {
+          _scrollToBottom();
+        }
       }
     } catch (e) {
       debugPrint('[ChatbotScreen] load history error: $e');
@@ -643,11 +755,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         children: [
           // Colorful glowing gradient bubbles (Orbs)
           Positioned(
-            top: 20,
-            right: -60,
+            top: -150,
+            right: -150,
             child: Container(
-              width: 250,
-              height: 250,
+              width: 500,
+              height: 500,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
@@ -660,11 +772,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             ),
           ),
           Positioned(
-            bottom: 100,
-            left: -40,
+            bottom: -50,
+            left: -200,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 600,
+              height: 600,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
@@ -676,13 +788,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               ),
             ),
           ),
-          if (!_isTransitioning)
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                child: Container(color: Colors.transparent),
-              ),
-            ),
           // Main content
           Positioned.fill(
             child: SafeArea(
@@ -705,7 +810,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       Positioned.fill(
                         child: FadeContent(
                           key: ValueKey(_currentChatSessionId ?? (_messages.isEmpty ? 'welcome' : 'new_chat')),
-                          blur: !_isTransitioning,
+                          blur: false,
                           duration: const Duration(milliseconds: 250),
                           curve: Curves.easeInOut,
                           child: _messages.isEmpty

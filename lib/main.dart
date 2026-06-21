@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'screens/auth/auth_wrapper.dart';
 import 'services/cart_service.dart';
 import 'services/inventory_service.dart';
+import 'screens/chatbot/chatbot_screen.dart';
 import 'config/config.dart';
 import 'config/active_tenant.g.dart';
 import 'config/web_theme_listener_stub.dart'
@@ -94,10 +95,11 @@ Future<void> main() async {
   // Load and cache tenant theme if specified via dart-define
   await _initDynamicTheme();
 
-  // Pre-load dynamic product catalog and cart session in parallel before rendering.
+  // Pre-load dynamic product catalog, cart session, and chatbot history in parallel before rendering.
   await Future.wait([
     InventoryService().syncCatalogWithSupabase(),
     CartService().load(),
+    ChatbotScreen.preloadHistory(),
   ]);
 
   runApp(MainApp(cameras: cameras));
