@@ -1,4 +1,3 @@
-import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -85,83 +84,6 @@ class CartService extends ChangeNotifier {
     } finally {
       _isLoaded = true;
       notifyListeners();
-    }
-  }
-
-  final String _agentBaseUrl = "http://localhost:8000";
-
-Future<Map<String, dynamic>?> analyzeAndInjectRecipeIngredients({
-    required String dishQuery,
-    required int servings,
-  }) async {
-    // 1. Resolve identity gracefully
-    final currentUserId = _supabase.auth.currentUser?.id ?? "anonymous_user";
-    final url = Uri.parse("$_agentBaseUrl/chat/message");
-
-    try {
-      debugPrint("📡 [ARCHITECT BRIDGE] Dispatching agent payload for user: $currentUserId");
-      
-      final List<String> currentSlugs = _items.map((e) => e.name.toLowerCase().replaceAll(' ', '-')).toList();
-
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "user_id": currentUserId,
-          "dish_query": dishQuery,
-          "servings": servings,
-          "current_cart_slugs": currentSlugs,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        final List<dynamic> additions = data['cart_additions'] ?? [];
-
-        debugPrint("📥 [ARCHITECT BRIDGE] Agent returned ${additions.length} items to inject.");
-
-        // 2. Core Write-Through Phase
-        for (var addition in additions) {
-          final String itemName = addition['name'] ?? 'Unknown Item';
-          final double itemPrice = (addition['price'] as num).toDouble();
-          final int itemQty = addition['quantity'] ?? 1;
-
-          final existingIdx = _items.indexWhere((e) => e.name == itemName);
-          if (existingIdx != -1) {
-            _items[existingIdx].quantity += itemQty;
-          } else {
-            _items.add(
-              CartItemModel(
-                id: addition['sku'] ?? 'unknown_sku_${DateTime.now().millisecondsSinceEpoch}',
-                name: itemName,
-                price: itemPrice,
-                quantity: itemQty,
-                details: "Injected via AI Agent Analysis",
-                imageUrl: "",
-              ),
-            );
-          }
-        }
-
-        // 3. Absolute Persistence Enforcement
-        await _persist();
-        
-        // 4. Force background synchronization to Supabase if session exists
-        if (_supabase.auth.currentUser != null) {
-          await _syncActiveCart();
-        }
-
-        // 5. Broadcast critical state alteration to redraw every UI element bound to this provider
-        notifyListeners();
-        return data;
-
-      } else {
-        debugPrint('❌ [ARCHITECT BRIDGE FLIGHT ERROR]: ${response.statusCode} - ${response.body}');
-        return null;
-      }
-    } catch (e) {
-      debugPrint('🚨 [ARCHITECT BRIDGE CRITICAL EXCEPTION]: $e');
-      return null;
     }
   }
 
@@ -277,10 +199,11 @@ Future<Map<String, dynamic>?> analyzeAndInjectRecipeIngredients({
     }
   }
 
-  /// Adds [item] to the cart. If an item with the same [name] already exists,
-  /// its quantity is incremented instead of adding a duplicate.
+  /// Adds [item] to the cart. If an item with the same name already exists
+  /// (case-insensitive), its quantity is incremented instead of adding a duplicate.
   void addItem(CartItemModel item) {
-    final existingIdx = _items.indexWhere((e) => e.name == item.name);
+    final nameLower = item.name.toLowerCase();
+    final existingIdx = _items.indexWhere((e) => e.name.toLowerCase() == nameLower);
     if (existingIdx != -1) {
       _items[existingIdx].quantity += item.quantity;
     } else {

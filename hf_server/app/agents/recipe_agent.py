@@ -153,11 +153,9 @@ CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own 
                         seen.add(key)
                         candidates.append(item)
 
-        # If filtering removed everything, return a small reasonable subset
-        if len(candidates) < 3:
-            fallback = [item for item in inventory_catalog if not self._is_non_food(item)]
-            return fallback[:25]
-
+        # If filtering removed everything, return what we have rather than
+        # randomly padding with unrelated food items (which causes hallucinated
+        # matches like "Quaker Oats" appearing in a pizza ingredient list).
         return candidates
 
     def match_inventory_with_ai(self, parsed_ingredients: List[Dict[str, Any]], inventory_catalog: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -258,6 +256,8 @@ Available Store Inventory Catalog (SKUs and Names):
    - "Rice" -> "Cerelac Rice" (baby cereal is NOT cooking rice)
    - "Garlic" -> "Wheat Apple Baby Food"
    - "Oil" -> "Tomato Ketchup"
+   - "Flour" or any pizza ingredient -> "Quaker Oats" (oats are NOT a pizza ingredient)
+   - "Cheese" or "Dough" -> "Oats" or "Cereal" (breakfast items are NOT pizza/bread ingredients)
 3. Only match when the product IS the ingredient (e.g. "Oil" -> "Gold Winner Refined Sunflower Oil" or "Idhayam Mantra Groundnut Oil", "Milk" -> "Amul Gold Standardised Milk", "Ginger" or "Garlic" -> "Aachi Ginger Garlic Paste").
 4. If no truly matching product exists in the catalog, you MUST return "sku": "UNKNOWN", "price_rupees": 0, "name": the ingredient name, and "slug": the ingredient name as a lowercase-slug. For UNKNOWN items, look at the catalog and provide up to 3 possible close substitutes that are available in our catalog under the "substitutes" key. If no substitutes are reasonable, return an empty list.
 

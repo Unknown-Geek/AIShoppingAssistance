@@ -77,6 +77,25 @@ def format_ingredient_quantity(quantity: Any, unit: Any) -> str:
             
     return f"{qty_str} {unit_str}"
 
+def _parse_qty(qty_str: Any) -> int:
+    """
+    Parses a human-readable quantity string into an integer for cart additions.
+    Examples: "2 cans" -> 2, "1.5 cups" -> 2, "3" -> 3, "half" -> 1, "" -> 1
+    """
+    import re
+    if not qty_str:
+        return 1
+    s = str(qty_str).strip().lower()
+    # Handle textual fractions
+    word_map = {"half": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+    for word, val in word_map.items():
+        if s.startswith(word):
+            return val
+    match = re.match(r"(\d+(?:\.\d+)?)", s)
+    if match:
+        return max(1, round(float(match.group(1))))
+    return 1
+
 def clean_ingredient_name(name: Any, unit: Any) -> str:
     """
     Cleans the ingredient name by removing any prepended unit words.
@@ -353,7 +372,21 @@ class ShoppingAssistantAgent:
 
             missing_ingredients_map = {}
             cart_additions_map = {}
-            normalized_cart_slugs = [str(slug).lower().strip() for slug in current_cart_slugs]
+
+            # Build two lookup sets for robust deduplication:
+            # 1. Normalized slugs (strip apostrophes/special chars Flutter adds)
+            # 2. SKU set from current_cart (authoritative — immune to slug drift)
+            import re as _re
+            def _norm_slug(s: str) -> str:
+                return _re.sub(r"[^a-z0-9\-]", "", str(s).lower().strip())
+
+            normalized_cart_slugs = [_norm_slug(slug) for slug in (current_cart_slugs or [])]
+            # current_cart_slugs are name-derived — also build a SKU set from current_cart
+            # NOTE: _generate_and_match_recipe_internal only receives cart_slugs, not
+            # the full current_cart. For now use the live_cart_memory which was just
+            # synced from Flutter as the SKU source of truth.
+            from app.utils.cart_state import live_cart_memory as _cart_mem
+            synced_skus = set(_cart_mem.get_cart(user_id).keys())
 
             # Parse and compose the final missing ingredients and cart additions lists
             for ing in ingredients:
@@ -366,7 +399,7 @@ class ShoppingAssistantAgent:
                 if not ing_slug:
                     ing_slug = ing_name_lower.replace(" ", "-")
 
-                if ing_slug in normalized_cart_slugs:
+                if _norm_slug(ing_slug) in normalized_cart_slugs:
                     continue
 
                 final_qty = format_ingredient_quantity(ing.get('quantity'), ing.get('unit'))
@@ -378,11 +411,12 @@ class ShoppingAssistantAgent:
                         item_sku = actual_item.get("sku")
                         item_slug = actual_item.get("slug", ing_slug).lower().strip()
                         
-                        if item_slug in normalized_cart_slugs:
+                        if item_sku in synced_skus or _norm_slug(item_slug) in normalized_cart_slugs:
                             continue
 
                         if item_sku in missing_ingredients_map:
                             missing_ingredients_map[item_sku]["required_quantity"] += f" + {final_qty}"
+                            missing_ingredients_map[item_sku]["quantity"] = missing_ingredients_map[item_sku].get("quantity", 0) + _parse_qty(final_qty)
                         else:
                             missing_ingredients_map[item_sku] = {
                                 "sku": item_sku,
@@ -391,17 +425,18 @@ class ShoppingAssistantAgent:
                                 "price_rupees": float(actual_item.get("price_rupees", 0.0)),
                                 "thumbnail_url": actual_item.get("thumbnail_url", ""),
                                 "required_quantity": final_qty,
+                                "quantity": _parse_qty(final_qty),
                                 "agent_tool_status": "Committed to DB"
                             }
                         
                         if item_sku in cart_additions_map:
-                            cart_additions_map[item_sku]["quantity"] += 1
+                            cart_additions_map[item_sku]["quantity"] += _parse_qty(final_qty)
                         else:
                             cart_additions_map[item_sku] = {
                                 "sku": item_sku,
                                 "name": actual_item.get("name"),
                                 "price": float(actual_item.get("price_rupees", 0.0)),
-                                "quantity": 1
+                                "quantity": _parse_qty(final_qty)
                             }
                 else:
                     # Clean up substitute list if any (ensure thumbnail URLs from inventory match if applicable)
@@ -429,6 +464,7 @@ class ShoppingAssistantAgent:
                         "price_rupees": 0.0,
                         "thumbnail_url": "",
                         "required_quantity": final_qty,
+                        "quantity": _parse_qty(final_qty),
                         "substitutes": cleaned_subs
                     }
 
@@ -659,7 +695,7 @@ class ShoppingAssistantAgent:
                 "type": "function",
                 "function": {
                     "name": "clear_cart",
-                    "description": "Clear all items from the user's shopping cart.",
+                    "description": "ONLY call this tool when the user EXPLICITLY requests to clear, empty, or wipe their entire cart (e.g. 'clear my cart', 'empty my cart', 'remove all items', 'start fresh'). NEVER call this tool when the user wants to ADD items, REMOVE a specific item, or asks about the cart. Calling this tool destroys the entire cart, so it must be used with extreme caution.",
                     "parameters": {
                         "type": "object",
                         "properties": {}
@@ -684,16 +720,19 @@ Current Cart Items:
 - Any item mentioned in the chat history that is NOT in the "Current Cart Items" list above has been removed and is NO LONGER in the cart. Do NOT list it or assume it is still in the cart.
 - Do NOT sum, add, or double-count quantities from the chat history with the list above.
 
+⚠️ CRITICAL — STALE CART DATA IN HISTORY: The chat history you receive may contain old assistant responses that listed cart contents (e.g., "Current Cart Items: Lays x5"). These are SNAPSHOTS of a PAST state and are ALWAYS WRONG about the current cart. The cart can be modified at any time from outside this chat (e.g., via the store scanner or manual clearing). You MUST COMPLETELY IGNORE any cart quantities or item lists mentioned in previous assistant messages. The ONLY correct cart state is the "Current Cart Items" block at the top of this system prompt. Treat any cart listing in the chat history as if it were from a different session entirely.
+
 
 ### Guidelines:
 1. **Conversational Responses**: Be extremely friendly, natural, and helpful. Always write your final response as plain, readable text — never as JSON or code blocks.
 2. **Tool Usage**: Use the tool-calling interface to search inventory, add/remove items, or match recipes.
 3. **No Raw Tool Tags**: Do NOT write tool calls as raw text, XML, or `<function>` tags in your response content. Only use the official API tool-calling mechanism.
 4. **No Hallucinations**: Only use the exact SKUs found in the inventory catalog.
+4b. **CRITICAL — DO NOT CLEAR CART BY MISTAKE**: The `clear_cart` tool PERMANENTLY destroys the entire cart. You MUST NEVER call `clear_cart` when the user says "add", "buy", "get", or anything that sounds like they want to put something in the cart. Only call `clear_cart` if the user uses an explicit phrase like: "clear my cart", "empty cart", "wipe the cart", "remove everything", "start over". If in doubt, do NOT call it.
 5. **Displaying Cart and Cart Quantities**:
    - When asked to show, display, or list the cart, list each item on a new line in a clear, user-friendly bulleted list showing its name and quantity (e.g., "- Product Name: 2"). Do not list the SKU to keep the response clean. Do not call any tools to list the cart; rely strictly on the "Current Cart Items" list provided above.
    - **CRITICAL**: The "Current Cart Items" block represents the absolute, exact, and up-to-date state of the user's cart. Past chat history requests (e.g., "add 4 items") are already fully processed and reflected in "Current Cart Items". Do NOT sum, add, or accumulate quantities from the chat history with the "Current Cart Items". Do NOT assume the user has items that are not explicitly present in the "Current Cart Items" list.
-5b. **Cart Action Confirmations**: After successfully adding, removing, or clearing items from the cart via a tool call, respond with a short, friendly confirmation message (e.g., "Done! I've added Snickers to your cart 🛒", "All clear! Your cart is now empty 🧹"). Do NOT echo the cart state or list all items unless the user explicitly asks to see the cart.
+5b. **Cart Action Confirmations**: After successfully adding, removing, or clearing items from the cart via a tool call, respond with a short, friendly confirmation message ONLY about what you just did (e.g., "Done! I've added 5 Lays to your cart 🛒", "All clear! Your cart is now empty 🧹"). **NEVER list the full cart state or say 'Current Cart Items:' after an action** — this creates stale data in the chat history that causes confusion on future requests. Only list cart contents if the user explicitly asks "what's in my cart?" or "show my cart".
 6. **Displaying Search Results / Products**: When listing products from inventory searches or queries:
    - Always display them as a clean bulleted list on new lines (rather than inline or in paragraphs) for better readability.
    - Show only the human-friendly product names.
@@ -703,6 +742,8 @@ Current Cart Items:
    - If the user asks for general shopping recommendations, breakfast item suggestions, snacks, greetings, or conversational questions, do NOT call the `generate_and_match_recipe` tool.
    - Instead, respond conversationally using products that are available in the 'Available Store Catalog' list below (e.g., for breakfast suggest "Nestle Ceregrow Multigrain Cereal", "Standardised Milk", "Organic Eggs", etc.).
    - Only call the `generate_and_match_recipe` tool when the user is explicitly requesting a recipe or cooking instructions for a specific dish.
+9. **Parallel Tool Calls for Multiple Items**: When the user asks to add, remove, or search for multiple items in a single message (e.g., "add Lays, Snickers, and KitKat"), you MUST issue ALL required tool calls **in a single response as parallel calls** — not one-by-one across multiple turns. This ensures all items are processed reliably.
+
 
 Available Store Catalog (SKUs and Names):
 {catalog_str}
@@ -761,7 +802,8 @@ Available Store Catalog (SKUs and Names):
         })
 
         executed_tool_calls = set()
-        for loop_iter in range(3):
+        for loop_iter in range(6):  # increased from 3: multi-item requests can need up to 6 sequential tool steps
+
             content = ""
             tool_calls_dict = {}
             try:
