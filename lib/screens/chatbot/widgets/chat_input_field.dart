@@ -11,6 +11,7 @@ class ChatInputField extends StatelessWidget {
   final ValueChanged<XFile?> onImageSelected;
   final VoidCallback onClearImage;
   final bool showScrollDownButton;
+  final VoidCallback onScrollToBottom;
 
   const ChatInputField({
     super.key,
@@ -21,10 +22,13 @@ class ChatInputField extends StatelessWidget {
     required this.onImageSelected,
     required this.onClearImage,
     required this.showScrollDownButton,
+    required this.onScrollToBottom,
   });
 
   @override
   Widget build(BuildContext context) {
+    const double btnWidth = 66;
+    const double btnHeight = 32;
     final imagePicker = ImagePicker();
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
@@ -207,8 +211,6 @@ class ChatInputField extends StatelessWidget {
                 listenable: CartService(),
                 builder: (context, child) {
                   final count = CartService().itemCount;
-                  const double btnWidth = 66;
-                  const double btnHeight = 32;
 
                   return AnimatedPositioned(
                     duration: const Duration(milliseconds: 250),
@@ -275,6 +277,54 @@ class ChatInputField extends StatelessWidget {
                     ),
                   );
                 },
+              ),
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                top: topGap + 4,
+                right: 16,
+                width: btnWidth,
+                height: btnHeight,
+                child: IgnorePointer(
+                  ignoring: !showScrollDownButton,
+                  child: AnimatedOpacity(
+                    opacity: showScrollDownButton ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    child: AnimatedScale(
+                      scale: showScrollDownButton ? 1.0 : 0.7,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutBack,
+                      child: GestureDetector(
+                        onTap: onScrollToBottom,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFFD2E4E6),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

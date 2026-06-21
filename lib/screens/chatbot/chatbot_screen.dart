@@ -792,11 +792,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     // Height from screen bottom to top of white input container
     final double inputFieldHeight = topGap + 80.0 + bottomGap + MediaQuery.of(context).viewInsets.bottom;
 
-    // Calculate the position of the scroll down button so it floats perfectly above the cart button
-    final double scrollDownButtonBottom = isKeyboardOpen
-        ? 150.0 + MediaQuery.of(context).viewInsets.bottom
-        : 170.0 + (bottomPadding > 0 ? bottomPadding : 16.0);
-
     // Bottom padding for the list view to clear the floating input field and cart button
     final double listBottomPadding = isKeyboardOpen
         ? (hasImage ? 200.0 : 160.0)
@@ -996,38 +991,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           end: Alignment.bottomCenter,
                         ),
                       ),
-                      if (_showScrollDownButton)
-                        Positioned(
-                          right: 16,
-                          bottom: scrollDownButtonBottom,
-                          child: GestureDetector(
-                            onTap: _scrollToBottom,
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFFD2E4E6),
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.keyboard_arrow_down_rounded,
-                                color: theme.colorScheme.primary,
-                                size: 28,
-                              ),
-                            ),
-                          ),
-                        ),
                       Positioned(
                         bottom: 0,
                         left: 0,
@@ -1038,6 +1001,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           onSend: _sendMessage,
                           selectedImage: _selectedImage,
                           showScrollDownButton: _showScrollDownButton,
+                          onScrollToBottom: _scrollToBottom,
                           onImageSelected: (image) {
                             setState(() {
                               _selectedImage = image;
