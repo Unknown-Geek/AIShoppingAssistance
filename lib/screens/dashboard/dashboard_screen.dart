@@ -664,6 +664,17 @@ class _DashboardScreenState extends State<DashboardScreen>
     DashboardSheets.showRagSheet(context, onSubmitted: _askChefRag);
   }
 
+  void _showVoiceRagSheet() {
+    DashboardSheets.showVoiceRagSheet(
+      context,
+      onSubmitted: _askChefRag,
+      onTypeInsteadTap: () {
+        Navigator.pop(context);
+        _showRagSheet();
+      },
+    );
+  }
+
   Future<void> _askChefRag(String prompt) async {
     final response = await _chromaClient.askChefRag(prompt);
 
@@ -994,7 +1005,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 }
                 _startBackgroundScanning();
               },
-              onVoiceTap: _showRagSheet,
+              onVoiceTap: _showVoiceRagSheet,
               isSearchingImage: _isSearchingImage,
               onShutterTap: _takePictureAndSearch,
             ),
