@@ -518,12 +518,15 @@ class ShoppingAssistantAgent:
         full_text = ""
         recipe_data = None
         mutations = None
+        llm_unavailable = False
         async for chunk_str in generator:
             if not chunk_str.strip():
                 continue
             try:
                 chunk = json.loads(chunk_str.strip())
-                if "text_chunk" in chunk:
+                if chunk.get("llm_unavailable"):
+                    llm_unavailable = True
+                elif "text_chunk" in chunk:
                     full_text += chunk["text_chunk"]
                 else:
                     if "recipe" in chunk:
@@ -545,7 +548,8 @@ class ShoppingAssistantAgent:
         return {
             "response_text": response_text,
             "recipe": recipe_data,
-            "cart_mutations": mutations
+            "cart_mutations": mutations,
+            "llm_unavailable": llm_unavailable
         }
 
     async def process_recipe_workflow_stream(
@@ -882,6 +886,7 @@ Available Store Catalog (SKUs and Names):
                 print(f"⚠️ [AGENT LLM FAULT] {e}")
                 if not content:
                     if mutations:
+                        # Cart was mutated but final reply failed — still report what was done.
                         details = []
                         for mut in mutations:
                             act = mut.get("action")
@@ -896,7 +901,10 @@ Available Store Catalog (SKUs and Names):
                         summary_str = ", ".join(details)
                         yield json.dumps({"text_chunk": f"Done! I've successfully {summary_str}, but I'm having trouble generating the final reply. Please check your cart to verify."}) + "\n"
                     else:
-                        yield json.dumps({"text_chunk": "Sorry, I'm having trouble connecting right now. Please try again in a moment."}) + "\n"
+                        # No content, no mutations — backend is unusable for this request.
+                        # Signal 503 so the Flutter client retries the next backend URL.
+                        print(f"⚠️ [AGENT LLM FAULT] No content produced — signalling llm_unavailable to trigger client failover")
+                        yield json.dumps({"llm_unavailable": True}) + "\n"
                 break
 
             # Reconstruct SimpleNamespace for internal checks

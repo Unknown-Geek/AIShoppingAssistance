@@ -39,9 +39,19 @@ class CartService extends ChangeNotifier {
   Future<void>? _activeLoadFuture;
   String? _loadedUserId;
 
+  /// Cached Supabase row ID of the current active cart so we can UPDATE
+  /// directly without a SELECT round-trip on every sync.
+  String? _activeCartId;
+
+  /// Hash of the last successfully synced cart state.
+  /// Syncs are skipped when the cart has not changed since the last write.
+  String? _lastSyncedHash;
+
+  String _cartHash() => _items.map((e) => '${e.id}:${e.quantity}').join(',');
+
   void _scheduleSync() {
     _syncTimer?.cancel();
-    _syncTimer = Timer(const Duration(milliseconds: 500), () {
+    _syncTimer = Timer(const Duration(seconds: 2), () {
       _syncActiveCart();
     });
   }
@@ -115,16 +125,19 @@ class CartService extends ChangeNotifier {
     try {
       final activeCart = await _supabase
           .from('user_carts')
-          .select('items')
+          .select('id, items')
           .eq('user_id', userId)
           .eq('status', 'active')
           .maybeSingle();
 
       if (activeCart != null && activeCart['items'] != null) {
+        // Cache the row ID so future syncs skip the SELECT.
+        _activeCartId = activeCart['id'] as String?;
         final List<dynamic> dbItems = activeCart['items'] as List<dynamic>;
         _items.clear();
         _items.addAll(dbItems.map((e) => CartItemModel.fromJson(e as Map<String, dynamic>)));
         _persist();
+        _lastSyncedHash = _cartHash();
         _loadedUserId = userId;
         notifyListeners();
       }
@@ -137,19 +150,19 @@ class CartService extends ChangeNotifier {
   }
 
   /// Pushes changes to Supabase in the background whenever the cart is modified.
+  /// Uses a cached cart ID to avoid an extra SELECT on every sync, and skips
+  /// the write entirely when the cart contents have not changed.
   Future<void> _syncActiveCart() async {
     final user = _supabase.auth.currentUser;
     if (user == null) return;
 
-    try {
-      final activeCart = await _supabase
-          .from('user_carts')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .maybeSingle();
+    // Skip sync when nothing has changed since the last write.
+    final currentHash = _cartHash();
+    if (currentHash == _lastSyncedHash) return;
 
-      if (activeCart != null) {
+    try {
+      if (_activeCartId != null) {
+        // Fast path: we already know the row ID — skip the SELECT.
         await _supabase
             .from('user_carts')
             .update({
@@ -157,18 +170,42 @@ class CartService extends ChangeNotifier {
               'total_price': totalPrice,
               'updated_at': DateTime.now().toIso8601String(),
             })
-            .eq('id', activeCart['id']);
+            .eq('id', _activeCartId!);
+        _lastSyncedHash = currentHash;
       } else {
-        // Only create active cart record if there are items to store
-        if (_items.isNotEmpty) {
+        // Slow path: fetch the row ID once and cache it for future syncs.
+        final activeCart = await _supabase
+            .from('user_carts')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .maybeSingle();
+
+        if (activeCart != null) {
+          _activeCartId = activeCart['id'] as String?;
           await _supabase
+              .from('user_carts')
+              .update({
+                'items': _items.map((e) => e.toJson()).toList(),
+                'total_price': totalPrice,
+                'updated_at': DateTime.now().toIso8601String(),
+              })
+              .eq('id', _activeCartId!);
+          _lastSyncedHash = currentHash;
+        } else if (_items.isNotEmpty) {
+          // No active cart row exists yet — create one.
+          final inserted = await _supabase
               .from('user_carts')
               .insert({
                 'user_id': user.id,
                 'items': _items.map((e) => e.toJson()).toList(),
                 'total_price': totalPrice,
                 'status': 'active',
-              });
+              })
+              .select('id')
+              .maybeSingle();
+          _activeCartId = inserted?['id'] as String?;
+          _lastSyncedHash = currentHash;
         }
       }
     } catch (e) {
@@ -250,12 +287,23 @@ class CartService extends ChangeNotifier {
     final user = _supabase.auth.currentUser;
     if (user != null && _items.isEmpty) {
       _syncTimer?.cancel(); // Cancel any pending sync if we are deleting the cart
-      _supabase
-          .from('user_carts')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
+      final cartIdToDelete = _activeCartId;
+      _activeCartId = null;
+      _lastSyncedHash = null;
+      if (cartIdToDelete != null) {
+        _supabase
+            .from('user_carts')
+            .delete()
+            .eq('id', cartIdToDelete)
+            .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
+      } else {
+        _supabase
+            .from('user_carts')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
+      }
     } else {
       _scheduleSync();
     }
@@ -268,12 +316,23 @@ class CartService extends ChangeNotifier {
     final user = _supabase.auth.currentUser;
     if (user != null) {
       _syncTimer?.cancel();
-      _supabase
-          .from('user_carts')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
+      final cartIdToDelete = _activeCartId;
+      _activeCartId = null;
+      _lastSyncedHash = null;
+      if (cartIdToDelete != null) {
+        _supabase
+            .from('user_carts')
+            .delete()
+            .eq('id', cartIdToDelete)
+            .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
+      } else {
+        _supabase
+            .from('user_carts')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
+      }
     }
     notifyListeners();
   }

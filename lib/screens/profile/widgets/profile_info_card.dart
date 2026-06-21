@@ -59,7 +59,9 @@ class ProfileInfoCard extends StatelessWidget {
                   border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
                   image: profilePicBase64 != null
                       ? DecorationImage(
-                          image: MemoryImage(base64Decode(profilePicBase64!)),
+                          image: (profilePicBase64!.startsWith('http')
+                              ? NetworkImage(profilePicBase64!)
+                              : MemoryImage(base64Decode(profilePicBase64!))) as ImageProvider,
                           fit: BoxFit.cover,
                         )
                       : null,
