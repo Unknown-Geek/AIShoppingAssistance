@@ -15,6 +15,8 @@ load_dotenv(dotenv_path=dotenv_path, override=True)
 class MissingRegularsAgent:
     def __init__(self):
         api_key = os.getenv("GROQ_API_KEY")
+        if api_key:
+            api_key = api_key.replace("your_groq_api_key_here", "").strip()
         print(f"[MissingRegularsAgent] GROQ API Key: {api_key}")
         if not api_key:
             print("[WARNING] GROQ_API_KEY not detected, using mock key")
