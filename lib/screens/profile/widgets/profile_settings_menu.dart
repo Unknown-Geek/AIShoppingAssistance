@@ -87,11 +87,11 @@ class ProfileSettingsMenu extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Row(
             children: [
-              // Icon block (no circle background)
+              // Icon block (no circle background, reduced size)
               Icon(
                 icon,
                 color: theme.colorScheme.primary,
-                size: 22,
+                size: 18,
               ),
               const SizedBox(width: 16),
               // Title text
@@ -123,7 +123,7 @@ class ProfileSettingsMenu extends StatelessWidget {
     return const Divider(
       height: 1,
       thickness: 1,
-      indent: 58, // aligns perfectly with the start of the text now (20 padding + 22 icon + 16 spacing)
+      indent: 54, // aligns perfectly with the start of the text now (20 padding + 18 icon + 16 spacing)
       endIndent: 20,
       color: Color(0xFFF3F4F6),
     );
