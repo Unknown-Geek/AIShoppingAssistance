@@ -144,7 +144,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } on AuthException catch (e) {
       setState(() {
-        _errorMessage = e.message;
+        _errorMessage = _friendlyAuthError(e.message);
       });
     } catch (e) {
       setState(() {
@@ -157,6 +157,35 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     }
+  }
+
+  /// Maps raw Supabase / network error strings to user-friendly copy.
+  String _friendlyAuthError(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('failed to fetch') ||
+        lower.contains('clientexception') ||
+        lower.contains('network') ||
+        lower.contains('socketexception') ||
+        lower.contains('connection refused')) {
+      return 'Unable to connect. Please check your internet connection and try again.';
+    }
+    if (lower.contains('invalid login credentials') ||
+        lower.contains('invalid email or password')) {
+      return 'Incorrect email or password. Please try again.';
+    }
+    if (lower.contains('email already registered') ||
+        lower.contains('user already registered')) {
+      return 'An account with this email already exists. Try signing in instead.';
+    }
+    if (lower.contains('email not confirmed')) {
+      return 'Please verify your email before signing in.';
+    }
+    if (lower.contains('too many requests') || lower.contains('rate limit')) {
+      return 'Too many attempts. Please wait a moment and try again.';
+    }
+    // Return the original message if it doesn't match any known pattern
+    // — Supabase auth messages are generally already user-friendly.
+    return raw;
   }
 
   @override
