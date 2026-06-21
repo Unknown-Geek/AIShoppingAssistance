@@ -60,18 +60,6 @@ class InventoryFilterBar extends StatelessWidget {
                         color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                         fontSize: 14,
                       ),
-                      prefixIconConstraints: const BoxConstraints(
-                        minWidth: 48,
-                        minHeight: 24,
-                      ),
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.only(left: 16.0, right: 4.0),
-                        child: Icon(
-                          Icons.search_rounded,
-                          color: theme.colorScheme.primary.withValues(alpha: 0.6),
-                          size: 20,
-                        ),
-                      ),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
                               icon: Icon(
