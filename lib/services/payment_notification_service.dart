@@ -50,12 +50,14 @@ class PaymentNotificationService {
           ],
         ),
         backgroundColor: theme.colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
+        behavior: SnackBarBehavior.fixed,
         duration: const Duration(seconds: 3),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
         ),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       ),
     );
   }
