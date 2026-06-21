@@ -139,7 +139,7 @@ class ProductGridCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
                     name,
@@ -153,6 +153,7 @@ class ProductGridCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -169,8 +170,8 @@ class ProductGridCard extends StatelessWidget {
                       GestureDetector(
                         onTap: onAddToCart,
                         child: Container(
-                          width: 32,
-                          height: 32,
+                          width: 28,
+                          height: 28,
                           decoration: BoxDecoration(
                             color: theme.colorScheme.primary,
                             shape: BoxShape.circle,
@@ -178,7 +179,7 @@ class ProductGridCard extends StatelessWidget {
                           child: const Icon(
                             Icons.add,
                             color: Colors.white,
-                            size: 16,
+                            size: 14,
                           ),
                         ),
                       ),

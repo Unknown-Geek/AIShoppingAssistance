@@ -316,7 +316,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
-                            childAspectRatio: 0.66,
+                            childAspectRatio: 0.68,
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
                           ),
