@@ -41,24 +41,20 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
       final saved = prefs.getString('saved_payment_cards');
       if (saved != null) {
         final decoded = List<dynamic>.from(jsonDecode(saved));
+        final loadedCards = decoded
+            .map((e) => Map<String, String>.from(e))
+            .where((card) => card['number'] != '4111 2222 3333 4242')
+            .toList();
+        if (loadedCards.length != decoded.length) {
+          await prefs.setString('saved_payment_cards', jsonEncode(loadedCards));
+        }
         setState(() {
-          cards = decoded.map((e) => Map<String, String>.from(e)).toList();
+          cards = loadedCards;
           loading = false;
         });
       } else {
-        // Seed default card
-        final defaultCards = [
-          {
-            'holder': 'Shravan Pandala',
-            'number': '4111 2222 3333 4242',
-            'expiry': '12/29',
-            'type': 'Visa',
-            'color': 'primary',
-          }
-        ];
-        await prefs.setString('saved_payment_cards', jsonEncode(defaultCards));
         setState(() {
-          cards = defaultCards;
+          cards = [];
           loading = false;
         });
       }
