@@ -290,7 +290,10 @@ class _DashboardScreenState extends State<DashboardScreen>
         transitionDuration: const Duration(milliseconds: 350),
         pageBuilder: (ctx, anim1, anim2) => builder(ctx),
         transitionBuilder: (ctx, anim1, anim2, child) {
-          final curve = CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic);
+          final curve = CurvedAnimation(
+            parent: anim1,
+            curve: Curves.easeOutCubic,
+          );
           return AnimatedBuilder(
             animation: curve,
             builder: (context, childWidget) {
@@ -325,11 +328,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Trigger Missing Regulars Agent before checkout
     try {
       final currentCart = _cartService.items.map((item) {
-        return {
-          "sku": item.id,
-          "name": item.name,
-          "quantity": item.quantity,
-        };
+        return {"sku": item.id, "name": item.name, "quantity": item.quantity};
       }).toList();
 
       final result = await ChatAgentService().analyzeCart(currentCart);
@@ -520,7 +519,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         setState(() {
           _isConfirmSheetOpen = false;
           _lastActionTime = DateTime.now();
-          _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
+          _backgroundScanPauseUntil = DateTime.now().add(
+            const Duration(milliseconds: 1200),
+          );
           _cachedDetectedItem = null;
           _cachedDetectionTime = null;
         });
@@ -570,7 +571,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     setState(() {
       _isSearchingImage = true;
       _lastActionTime = DateTime.now();
-      _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
+      _backgroundScanPauseUntil = DateTime.now().add(
+        const Duration(milliseconds: 1200),
+      );
     });
     _isCameraBusy = true;
 
@@ -597,7 +600,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           setState(() {
             _isConfirmSheetOpen = false;
             _lastActionTime = DateTime.now();
-            _backgroundScanPauseUntil = DateTime.now().add(const Duration(milliseconds: 1200));
+            _backgroundScanPauseUntil = DateTime.now().add(
+              const Duration(milliseconds: 1200),
+            );
             _cachedDetectedItem = null;
             _cachedDetectionTime = null;
           });
@@ -660,39 +665,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
-  void _showRagSheet() {
-    DashboardSheets.showRagSheet(context, onSubmitted: _askChefRag);
-  }
 
-  void _showVoiceRagSheet() {
-    DashboardSheets.showVoiceRagSheet(
-      context,
-      onSubmitted: _askChefRag,
-      onTypeInsteadTap: () {
-        Navigator.pop(context);
-        _showRagSheet();
-      },
-    );
-  }
-
-  Future<void> _askChefRag(String prompt) async {
-    final response = await _chromaClient.askChefRag(prompt);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.fixed,
-          content: Text(response, style: const TextStyle(color: Colors.white)),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-        ),
-      );
-    }
-  }
 
   Future<String> _checkBackendStatus() async {
     final primary = dotenv.env['PRIMARY_DETECTION_URL']?.trim() ?? '';
     final backup = dotenv.env['BACKUP_DETECTION_URL']?.trim() ?? '';
-    
+
     if (primary.isEmpty && backup.isEmpty) {
       return "Not Configured";
     }
@@ -701,9 +679,13 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     // Clean and check primary
     if (primary.isNotEmpty) {
-      final cleanPrimary = primary.replaceAll(RegExp(r'/health$'), '').replaceAll(RegExp(r'/$'), '');
+      final cleanPrimary = primary
+          .replaceAll(RegExp(r'/health$'), '')
+          .replaceAll(RegExp(r'/$'), '');
       try {
-        final response = await http.get(Uri.parse('$cleanPrimary/health')).timeout(const Duration(seconds: 2));
+        final response = await http
+            .get(Uri.parse('$cleanPrimary/health'))
+            .timeout(const Duration(seconds: 2));
         if (response.statusCode == 200) {
           activeBackends.add("Oracle (Active)");
         }
@@ -714,9 +696,13 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     // Clean and check backup
     if (backup.isNotEmpty) {
-      final cleanBackup = backup.replaceAll(RegExp(r'/health$'), '').replaceAll(RegExp(r'/$'), '');
+      final cleanBackup = backup
+          .replaceAll(RegExp(r'/health$'), '')
+          .replaceAll(RegExp(r'/$'), '');
       try {
-        final response = await http.get(Uri.parse('$cleanBackup/health')).timeout(const Duration(seconds: 2));
+        final response = await http
+            .get(Uri.parse('$cleanBackup/health'))
+            .timeout(const Duration(seconds: 2));
         if (response.statusCode == 200) {
           activeBackends.add("HF Space (Active)");
         }
@@ -950,10 +936,13 @@ class _DashboardScreenState extends State<DashboardScreen>
                 _stopBackgroundScanning();
 
                 // Pre-emptively pause camera preview to prevent rendering load during transition
-                if (_cameraController != null && _cameraController!.value.isInitialized) {
+                if (_cameraController != null &&
+                    _cameraController!.value.isInitialized) {
                   try {
                     await _cameraController!.pausePreview();
-                    debugPrint("[DashboardScreen] Pre-emptively paused camera preview for Chat transition.");
+                    debugPrint(
+                      "[DashboardScreen] Pre-emptively paused camera preview for Chat transition.",
+                    );
                   } catch (e) {
                     debugPrint("Error pausing camera: $e");
                   }
@@ -963,27 +952,29 @@ class _DashboardScreenState extends State<DashboardScreen>
 
                 final route = PageRouteBuilder(
                   pageBuilder: (_, animation, __) => const ChatbotScreen(),
-                  transitionsBuilder: (_, animation, secondaryAnimation, child) {
-                    final slideAnimation = Tween<Offset>(
-                      begin: const Offset(-1.0, 0.0),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.fastOutSlowIn,
-                        reverseCurve: Curves.fastOutSlowIn.flipped,
-                      ),
-                    );
+                  transitionsBuilder:
+                      (_, animation, secondaryAnimation, child) {
+                        final slideAnimation =
+                            Tween<Offset>(
+                              begin: const Offset(-1.0, 0.0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.fastOutSlowIn,
+                                reverseCurve: Curves.fastOutSlowIn.flipped,
+                              ),
+                            );
 
-                    return SlideTransition(
-                      position: slideAnimation,
-                      child: Material(
-                        elevation: 16,
-                        shadowColor: Colors.black38,
-                        child: child,
-                      ),
-                    );
-                  },
+                        return SlideTransition(
+                          position: slideAnimation,
+                          child: Material(
+                            elevation: 16,
+                            shadowColor: Colors.black38,
+                            child: child,
+                          ),
+                        );
+                      },
                   transitionDuration: const Duration(milliseconds: 300),
                   reverseTransitionDuration: const Duration(milliseconds: 250),
                 );
@@ -993,19 +984,22 @@ class _DashboardScreenState extends State<DashboardScreen>
                 await pushFuture;
 
                 _isDashboardActive = true;
-                if (_cameraController == null || !_cameraController!.value.isInitialized) {
+                if (_cameraController == null ||
+                    !_cameraController!.value.isInitialized) {
                   await _initializeCamera();
                 } else {
                   try {
                     await _cameraController!.resumePreview();
-                    debugPrint("[DashboardScreen] Resumed camera preview after Chat pop.");
+                    debugPrint(
+                      "[DashboardScreen] Resumed camera preview after Chat pop.",
+                    );
                   } catch (e) {
                     debugPrint("Error resuming camera: $e");
                   }
                 }
                 _startBackgroundScanning();
               },
-              onVoiceTap: _showVoiceRagSheet,
+              onVoiceTap: () {},
               isSearchingImage: _isSearchingImage,
               onShutterTap: _takePictureAndSearch,
             ),
@@ -1247,10 +1241,20 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         ),
                                         onDismissed: (_) => _removeItem(index),
                                         child: () {
-                                          final slug = InventoryService().getSlugByName(item.name);
-                                          final displayImageUrl = (item.imageUrl.startsWith('http') && !item.imageUrl.contains('string'))
+                                          final slug = InventoryService()
+                                              .getSlugByName(item.name);
+                                          final displayImageUrl =
+                                              (item.imageUrl.startsWith(
+                                                    'http',
+                                                  ) &&
+                                                  !item.imageUrl.contains(
+                                                    'string',
+                                                  ))
                                               ? item.imageUrl
-                                              : (slug != null ? InventoryService().getImageUrl(slug) : item.imageUrl);
+                                              : (slug != null
+                                                    ? InventoryService()
+                                                          .getImageUrl(slug)
+                                                    : item.imageUrl);
                                           return CartItem(
                                             imageUrl: displayImageUrl,
                                             name: item.name,
@@ -1317,7 +1321,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         _cameraController!.pausePreview().catchError((e) {
           debugPrint("Error pausing camera for Profile transition: $e");
         });
-        debugPrint("[DashboardScreen] Pre-emptively paused camera preview for Profile transition.");
+        debugPrint(
+          "[DashboardScreen] Pre-emptively paused camera preview for Profile transition.",
+        );
       } catch (e) {
         debugPrint("Error pausing camera: $e");
       }
@@ -1337,14 +1343,17 @@ class _DashboardScreenState extends State<DashboardScreen>
           },
         ),
         transitionsBuilder: (_, animation, secondaryAnimation, child) {
-          final slideAnimation = Tween<Offset>(
-            begin: const Offset(-1.0, 0.0),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(
-            parent: animation,
-            curve: Curves.fastOutSlowIn,
-            reverseCurve: Curves.fastOutSlowIn.flipped,
-          ));
+          final slideAnimation =
+              Tween<Offset>(
+                begin: const Offset(-1.0, 0.0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.fastOutSlowIn,
+                  reverseCurve: Curves.fastOutSlowIn.flipped,
+                ),
+              );
           return SlideTransition(
             position: slideAnimation,
             child: Material(
@@ -1359,12 +1368,15 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     ).then((_) async {
       _isDashboardActive = true;
-      if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      if (_cameraController == null ||
+          !_cameraController!.value.isInitialized) {
         await _initializeCamera();
       } else {
         try {
           await _cameraController!.resumePreview();
-          debugPrint("[DashboardScreen] Resumed camera preview after Profile pop.");
+          debugPrint(
+            "[DashboardScreen] Resumed camera preview after Profile pop.",
+          );
         } catch (e) {
           debugPrint("Error resuming camera: $e");
         }
@@ -1378,7 +1390,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     final list = await NotificationStorageService.getNotifications();
     if (mounted) {
       setState(() {
-        _hasNotifications = list.any((item) => !(item['read'] as bool? ?? false));
+        _hasNotifications = list.any(
+          (item) => !(item['read'] as bool? ?? false),
+        );
       });
     }
   }
@@ -1390,13 +1404,13 @@ class _DashboardScreenState extends State<DashboardScreen>
         pageBuilder: (_, animation, __) => const NotificationsPage(),
         transitionsBuilder: (_, animation, __, child) {
           return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1.0, 0.0), // Slides in from right to left
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOut,
-            )),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(1.0, 0.0), // Slides in from right to left
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                ),
             child: child,
           );
         },

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../models/cart_item_model.dart';
 import '../../../services/inventory_service.dart';
 import 'payment_sheet.dart';
@@ -38,7 +37,9 @@ class DashboardSheets {
               ),
               CircleAvatar(
                 radius: 36,
-                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                backgroundColor: theme.colorScheme.primary.withValues(
+                  alpha: 0.1,
+                ),
                 child: Text(
                   initial,
                   style: TextStyle(
@@ -136,24 +137,6 @@ class DashboardSheets {
     );
   }
 
-  static Future<void> showVoiceRagSheet(
-    BuildContext context, {
-    required Function(String) onSubmitted,
-    required VoidCallback onTypeInsteadTap,
-  }) {
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return _VoiceRagSheetContent(
-          onSubmitted: onSubmitted,
-          onTypeInsteadTap: onTypeInsteadTap,
-        );
-      },
-    );
-  }
-
   static Future<bool?> showItemConfirmSheet(
     BuildContext context, {
     required CartItemModel item,
@@ -204,7 +187,8 @@ class DashboardSheets {
                       builder: (context, snapshot) {
                         String displayUrl = item.imageUrl;
                         if (snapshot.hasData && snapshot.data != null) {
-                          final thumbnail = snapshot.data!['thumbnail_url'] as String?;
+                          final thumbnail =
+                              snapshot.data!['thumbnail_url'] as String?;
                           if (thumbnail != null && thumbnail.isNotEmpty) {
                             displayUrl = thumbnail;
                           }
@@ -216,10 +200,13 @@ class DashboardSheets {
                             child: SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 1.5),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                              ),
                             ),
                           ),
-                          errorWidget: (context, url, error) => const Icon(Icons.image, size: 20),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.image, size: 20),
                         );
                       },
                     ),
@@ -317,10 +304,7 @@ class DashboardSheets {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return PaymentSheet(
-          amount: amount,
-          onPaymentSuccess: onPaymentSuccess,
-        );
+        return PaymentSheet(amount: amount, onPaymentSuccess: onPaymentSuccess);
       },
     );
   }
@@ -464,292 +448,9 @@ class _RagSheetContentState extends State<_RagSheetContent> {
                 ),
                 child: const Text(
                   'Ask',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _VoiceRagSheetContent extends StatefulWidget {
-  final Function(String) onSubmitted;
-  final VoidCallback onTypeInsteadTap;
-
-  const _VoiceRagSheetContent({
-    required this.onSubmitted,
-    required this.onTypeInsteadTap,
-  });
-
-  @override
-  State<_VoiceRagSheetContent> createState() => _VoiceRagSheetContentState();
-}
-
-class _VoiceRagSheetContentState extends State<_VoiceRagSheetContent> with SingleTickerProviderStateMixin {
-  late stt.SpeechToText _speech;
-  bool _isListening = false;
-  String _text = 'Listening...';
-  bool _isAvailable = false;
-  late AnimationController _pulseController;
-
-  @override
-  void initState() {
-    super.initState();
-    _speech = stt.SpeechToText();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-    _initSpeech();
-  }
-
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    _speech.stop();
-    super.dispose();
-  }
-
-  Future<void> _initSpeech() async {
-    try {
-      final available = await _speech.initialize(
-        onStatus: (val) {
-          debugPrint('Speech status: $val');
-          if (mounted) {
-            setState(() {
-              _isListening = _speech.isListening;
-              if (val == 'done' || val == 'notListening') {
-                _isListening = false;
-                if (_text != 'Listening...' && _text.trim().isNotEmpty) {
-                  // Auto submit after short delay if status is done
-                  Future.delayed(const Duration(milliseconds: 800), () {
-                    if (mounted && !_isListening && _text.trim().isNotEmpty) {
-                      Navigator.pop(context);
-                      widget.onSubmitted(_text);
-                    }
-                  });
-                }
-              }
-            });
-          }
-        },
-        onError: (val) {
-          debugPrint('Speech error: $val');
-          if (mounted) {
-            setState(() {
-              _isListening = false;
-              _text = 'Could not recognize speech. Tap mic to retry.';
-            });
-          }
-        },
-      );
-      if (mounted) {
-        setState(() {
-          _isAvailable = available;
-        });
-        if (available) {
-          _startListening();
-        } else {
-          setState(() {
-            _text = 'Speech recognition not available on this device.';
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _text = 'Failed to initialize speech recognition.';
-        });
-      }
-    }
-  }
-
-  void _startListening() async {
-    if (!_isAvailable) return;
-    setState(() {
-      _text = 'Listening...';
-      _isListening = true;
-    });
-    await _speech.listen(
-      onResult: (val) {
-        if (mounted) {
-          setState(() {
-            _text = val.recognizedWords;
-          });
-        }
-      },
-      listenFor: const Duration(seconds: 15),
-      pauseFor: const Duration(seconds: 3),
-      partialResults: true,
-    );
-  }
-
-  void _stopListening() async {
-    await _speech.stop();
-    setState(() {
-      _isListening = false;
-    });
-  }
-
-  void _toggleListening() {
-    if (_isListening) {
-      _stopListening();
-    } else {
-      _startListening();
-    }
-  }
-
-  Widget _buildPulsingMic(ThemeData theme) {
-    return GestureDetector(
-      onTap: _toggleListening,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (_isListening)
-            ...List.generate(3, (index) {
-              final delay = index * 0.4;
-              return AnimatedBuilder(
-                animation: _pulseController,
-                builder: (context, child) {
-                  final progress = (_pulseController.value + delay) % 1.0;
-                  final size = 80.0 + (progress * 80.0);
-                  final opacity = (1.0 - progress) * 0.3;
-                  return Container(
-                    width: size,
-                    height: size,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: theme.colorScheme.secondary.withValues(alpha: opacity),
-                    ),
-                  );
-                },
-              );
-            }),
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _isListening ? theme.colorScheme.secondary : Colors.white,
-              border: Border.all(
-                color: const Color(0xFFD2E4E6),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: (_isListening ? theme.colorScheme.secondary : theme.colorScheme.primary)
-                      .withValues(alpha: 0.12),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(
-              _isListening ? Icons.mic : Icons.mic_none,
-              color: _isListening ? Colors.white : theme.colorScheme.primary,
-              size: 32,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Voice Search',
-              style: TextStyle(
-                fontFamily: theme.textTheme.titleLarge?.fontFamily,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 36),
-            _buildPulsingMic(theme),
-            const SizedBox(height: 36),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                _text,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: theme.textTheme.bodyLarge?.fontFamily,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: _isListening
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.primary.withValues(alpha: 0.6),
-                ),
-              ),
-            ),
-            const SizedBox(height: 40),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton.icon(
-                  onPressed: widget.onTypeInsteadTap,
-                  icon: const Icon(Icons.keyboard_outlined, size: 18),
-                  label: const Text(
-                    'Type instead',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                  ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: theme.colorScheme.primary.withValues(alpha: 0.6),
-                  ),
-                ),
-                if (_text != 'Listening...' && _text.trim().isNotEmpty)
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      widget.onSubmitted(_text);
-                    },
-                    icon: const Icon(Icons.send_rounded, size: 16, color: Colors.white),
-                    label: const Text(
-                      'Search',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: const StadiumBorder(),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    ),
-                  ),
-              ],
             ),
           ],
         ),
