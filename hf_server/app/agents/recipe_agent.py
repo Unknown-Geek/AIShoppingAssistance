@@ -66,11 +66,19 @@ Return ONLY valid JSON in this exact format (no markdown strings, no code fences
   "servings": {servings},
   "instructions": ["step 1", "step 2"],
   "ingredients": [
-    {{"name": "Ingredient Name", "quantity": "amount", "unit": "unit"}}
+    {{
+      "name": "Ingredient Name",
+      "raw": "amount unit Ingredient Name, state",
+      "canonical": "canonical name",
+      "quantity": 1,
+      "unit": "unit",
+      "state": "state",
+      "substitution_for": null
+    }}
   ]
 }}
 
-CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own independent dictionary entry in the "ingredients" list. NEVER group multiple items together in a single line like "Spices (Turmeric, Salt, Chili Powder)". Break them down into separate entries: {{"name": "Turmeric Powder", "quantity": "1/2", "unit": "teaspoon"}}, {{"name": "Red Chili Powder", ...}}, and {{"name": "Salt", ...}}."""
+CRITICAL RULE — Ingredient Isolation: Every single ingredient must be its own independent dictionary entry in the "ingredients" list. NEVER group multiple items together in a single line like "Spices (Turmeric, Salt, Chili Powder)". Break them down into separate entries: {{"name": "Turmeric Powder", "raw": "1/2 teaspoon Turmeric Powder", "canonical": "turmeric powder", "quantity": 0.5, "unit": "teaspoon", "state": "powder", "substitution_for": null}}, {{"name": "Red Chili Powder", ...}}, and {{"name": "Salt", ...}}."""
 
         messages = [
             {
@@ -269,8 +277,12 @@ Return ONLY valid JSON in this exact format (no markdown strings, no code fences
   "ingredients": [
     {{
       "name": "Ingredient Name",
-      "quantity": "amount",
+      "raw": "amount unit Ingredient Name, state",
+      "canonical": "canonical name",
+      "quantity": 1.5,
       "unit": "unit",
+      "state": "state",
+      "substitution_for": null,
       "sku": "SKU_CODE_IF_MATCHED_OR_UNKNOWN",
       "slug": "product-slug",
       "price_rupees": 0.0,
