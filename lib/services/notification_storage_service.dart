@@ -18,6 +18,7 @@ class NotificationStorageService {
         'message': message,
         'transactionId': transactionId,
         'timestamp': DateTime.now().toIso8601String(),
+        'read': false,
       };
       
       list.insert(0, jsonEncode(newNotification));
@@ -34,6 +35,24 @@ class NotificationStorageService {
       return list.map((item) => jsonDecode(item) as Map<String, dynamic>).toList();
     } catch (e) {
       return [];
+    }
+  }
+
+  static Future<void> markAllAsRead() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<String> list = prefs.getStringList(_storageKey) ?? [];
+      if (list.isEmpty) return;
+
+      final List<String> updatedList = list.map((itemStr) {
+        final Map<String, dynamic> item = jsonDecode(itemStr) as Map<String, dynamic>;
+        item['read'] = true;
+        return jsonEncode(item);
+      }).toList();
+
+      await prefs.setStringList(_storageKey, updatedList);
+    } catch (e) {
+      // silent fallback
     }
   }
 

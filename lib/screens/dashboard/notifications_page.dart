@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../../services/notification_storage_service.dart';
+import '../../services/chat_agent_service.dart';
+import '../../services/payment_notification_service.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -11,6 +16,47 @@ class NotificationsPage extends StatefulWidget {
 class _NotificationsPageState extends State<NotificationsPage> {
   List<Map<String, dynamic>> notifications = [];
   bool loading = true;
+  bool _isSimulating = false;
+
+  Future<void> _simulateNotification() async {
+    if (_isSimulating) return;
+    setState(() => _isSimulating = true);
+
+    try {
+      final chatService = ChatAgentService();
+      final response = await http.post(
+        Uri.parse('${chatService.backendUrl}/chat/test-notification'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final success = data['success'] as bool? ?? false;
+        final message = data['message'] as String? ?? '';
+        final txId = data['transactionId'] as String?;
+
+        await NotificationStorageService.saveNotification(
+          success: success,
+          message: message,
+          transactionId: txId,
+        );
+
+        if (mounted) {
+          PaymentNotificationService.show(
+            context,
+            success: success,
+            message: message,
+            transactionId: txId,
+          );
+          _loadNotifications();
+        }
+      }
+    } catch (e) {
+      debugPrint('[NotificationsPage] Simulation failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSimulating = false);
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -25,6 +71,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         notifications = list;
         loading = false;
       });
+      await NotificationStorageService.markAllAsRead();
     }
   }
 
@@ -101,7 +148,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             )
                           : ListView.builder(
                               physics: const BouncingScrollPhysics(),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.only(top: 12, bottom: 24),
                               itemCount: notifications.length,
                               itemBuilder: (context, index) {
                                 final item = notifications[index];
@@ -161,6 +208,28 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 color: theme.colorScheme.primary.withValues(alpha: 0.5),
               ),
             ),
+            const SizedBox(height: 24),
+            _isSimulating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : OutlinedButton.icon(
+                    onPressed: _simulateNotification,
+                    icon: const Icon(Icons.bug_report_outlined, size: 16),
+                    label: const Text(
+                      'Simulate Backend Notification',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.primary,
+                      side: BorderSide(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                      ),
+                      shape: const StadiumBorder(),
+                    ),
+                  ),
           ],
         ),
       ),
@@ -246,14 +315,14 @@ class NotificationsHeaderPill extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: Colors.white,
                   border: Border.all(
-                    color: Colors.red.withValues(alpha: 0.2),
+                    color: const Color(0xFFD2E4E6),
                     width: 1.2,
                   ),
                 ),
-                child: const Center(
+                child: Center(
                   child: Icon(
                     Icons.delete_sweep_rounded,
-                    color: Colors.red,
+                    color: theme.colorScheme.error,
                     size: 20,
                   ),
                 ),
@@ -284,118 +353,150 @@ class NotificationCard extends StatelessWidget {
     final message = notification['message'] as String? ?? '';
     final txId = notification['transactionId'] as String?;
 
-    final Color iconColor = success
-        ? theme.colorScheme.secondary
-        : const Color(0xFFEF4444);
+    String? amountStr;
+    final match = RegExp(r'INR\s*([\d,]+\.\d{2})').firstMatch(message);
+    if (match != null) {
+      amountStr = '₹${match.group(1)}';
+    }
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-      padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withValues(alpha: 0.03),
-            blurRadius: 12,
+            color: theme.colorScheme.primary.withValues(alpha: 0.04),
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Icon Avatar
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Center(
-              child: Icon(
-                success
-                    ? Icons.check_circle_outline_rounded
-                    : Icons.error_outline_rounded,
-                color: success ? theme.colorScheme.primary : iconColor,
-                size: 22,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          // Text Content
-          Expanded(
-            child: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        success ? 'Payment Success' : 'Payment Failed',
-                        style: TextStyle(
-                          fontFamily: theme.textTheme.titleLarge?.fontFamily,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: theme.colorScheme.primary,
-                        ),
+                    Text(
+                      'Qless Payment',
+                      style: TextStyle(
+                        fontFamily: theme.textTheme.titleMedium?.fontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
+                    const SizedBox(height: 0),
                     if (timeLabel.isNotEmpty)
                       Text(
                         timeLabel,
                         style: TextStyle(
                           fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                          fontSize: 10,
+                          fontWeight: FontWeight.normal,
+                          letterSpacing: 0.6,
+                          color: theme.colorScheme.primary.withValues(alpha: 0.5),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  message,
-                  style: TextStyle(
-                    fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.primary.withValues(alpha: 0.7),
-                    height: 1.4,
-                  ),
-                ),
-                if (txId != null && txId.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                        width: 0.8,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      success ? 'Success' : 'Failure',
+                      style: TextStyle(
+                        fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: success ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                       ),
                     ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      success ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                      color: success ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Body text description
+            Text(
+              message,
+              style: TextStyle(
+                fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.primary.withValues(alpha: 0.8),
+                height: 1.4,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+            Divider(height: 1, color: Colors.grey.shade200),
+            const SizedBox(height: 12),
+
+            // Footer
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (txId != null && txId.isNotEmpty) {
+                        Clipboard.setData(ClipboardData(text: txId));
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Ref ID copied to clipboard!'),
+                            backgroundColor: theme.colorScheme.primary,
+                            behavior: SnackBarBehavior.fixed,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
                     child: Text(
-                      'Ref ID: $txId',
+                      txId != null && txId.isNotEmpty ? 'Ref ID: $txId' : 'Ref ID: N/A',
                       style: TextStyle(
-                        fontFamily: 'ClashGrotesk',
+                        fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                         fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                        letterSpacing: 0.5,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey.shade500,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                if (amountStr != null) ...[
+                  const SizedBox(width: 16),
+                  Text(
+                    amountStr,
+                    style: TextStyle(
+                      fontFamily: theme.textTheme.titleMedium?.fontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 ],
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
