@@ -11,6 +11,7 @@ import '../../services/chromadb_client.dart';
 import '../../services/cart_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/product_detection_service.dart';
+import '../../services/chat_agent_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -264,8 +265,46 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _checkoutCart() async {
     if (_cartService.isEmpty || _isCheckingOut) return;
 
-    final double total = _cartService.totalPrice;
+    setState(() => _isCheckingOut = true);
+
     final theme = Theme.of(context);
+
+    // Trigger Missing Regulars Agent before checkout
+    try {
+      final currentCart = _cartService.items.map((item) {
+        return {
+          "sku": item.id,
+          "name": item.name,
+          "quantity": item.quantity,
+        };
+      }).toList();
+
+      final result = await ChatAgentService().analyzeCart(currentCart);
+      final List<dynamic> missingItems = result['missing_regulars'] ?? [];
+
+      if (missingItems.isNotEmpty && mounted) {
+        bool proceedToCheckout = false;
+        await DashboardSheets.showMissingRegularsSheet(
+          context,
+          missingItems: missingItems,
+          onContinueToCheckout: () {
+            proceedToCheckout = true;
+          },
+        );
+
+        if (!proceedToCheckout || !mounted) {
+          setState(() => _isCheckingOut = false);
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('[DashboardScreen] Missing Regulars analysis failed: $e');
+      // Proceed silently if it fails
+    }
+
+    if (!mounted) return;
+
+    final double total = _cartService.totalPrice;
 
     // Show confirmation dialog
     final bool? confirmed = await showDialog<bool>(

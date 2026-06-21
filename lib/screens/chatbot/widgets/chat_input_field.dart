@@ -207,13 +207,13 @@ class ChatInputField extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Add Attachment',
                 style: TextStyle(
-                  fontFamily: 'ClashDisplay',
+                  fontFamily: Theme.of(context).textTheme.titleLarge?.fontFamily,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF001A23),
+                  color: const Color(0xFF001A23),
                 ),
               ),
               const SizedBox(height: 16),
@@ -232,7 +232,6 @@ class ChatInputField extends StatelessWidget {
                 title: const Text(
                   'Choose Image from Gallery',
                   style: TextStyle(
-                    fontFamily: 'ClashGrotesk',
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF001A23),
@@ -264,7 +263,6 @@ class ChatInputField extends StatelessWidget {
                 title: const Text(
                   'Take Photo with Camera',
                   style: TextStyle(
-                    fontFamily: 'ClashGrotesk',
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF001A23),

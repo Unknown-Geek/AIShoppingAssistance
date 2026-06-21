@@ -466,6 +466,75 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     }
   }
 
+  Future<void> _analyzeCart() async {
+    if (_loading) return;
+
+    setState(() {
+      _messages.add(ChatMessage(
+        isUser: true,
+        text: "Analyze my cart for missing items",
+      ));
+      _loading = true;
+    });
+
+    _saveCurrentChat();
+    _scrollToBottom();
+
+    try {
+      final currentCart = CartService().items.map((item) {
+        return {
+          "sku": item.id,
+          "name": item.name,
+          "quantity": item.quantity,
+        };
+      }).toList();
+
+      final result = await ChatAgentService().analyzeCart(currentCart);
+
+      final String responseText = result['response_text'] ?? '';
+      final List<dynamic> missingItems = result['missing_regulars'] ?? [];
+
+      String finalMessage = responseText;
+      if (missingItems.isNotEmpty) {
+        finalMessage += "\n\nBased on your past orders, we found the following missing items:";
+        for (var item in missingItems) {
+          final name = item['name'] ?? 'Unknown Item';
+          final avgGap = item['avg_gap_days'] ?? 0;
+          final lastBought = item['last_bought_days_ago'] ?? 0;
+          final price = item['price'] ?? 0.0;
+          
+          finalMessage += "\n• $name (₹${price.toStringAsFixed(2)}) - usually bought every $avgGap days, last bought $lastBought days ago.";
+        }
+      } else {
+        finalMessage += "\n\nNo missing regular items detected in your cart. You are all set!";
+      }
+
+      setState(() {
+        _messages.add(ChatMessage(
+          isUser: false,
+          text: finalMessage,
+        ));
+      });
+      _saveCurrentChat();
+    } catch (e) {
+      debugPrint('[ChatbotScreen] Cart analysis error: $e');
+      setState(() {
+        _messages.add(
+          ChatMessage(
+            isUser: false,
+            text: 'Unable to perform cart analysis. Please try again later.',
+          ),
+        );
+      });
+      _saveCurrentChat();
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+      _scrollToBottom();
+    }
+  }
+
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
@@ -648,7 +717,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                         child: Text(
                                           'Try asking me',
                                           style: TextStyle(
-                                            fontFamily: 'ClashDisplay',
+                                            fontFamily: theme.textTheme.titleLarge?.fontFamily,
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,
                                             color: theme.colorScheme.primary,
@@ -661,6 +730,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                         ),
                                         child: Column(
                                           children: [
+                                            SuggestionPill(
+                                              text: 'Analyze my cart for missing items 🛒',
+                                              icon: Icons.analytics_outlined,
+                                              onTap: () {
+                                                _analyzeCart();
+                                              },
+                                            ),
                                             SuggestionPill(
                                               text: 'What snacks do you have under ₹50?',
                                               icon: Icons.local_offer_outlined,
@@ -868,7 +944,7 @@ class ChatHeaderPill extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'ClashDisplay',
+                fontFamily: theme.textTheme.titleLarge?.fontFamily,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.primary,
@@ -962,7 +1038,7 @@ class _WelcomeCardState extends State<WelcomeCard> {
                     TypewriterText(
                       text: 'Hi there!',
                       style: TextStyle(
-                        fontFamily: 'ClashDisplay',
+                        fontFamily: theme.textTheme.titleLarge?.fontFamily,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.primary,
@@ -977,7 +1053,7 @@ class _WelcomeCardState extends State<WelcomeCard> {
                       text: "I'm your Qless Assistant.",
                       startTyping: _startSecondSentence,
                       style: TextStyle(
-                        fontFamily: 'ClashDisplay',
+                        fontFamily: theme.textTheme.titleLarge?.fontFamily,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.primary,
@@ -992,7 +1068,7 @@ class _WelcomeCardState extends State<WelcomeCard> {
           Text(
             'Ask me questions, get item suggestions, update your cart, or find recipe ideas!',
             style: TextStyle(
-              fontFamily: 'ClashGrotesk',
+              fontFamily: theme.textTheme.bodyMedium?.fontFamily,
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: theme.colorScheme.primary.withValues(alpha: 0.7),
@@ -1210,7 +1286,7 @@ class _SuggestionPillState extends State<SuggestionPill> {
                 child: Text(
                   widget.text,
                   style: TextStyle(
-                    fontFamily: 'ClashGrotesk',
+                    fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: theme.colorScheme.primary,

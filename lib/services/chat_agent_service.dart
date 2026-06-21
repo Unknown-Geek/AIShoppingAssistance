@@ -143,6 +143,37 @@ class ChatAgentService {
     throw Exception("Failed to process chat orchestration layer. Errors: ${errors.join(', ')}");
   }
 
+  /// Sends the current cart to the backend to get suggestions for missing regulars.
+  Future<Map<String, dynamic>> analyzeCart(List<Map<String, dynamic>> currentCart) async {
+    final userId = await resolvedUserId;
+    final urls = backendUrls;
+    List<String> errors = [];
+
+    for (final url in urls) {
+      try {
+        debugPrint('[ChatAgentService] Attempting cart analysis with: $url/cart-analysis/missing-regulars');
+        final response = await http.post(
+          Uri.parse('$url/cart-analysis/missing-regulars'),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({
+            "user_id": userId,
+            "current_cart": currentCart,
+          }),
+        ).timeout(const Duration(seconds: 15));
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          debugPrint('[ChatAgentService] Cart analysis success: $url');
+          return data;
+        } else {
+          errors.add('Server $url returned status code: ${response.statusCode}');
+        }
+      } catch (e) {
+        errors.add('Failed to connect to $url: $e');
+      }
+    }
+    throw Exception("Failed to analyze cart. Errors: ${errors.join(', ')}");
+  }
 
   /// Fetches the agent-committed cart state from the backend in-memory store.
   Future<List<Map<String, dynamic>>> fetchAgentCart() async {

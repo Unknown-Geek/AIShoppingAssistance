@@ -62,7 +62,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
           title: Text(
             'Rename Chat',
             style: TextStyle(
-              fontFamily: 'ClashDisplay',
+              fontFamily: theme.textTheme.titleLarge?.fontFamily,
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,
@@ -72,7 +72,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
             controller: controller,
             autofocus: true,
             style: TextStyle(
-              fontFamily: 'ClashGrotesk',
+              fontFamily: theme.textTheme.bodyMedium?.fontFamily,
               fontSize: 16,
               fontWeight: FontWeight.w500,
               color: theme.colorScheme.primary,
@@ -80,7 +80,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
             decoration: InputDecoration(
               hintText: 'Enter new title...',
               hintStyle: TextStyle(
-                fontFamily: 'ClashGrotesk',
+                fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                 fontSize: 15,
                 color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
@@ -106,7 +106,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
               child: Text(
                 'Cancel',
                 style: TextStyle(
-                  fontFamily: 'ClashGrotesk',
+                  fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.primary.withValues(alpha: 0.7),
@@ -132,7 +132,6 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
               child: const Text(
                 'Rename',
                 style: TextStyle(
-                  fontFamily: 'ClashGrotesk',
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
@@ -155,7 +154,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
           title: Text(
             'Delete Chat',
             style: TextStyle(
-              fontFamily: 'ClashDisplay',
+              fontFamily: theme.textTheme.titleLarge?.fontFamily,
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,
@@ -164,7 +163,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
           content: Text(
             'Are you sure you want to delete this chat session? This action cannot be undone.',
             style: TextStyle(
-              fontFamily: 'ClashGrotesk',
+              fontFamily: theme.textTheme.bodyMedium?.fontFamily,
               fontSize: 15,
               fontWeight: FontWeight.w500,
               color: theme.colorScheme.onSurfaceVariant,
@@ -177,7 +176,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
               child: Text(
                 'Cancel',
                 style: TextStyle(
-                  fontFamily: 'ClashGrotesk',
+                  fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.primary.withValues(alpha: 0.7),
@@ -200,7 +199,6 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
               child: const Text(
                 'Delete',
                 style: TextStyle(
-                  fontFamily: 'ClashGrotesk',
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
@@ -253,7 +251,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                   Text(
                     'Chat History',
                     style: TextStyle(
-                      fontFamily: 'ClashDisplay',
+                      fontFamily: theme.textTheme.titleLarge?.fontFamily,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.primary,
@@ -309,7 +307,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                       Text(
                         'New Chat',
                         style: TextStyle(
-                          fontFamily: 'ClashGrotesk',
+                          fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: theme.colorScheme.onPrimary,
@@ -339,7 +337,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                           Text(
                             'No saved chats yet.',
                             style: TextStyle(
-                              fontFamily: 'ClashGrotesk',
+                              fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
                               color: theme.colorScheme.primary.withValues(alpha: 0.5),
@@ -361,7 +359,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                             child: Text(
                               item.toUpperCase(),
                               style: TextStyle(
-                                fontFamily: 'ClashGrotesk',
+                                fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
                                 color: theme.colorScheme.primary.withValues(alpha: 0.45),
@@ -411,7 +409,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontFamily: 'ClashGrotesk',
+                                        fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                                         fontSize: 14,
                                         fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                                         color: theme.colorScheme.primary,
@@ -451,7 +449,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                                             Text(
                                               'Rename',
                                               style: TextStyle(
-                                                fontFamily: 'ClashGrotesk',
+                                                fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w500,
                                                 color: theme.colorScheme.primary,
@@ -473,7 +471,6 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                                             Text(
                                               'Delete',
                                               style: TextStyle(
-                                                fontFamily: 'ClashGrotesk',
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w500,
                                                 color: Color(0xFFEF4444),
