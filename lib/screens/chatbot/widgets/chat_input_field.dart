@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../services/cart_service.dart';
+import 'chat_cart_sheet.dart';
 
 class ChatInputField extends StatelessWidget {
   final TextEditingController controller;
@@ -91,97 +93,160 @@ class ChatInputField extends StatelessWidget {
               ),
             ),
           // Floating 84px input area
-          Container(
-            constraints: const BoxConstraints(
-              minHeight: 80,
-              maxHeight: 160,
-            ),
-            margin: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: topGap,
-              bottom: bottomGap,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(42),
-              border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.06),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
+            children: [
+              Container(
+                constraints: const BoxConstraints(
+                  minHeight: 80,
+                  maxHeight: 160,
                 ),
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Plus Menu Button
-                GestureDetector(
-                  onTap: () {
-                    _showAttachmentBottomSheet(context, imagePicker);
-                  },
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.add_rounded,
-                        color: Theme.of(context).colorScheme.onSecondary,
-                        size: 24,
-                      ),
-                    ),
-                  ),
+                margin: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: topGap,
+                  bottom: bottomGap,
                 ),
-                const SizedBox(width: 12),
-                // Text Field
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: TextField(
-                      controller: controller,
-                      onSubmitted: loading ? null : (_) => onSend(),
-                      maxLines: null,
-                      minLines: 1,
-                      keyboardType: TextInputType.multiline,
-                      style: TextStyle(
-                        fontFamily: 'ClashGrotesk',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Ask me anything...',
-                        hintStyle: TextStyle(
-                          fontFamily: 'ClashGrotesk',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(42),
+                  border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.06),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Plus Menu Button
+                    GestureDetector(
+                      onTap: () {
+                        _showAttachmentBottomSheet(context, imagePicker);
+                      },
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Theme.of(context).colorScheme.secondary,
                         ),
-                        border: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
+                        child: Center(
+                          child: Icon(
+                            Icons.add_rounded,
+                            color: Theme.of(context).colorScheme.onSecondary,
+                            size: 24,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    // Text Field
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: TextField(
+                          controller: controller,
+                          onSubmitted: loading ? null : (_) => onSend(),
+                          maxLines: null,
+                          minLines: 1,
+                          keyboardType: TextInputType.multiline,
+                          style: TextStyle(
+                            fontFamily: 'ClashGrotesk',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Ask me anything...',
+                            hintStyle: TextStyle(
+                              fontFamily: 'ClashGrotesk',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                            border: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Send Button
+                    AnimSendButton(
+                      onTap: loading ? null : onSend,
+                      loading: loading,
+                    ),
+                  ],
                 ),
-                // Send Button
-                AnimSendButton(
-                  onTap: loading ? null : onSend,
-                  loading: loading,
+              ),
+              Positioned(
+                top: topGap - 16,
+                child: ListenableBuilder(
+                  listenable: CartService(),
+                  builder: (context, child) {
+                    final count = CartService().itemCount;
+                    return GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (ctx) => const ChatCartSheet(),
+                        );
+                      },
+                      child: Container(
+                        width: 56,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFD2E4E6),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, -2),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Badge(
+                            label: Text(
+                              '$count',
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            isLabelVisible: count > 0,
+                            backgroundColor: Theme.of(context).colorScheme.secondary,
+                            textColor: Theme.of(context).colorScheme.primary,
+                            child: Icon(
+                              Icons.shopping_cart_outlined,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

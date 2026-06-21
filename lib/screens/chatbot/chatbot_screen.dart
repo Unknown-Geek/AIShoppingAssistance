@@ -9,7 +9,6 @@ import '../../models/cart_item_model.dart';
 import 'widgets/message_bubble.dart';
 import 'widgets/chat_input_field.dart';
 import 'widgets/history_drawer.dart';
-import 'widgets/chat_cart_sheet.dart';
 import 'widgets/chat_header_pill.dart';
 import 'widgets/welcome_card.dart';
 import 'widgets/suggestion_pill.dart';
@@ -971,64 +970,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                             ),
                           ),
                         ),
-                      Positioned(
-                        left: 16,
-                        bottom: 16,
-                        child: ListenableBuilder(
-                          listenable: CartService(),
-                          builder: (context, child) {
-                            final count = CartService().itemCount;
-                            return GestureDetector(
-                              onTap: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (ctx) => const ChatCartSheet(),
-                                );
-                              },
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: const Color(0xFFD2E4E6),
-                                    width: 1.5,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Badge(
-                                    label: Text(
-                                      '$count',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    isLabelVisible: count > 0,
-                                    backgroundColor: theme.colorScheme.secondary,
-                                    textColor: theme.colorScheme.primary,
-                                    child: Icon(
-                                      Icons.shopping_cart_outlined,
-                                      color: theme.colorScheme.primary,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
                     ],
                   ),
                 ),
