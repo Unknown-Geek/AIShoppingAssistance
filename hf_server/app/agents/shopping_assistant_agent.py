@@ -659,7 +659,7 @@ class ShoppingAssistantAgent:
                 "type": "function",
                 "function": {
                     "name": "clear_cart",
-                    "description": "Clear all items from the user's shopping cart.",
+                    "description": "ONLY call this tool when the user EXPLICITLY requests to clear, empty, or wipe their entire cart (e.g. 'clear my cart', 'empty my cart', 'remove all items', 'start fresh'). NEVER call this tool when the user wants to ADD items, REMOVE a specific item, or asks about the cart. Calling this tool destroys the entire cart, so it must be used with extreme caution.",
                     "parameters": {
                         "type": "object",
                         "properties": {}
@@ -690,6 +690,7 @@ Current Cart Items:
 2. **Tool Usage**: Use the tool-calling interface to search inventory, add/remove items, or match recipes.
 3. **No Raw Tool Tags**: Do NOT write tool calls as raw text, XML, or `<function>` tags in your response content. Only use the official API tool-calling mechanism.
 4. **No Hallucinations**: Only use the exact SKUs found in the inventory catalog.
+4b. **CRITICAL — DO NOT CLEAR CART BY MISTAKE**: The `clear_cart` tool PERMANENTLY destroys the entire cart. You MUST NEVER call `clear_cart` when the user says "add", "buy", "get", or anything that sounds like they want to put something in the cart. Only call `clear_cart` if the user uses an explicit phrase like: "clear my cart", "empty cart", "wipe the cart", "remove everything", "start over". If in doubt, do NOT call it.
 5. **Displaying Cart and Cart Quantities**:
    - When asked to show, display, or list the cart, list each item on a new line in a clear, user-friendly bulleted list showing its name and quantity (e.g., "- Product Name: 2"). Do not list the SKU to keep the response clean. Do not call any tools to list the cart; rely strictly on the "Current Cart Items" list provided above.
    - **CRITICAL**: The "Current Cart Items" block represents the absolute, exact, and up-to-date state of the user's cart. Past chat history requests (e.g., "add 4 items") are already fully processed and reflected in "Current Cart Items". Do NOT sum, add, or accumulate quantities from the chat history with the "Current Cart Items". Do NOT assume the user has items that are not explicitly present in the "Current Cart Items" list.
