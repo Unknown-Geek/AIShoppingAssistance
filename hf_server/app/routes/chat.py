@@ -71,3 +71,31 @@ async def get_user_live_cart(user_id: str):
         "user_id": user_id,
         "items": formatted_items
     }
+
+
+@router.post("/test-notification")
+async def trigger_test_notification():
+    """
+    Simulates a payment notification generation from the backend.
+    """
+    import random
+    success = random.choice([True, False])
+    txn_id = f"pay_{''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=12))}" if success else ""
+    amount = random.choice([250.00, 499.00, 999.00, 1499.00, 2999.00])
+    
+    if success:
+        message = f"Payment of INR {amount:,.2f} to Qless Merchant was successful."
+    else:
+        reason = random.choice([
+            "declined by the issuing bank",
+            "insufficient funds in the account",
+            "incorrect OTP entered",
+            "network timeout during processing"
+        ])
+        message = f"Payment of INR {amount:,.2f} failed: {reason}."
+        
+    return {
+        "success": success,
+        "message": message,
+        "transactionId": txn_id
+    }

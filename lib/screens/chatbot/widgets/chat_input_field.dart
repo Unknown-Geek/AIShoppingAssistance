@@ -11,6 +11,7 @@ class ChatInputField extends StatelessWidget {
   final ValueChanged<XFile?> onImageSelected;
   final VoidCallback onClearImage;
   final bool showScrollDownButton;
+  final VoidCallback onScrollToBottom;
 
   const ChatInputField({
     super.key,
@@ -21,10 +22,13 @@ class ChatInputField extends StatelessWidget {
     required this.onImageSelected,
     required this.onClearImage,
     required this.showScrollDownButton,
+    required this.onScrollToBottom,
   });
 
   @override
   Widget build(BuildContext context) {
+    const double btnWidth = 66;
+    const double btnHeight = 32;
     final imagePicker = ImagePicker();
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
@@ -99,6 +103,15 @@ class ChatInputField extends StatelessWidget {
             clipBehavior: Clip.none,
             alignment: Alignment.topCenter,
             children: [
+              Positioned(
+                top: 48 + topGap,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.only(top: 48),
                 child: Container(
@@ -198,8 +211,6 @@ class ChatInputField extends StatelessWidget {
                 listenable: CartService(),
                 builder: (context, child) {
                   final count = CartService().itemCount;
-                  const double btnWidth = 66;
-                  const double btnHeight = 32;
 
                   return AnimatedPositioned(
                     duration: const Duration(milliseconds: 250),
@@ -208,77 +219,112 @@ class ChatInputField extends StatelessWidget {
                     left: (MediaQuery.of(context).size.width - btnWidth) / 2,
                     width: btnWidth,
                     height: btnHeight,
-                    child: IgnorePointer(
-                      ignoring: showScrollDownButton,
-                      child: AnimatedOpacity(
-                        opacity: showScrollDownButton ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
-                        child: AnimatedScale(
-                          scale: showScrollDownButton ? 0.3 : 1.0,
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeOutBack,
-                          child: GestureDetector(
-                            onTap: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (ctx) => const ChatCartSheet(),
-                              );
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: const Color(0xFFD2E4E6),
-                                  width: 1.2,
+                    child: GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (ctx) => const ChatCartSheet(),
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFD2E4E6),
+                            width: 1.2,
+                          ),
+                           boxShadow: [
+                             BoxShadow(
+                               color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                               blurRadius: 12,
+                               offset: const Offset(0, 4),
+                             ),
+                           ],
+                        ),
+                        child: Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.shopping_cart_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.secondary,
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
+                                child: Text(
+                                  '$count',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.shopping_cart_rounded,
-                                      color: Theme.of(context).colorScheme.primary,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.secondary,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Text(
-                                        '$count',
-                                        style: TextStyle(
-                                          color: Theme.of(context).colorScheme.primary,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
                                 ),
                               ),
-                            ),
+                            ],
                           ),
                         ),
                       ),
                     ),
                   );
                 },
+              ),
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                top: topGap + 4,
+                right: 16,
+                width: btnHeight,
+                height: btnHeight,
+                child: IgnorePointer(
+                  ignoring: !showScrollDownButton,
+                  child: AnimatedOpacity(
+                    opacity: showScrollDownButton ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    child: AnimatedScale(
+                      scale: showScrollDownButton ? 1.0 : 0.7,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutBack,
+                      child: GestureDetector(
+                        onTap: onScrollToBottom,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFFD2E4E6),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

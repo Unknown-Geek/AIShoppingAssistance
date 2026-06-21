@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../../services/notification_storage_service.dart';
+import '../../services/chat_agent_service.dart';
+import '../../services/payment_notification_service.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -11,6 +16,47 @@ class NotificationsPage extends StatefulWidget {
 class _NotificationsPageState extends State<NotificationsPage> {
   List<Map<String, dynamic>> notifications = [];
   bool loading = true;
+  bool _isSimulating = false;
+
+  Future<void> _simulateNotification() async {
+    if (_isSimulating) return;
+    setState(() => _isSimulating = true);
+
+    try {
+      final chatService = ChatAgentService();
+      final response = await http.post(
+        Uri.parse('${chatService.backendUrl}/chat/test-notification'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final success = data['success'] as bool? ?? false;
+        final message = data['message'] as String? ?? '';
+        final txId = data['transactionId'] as String?;
+
+        await NotificationStorageService.saveNotification(
+          success: success,
+          message: message,
+          transactionId: txId,
+        );
+
+        if (mounted) {
+          PaymentNotificationService.show(
+            context,
+            success: success,
+            message: message,
+            transactionId: txId,
+          );
+          _loadNotifications();
+        }
+      }
+    } catch (e) {
+      debugPrint('[NotificationsPage] Simulation failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSimulating = false);
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -25,174 +71,433 @@ class _NotificationsPageState extends State<NotificationsPage> {
         notifications = list;
         loading = false;
       });
+      await NotificationStorageService.markAllAsRead();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'Notifications',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'ClashDisplay',
-          ),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black),
-        actions: [
-          if (notifications.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: TextButton.icon(
-                onPressed: () async {
-                  await NotificationStorageService.clearNotifications();
-                  if (mounted) {
-                    setState(() {
-                      notifications.clear();
-                    });
-                  }
-                },
-                icon: const Icon(Icons.clear_all_rounded, size: 18, color: Colors.red),
-                label: const Text(
-                  'Clear All',
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          // Background soft visual decoration (radial gradients) matching profile/orders
+          Positioned(
+            top: -120,
+            right: -120,
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    theme.colorScheme.primary.withValues(alpha: 0.08),
+                    theme.colorScheme.primary.withValues(alpha: 0.0),
+                  ],
                 ),
               ),
             ),
+          ),
+          Positioned(
+            bottom: 100,
+            left: -60,
+            child: Container(
+              width: 280,
+              height: 280,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    theme.colorScheme.secondary.withValues(alpha: 0.12),
+                    theme.colorScheme.secondary.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Main Body
+          SafeArea(
+            child: Column(
+              children: [
+                // Custom Floating Header Pill
+                NotificationsHeaderPill(
+                  onBackTap: () {
+                    Navigator.of(context).pop();
+                  },
+                  showClearAll: notifications.isNotEmpty,
+                  onClearAllTap: () async {
+                    await NotificationStorageService.clearNotifications();
+                    if (mounted) {
+                      setState(() {
+                        notifications.clear();
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : notifications.isEmpty
+                          ? SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: _buildEmptyState(theme),
+                            )
+                          : ListView.builder(
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.only(top: 12, bottom: 24),
+                              itemCount: notifications.length,
+                              itemBuilder: (context, index) {
+                                final item = notifications[index];
+                                final timestampStr = item['timestamp'] as String?;
+                                
+                                String timeLabel = '';
+                                if (timestampStr != null) {
+                                  try {
+                                    final time = DateTime.parse(timestampStr);
+                                    final diff = DateTime.now().difference(time);
+                                    if (diff.inMinutes < 1) {
+                                      timeLabel = 'Just now';
+                                    } else if (diff.inMinutes < 60) {
+                                      timeLabel = '${diff.inMinutes}m ago';
+                                    } else if (diff.inHours < 24) {
+                                      timeLabel = '${diff.inHours}h ago';
+                                    } else {
+                                      timeLabel = '${diff.inDays}d ago';
+                                    }
+                                  } catch (_) {}
+                                }
+
+                                return NotificationCard(
+                                  notification: item,
+                                  timeLabel: timeLabel,
+                                );
+                              },
+                            ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : notifications.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.notifications_off_outlined,
-                        size: 48,
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 120),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.notifications_off_rounded,
+              size: 64,
+              color: theme.colorScheme.primary.withValues(alpha: 0.2),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No notifications found',
+              style: TextStyle(
+                fontFamily: 'ClashGrotesk',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+              ),
+            ),
+            const SizedBox(height: 24),
+            _isSimulating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : OutlinedButton.icon(
+                    onPressed: _simulateNotification,
+                    icon: const Icon(Icons.bug_report_outlined, size: 16),
+                    label: const Text(
+                      'Simulate Backend Notification',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.primary,
+                      side: BorderSide(
                         color: theme.colorScheme.primary.withValues(alpha: 0.2),
                       ),
-                      const SizedBox(height: 12),
+                      shape: const StadiumBorder(),
+                    ),
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class NotificationsHeaderPill extends StatelessWidget {
+  final VoidCallback onBackTap;
+  final VoidCallback? onClearAllTap;
+  final bool showClearAll;
+
+  const NotificationsHeaderPill({
+    super.key,
+    required this.onBackTap,
+    this.onClearAllTap,
+    required this.showClearAll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      height: 64,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Left: Back button
+          GestureDetector(
+            onTap: onBackTap,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                border: Border.all(
+                  color: const Color(0xFFD2E4E6),
+                  width: 1.2,
+                ),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.arrow_back_rounded,
+                  color: theme.colorScheme.primary,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+          // Center: Title
+          Text(
+            'Notifications',
+            style: TextStyle(
+              fontFamily: theme.textTheme.titleLarge?.fontFamily,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          // Right: Clear All button (or placeholder to balance the back button)
+          if (showClearAll)
+            GestureDetector(
+              onTap: onClearAllTap,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(
+                    color: const Color(0xFFD2E4E6),
+                    width: 1.2,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.delete_sweep_rounded,
+                    color: theme.colorScheme.error,
+                    size: 20,
+                  ),
+                ),
+              ),
+            )
+          else
+            const SizedBox(width: 44),
+        ],
+      ),
+    );
+  }
+}
+
+class NotificationCard extends StatelessWidget {
+  final Map<String, dynamic> notification;
+  final String timeLabel;
+
+  const NotificationCard({
+    super.key,
+    required this.notification,
+    required this.timeLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final success = notification['success'] as bool? ?? false;
+    final message = notification['message'] as String? ?? '';
+    final txId = notification['transactionId'] as String?;
+
+    String? amountStr;
+    final match = RegExp(r'INR\s*([\d,]+\.\d{2})').firstMatch(message);
+    if (match != null) {
+      amountStr = '₹${match.group(1)}';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Qless Payment',
+                      style: TextStyle(
+                        fontFamily: theme.textTheme.titleMedium?.fontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 0),
+                    if (timeLabel.isNotEmpty)
                       Text(
-                        'No notifications yet',
+                        timeLabel,
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                          fontSize: 10,
+                          fontWeight: FontWeight.normal,
+                          letterSpacing: 0.6,
                           color: theme.colorScheme.primary.withValues(alpha: 0.5),
                         ),
                       ),
-                    ],
-                  ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: notifications.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                  itemBuilder: (context, index) {
-                    final item = notifications[index];
-                    final success = item['success'] as bool? ?? false;
-                    final message = item['message'] as String? ?? '';
-                    final txId = item['transactionId'] as String?;
-                    final timestampStr = item['timestamp'] as String?;
-                    
-                    String timeLabel = '';
-                    if (timestampStr != null) {
-                      try {
-                        final time = DateTime.parse(timestampStr);
-                        final diff = DateTime.now().difference(time);
-                        if (diff.inMinutes < 1) {
-                          timeLabel = 'Just now';
-                        } else if (diff.inMinutes < 60) {
-                          timeLabel = '${diff.inMinutes}m ago';
-                        } else if (diff.inHours < 24) {
-                          timeLabel = '${diff.inHours}h ago';
-                        } else {
-                          timeLabel = '${diff.inDays}d ago';
-                        }
-                      } catch (_) {}
-                    }
-
-                    final Color iconColor = success
-                        ? theme.colorScheme.secondary
-                        : const Color(0xFFEF4444);
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12.0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: iconColor.withValues(alpha: 0.1),
-                            child: Icon(
-                              success
-                                  ? Icons.check_circle_outline_rounded
-                                  : Icons.error_outline_rounded,
-                              color: iconColor,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      success ? 'Payment Success' : 'Payment Failed',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                    ),
-                                    if (timeLabel.isNotEmpty)
-                                      Text(
-                                        timeLabel,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  message,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Color(0xFF4A5568),
-                                    height: 1.3,
-                                  ),
-                                ),
-                                if (txId != null && txId.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Ref ID: $txId',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.primary.withValues(alpha: 0.4),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                  ],
                 ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      success ? 'Success' : 'Failure',
+                      style: TextStyle(
+                        fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: success ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      success ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                      color: success ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Body text description
+            Text(
+              message,
+              style: TextStyle(
+                fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.primary.withValues(alpha: 0.8),
+                height: 1.4,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+            Divider(height: 1, color: Colors.grey.shade200),
+            const SizedBox(height: 12),
+
+            // Footer
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (txId != null && txId.isNotEmpty) {
+                        Clipboard.setData(ClipboardData(text: txId));
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Ref ID copied to clipboard!'),
+                            backgroundColor: theme.colorScheme.primary,
+                            behavior: SnackBarBehavior.fixed,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                    child: Text(
+                      txId != null && txId.isNotEmpty ? 'Ref ID: $txId' : 'Ref ID: N/A',
+                      style: TextStyle(
+                        fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey.shade500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                if (amountStr != null) ...[
+                  const SizedBox(width: 16),
+                  Text(
+                    amountStr,
+                    style: TextStyle(
+                      fontFamily: theme.textTheme.titleMedium?.fontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
