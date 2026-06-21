@@ -11,6 +11,7 @@ import '../../services/chromadb_client.dart';
 import '../../services/cart_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/product_detection_service.dart';
+import '../../services/chat_agent_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -20,6 +21,8 @@ import 'widgets/camera_viewport.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'widgets/checkout_bar.dart';
 import 'widgets/dashboard_sheets.dart';
+import 'profile_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
@@ -36,6 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       HuggingFaceProxyDetectionService();
   late AnimationController _cursorController;
   late AnimationController _cartExpandController;
+  String? _profilePicBase64;
 
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
@@ -77,6 +81,22 @@ class _DashboardScreenState extends State<DashboardScreen>
     _initializeCamera();
     _refreshDbStatus();
     _startBackgroundScanning();
+    _loadProfilePic();
+  }
+
+  Future<void> _loadProfilePic() async {
+    try {
+      final email = Supabase.instance.client.auth.currentUser?.email ?? 'Guest';
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('profile_pic_$email');
+      if (mounted) {
+        setState(() {
+          _profilePicBase64 = saved;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading profile pic in dashboard: $e');
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -241,8 +261,46 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _checkoutCart() async {
     if (_cartService.isEmpty || _isCheckingOut) return;
 
-    final double total = _cartService.totalPrice;
+    setState(() => _isCheckingOut = true);
+
     final theme = Theme.of(context);
+
+    // Trigger Missing Regulars Agent before checkout
+    try {
+      final currentCart = _cartService.items.map((item) {
+        return {
+          "sku": item.id,
+          "name": item.name,
+          "quantity": item.quantity,
+        };
+      }).toList();
+
+      final result = await ChatAgentService().analyzeCart(currentCart);
+      final List<dynamic> missingItems = result['missing_regulars'] ?? [];
+
+      if (missingItems.isNotEmpty && mounted) {
+        bool proceedToCheckout = false;
+        await DashboardSheets.showMissingRegularsSheet(
+          context,
+          missingItems: missingItems,
+          onContinueToCheckout: () {
+            proceedToCheckout = true;
+          },
+        );
+
+        if (!proceedToCheckout || !mounted) {
+          setState(() => _isCheckingOut = false);
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('[DashboardScreen] Missing Regulars analysis failed: $e');
+      // Proceed silently if it fails
+    }
+
+    if (!mounted) return;
+
+    final double total = _cartService.totalPrice;
 
     // Show confirmation dialog
     final bool? confirmed = await showDialog<bool>(
@@ -360,30 +418,6 @@ class _DashboardScreenState extends State<DashboardScreen>
         await _cartService.checkout();
         if (mounted) {
           setState(() => _isCheckingOut = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              behavior: SnackBarBehavior.fixed,
-              content: Row(
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    color: theme.colorScheme.secondary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Order placed! ₹${total.toStringAsFixed(2)} charged.',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: theme.colorScheme.primary,
-              duration: const Duration(seconds: 3),
-            ),
-          );
         }
       },
     );
@@ -718,7 +752,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           duration: const Duration(seconds: 4),
         ),
       );
-      // Also update the indicator
+      // Also update only the DB indicator
       setState(
         () => _dbStatus = (isChromaOk && isSupabaseOk && isBackendOk)
             ? DbConnectionStatus.live
@@ -742,6 +776,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Scaffold(
       appBar: DashboardAppBar(
         userInitial: userInitial,
+        profilePicBase64: _profilePicBase64,
         dbStatus: _dbStatus,
         onProfileTap: _showProfileSheet,
         onDbStatusTap: _checkDbStatus,
@@ -1208,13 +1243,36 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   void _showProfileSheet() {
     final user = Supabase.instance.client.auth.currentUser;
+    final name = user?.userMetadata?['name'] as String? ?? 'User';
     final email = user?.email ?? 'Guest';
-    DashboardSheets.showProfileSheet(
+
+    Navigator.push(
       context,
-      email: email,
-      onSignOut: () async {
-        await Supabase.instance.client.auth.signOut();
-      },
-    );
+      PageRouteBuilder(
+        pageBuilder: (_, animation, __) => ProfilePage(
+          name: name,
+          email: email,
+          onLogout: () async {
+            await Supabase.instance.client.auth.signOut();
+            if (mounted) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
+          },
+        ),
+        transitionsBuilder: (_, animation, __, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(-1.0, 0.0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            )),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    ).then((_) => _loadProfilePic());
   }
 }

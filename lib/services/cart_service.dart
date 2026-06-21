@@ -179,14 +179,22 @@ class CartService extends ChangeNotifier {
   // ─────────────────────────── CRUD ──────────────────────────────────────────
 
   void removeItemBySkuOrName(String sku, String name) {
-    final index = _items.indexWhere((e) => e.id == sku || e.name == name);
+    final nameLower = name.toLowerCase();
+    final index = _items.indexWhere((e) =>
+        e.id == sku ||
+        (sku.isNotEmpty && e.details.contains(sku)) ||
+        e.name.toLowerCase() == nameLower);
     if (index != -1) {
       removeItem(index);
     }
   }
 
   void removeOrDecrementItemBySkuOrName(String sku, String name, int quantity) {
-    final index = _items.indexWhere((e) => e.id == sku || e.name == name);
+    final nameLower = name.toLowerCase();
+    final index = _items.indexWhere((e) =>
+        e.id == sku ||
+        (sku.isNotEmpty && e.details.contains(sku)) ||
+        e.name.toLowerCase() == nameLower);
     if (index != -1) {
       final currentQty = _items[index].quantity;
       if (currentQty > quantity) {

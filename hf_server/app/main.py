@@ -8,7 +8,7 @@ load_dotenv(dotenv_path=dotenv_path, override=True)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import health, detection, chat
+from .routes import health, detection, chat, cart_analysis
 from .services.http_client import init_http_client, close_http_client
 
 app = FastAPI()
@@ -32,6 +32,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(detection.router)
 app.include_router(chat.router)
+app.include_router(cart_analysis.router)
 
 @app.on_event("startup")
 async def startup_event():

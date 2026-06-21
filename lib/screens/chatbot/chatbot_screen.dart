@@ -10,7 +10,11 @@ import '../../models/cart_item_model.dart';
 import 'widgets/message_bubble.dart';
 import 'widgets/chat_input_field.dart';
 import 'widgets/history_drawer.dart';
-import 'widgets/animated_orb.dart';
+import 'widgets/chat_header_pill.dart';
+import 'widgets/welcome_card.dart';
+import 'widgets/suggestion_pill.dart';
+import 'widgets/fade_content.dart';
+import 'widgets/gradual_blur.dart';
 import '../../services/chat_agent_service.dart';
 import '../../services/cart_service.dart';
 
@@ -27,11 +31,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  bool _loading = false;
-  final List<ChatMessage> _messages = [];
-  final List<ChatSession> _chatHistory = [];
-  String _currentChatTitle = 'New Chat';
-  String? _currentChatSessionId;
+  static bool _loading = false;
+  static final List<ChatMessage> _messages = [];
+  static final List<ChatSession> _chatHistory = [];
+  static String _currentChatTitle = 'New Chat';
+  static String? _currentChatSessionId;
+  static bool _isInitialized = false;
+  static final ValueNotifier<int> _updateNotifier = ValueNotifier(0);
 
   bool _showScrollDownButton = false;
   Animation<double>? _routeAnimation;
@@ -54,9 +60,19 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   void initState() {
     super.initState();
-    _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
-    _loadChatHistory();
+    _updateNotifier.addListener(_onGlobalUpdate);
+    if (!_isInitialized) {
+      _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
+      _loadChatHistory();
+      _isInitialized = true;
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    }
     _scrollController.addListener(_onScroll);
+  }
+
+  void _onGlobalUpdate() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -239,7 +255,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         ? (_messages.first.text ?? 'New Chat')
         : _currentChatTitle;
 
-    setState(() {
+    void updateState() {
       if (_currentChatSessionId != null) {
         final index = _chatHistory.indexWhere((chat) => chat.id == _currentChatSessionId);
         final updatedSession = ChatSession(
@@ -268,7 +284,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       _currentChatTitle = title;
       // Sort history to keep newest on top
       _chatHistory.sort((a, b) => b.lastActive.compareTo(a.lastActive));
-    });
+    }
+
+    updateState();
+    _updateNotifier.value++;
 
     _saveChatHistory();
   }
@@ -412,25 +431,107 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         );
       }
 
-      setState(() {
+      if (mounted) {
+        setState(() {
+          _messages.add(assistantMessage);
+        });
+      } else {
         _messages.add(assistantMessage);
-      });
+      }
       _saveCurrentChat();
     } catch (e) {
       debugPrint('[ChatbotScreen] Send message error: $e');
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            isUser: false,
-            text: 'Unable to connect to assistant service.',
-          ),
-        );
-      });
+      final errorMsg = ChatMessage(
+        isUser: false,
+        text: 'Unable to connect to assistant service.',
+      );
+      if (mounted) {
+        setState(() {
+          _messages.add(errorMsg);
+        });
+      } else {
+        _messages.add(errorMsg);
+      }
       _saveCurrentChat();
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      _loading = false;
+      _updateNotifier.value++;
+      _scrollToBottom();
+    }
+  }
+
+  Future<void> _analyzeCart() async {
+    if (_loading) return;
+
+    setState(() {
+      _messages.add(ChatMessage(
+        isUser: true,
+        text: "Analyze my cart for missing items",
+      ));
+      _loading = true;
+    });
+
+    _saveCurrentChat();
+    _scrollToBottom();
+
+    try {
+      final currentCart = CartService().items.map((item) {
+        return {
+          "sku": item.id,
+          "name": item.name,
+          "quantity": item.quantity,
+        };
+      }).toList();
+
+      final result = await ChatAgentService().analyzeCart(currentCart);
+
+      final String responseText = result['response_text'] ?? '';
+      final List<dynamic> missingItems = result['missing_regulars'] ?? [];
+
+      String finalMessage = responseText;
+      if (missingItems.isNotEmpty) {
+        finalMessage += "\n\nBased on your past orders, we found the following missing items:";
+        for (var item in missingItems) {
+          final name = item['name'] ?? 'Unknown Item';
+          final avgGap = item['avg_gap_days'] ?? 0;
+          final lastBought = item['last_bought_days_ago'] ?? 0;
+          final price = item['price'] ?? 0.0;
+          
+          finalMessage += "\n• $name (₹${price.toStringAsFixed(2)}) - usually bought every $avgGap days, last bought $lastBought days ago.";
+        }
+      } else {
+        finalMessage += "\n\nNo missing regular items detected in your cart. You are all set!";
+      }
+
+      final successMsg = ChatMessage(
+        isUser: false,
+        text: finalMessage,
+      );
+      if (mounted) {
+        setState(() {
+          _messages.add(successMsg);
+        });
+      } else {
+        _messages.add(successMsg);
+      }
+      _saveCurrentChat();
+    } catch (e) {
+      debugPrint('[ChatbotScreen] Cart analysis error: $e');
+      final errorMsg = ChatMessage(
+        isUser: false,
+        text: 'Unable to perform cart analysis. Please try again later.',
+      );
+      if (mounted) {
+        setState(() {
+          _messages.add(errorMsg);
+        });
+      } else {
+        _messages.add(errorMsg);
+      }
+      _saveCurrentChat();
+    } finally {
+      _loading = false;
+      _updateNotifier.value++;
       _scrollToBottom();
     }
   }
@@ -515,6 +616,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   @override
   void dispose() {
+    _updateNotifier.removeListener(_onGlobalUpdate);
     _scrollController.removeListener(_onScroll);
     _routeAnimation?.removeStatusListener(_handleRouteStatus);
     _controller.dispose();
@@ -587,7 +689,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               children: [
                 // Floating Header Pill
                 ChatHeaderPill(
-                  onBackTap: () {
+                  onHomeTap: () {
                     Navigator.of(context).pop();
                   },
                   onHistoryTap: () {
@@ -617,7 +719,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                         child: Text(
                                           'Try asking me',
                                           style: TextStyle(
-                                            fontFamily: 'ClashDisplay',
+                                            fontFamily: theme.textTheme.titleLarge?.fontFamily,
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,
                                             color: theme.colorScheme.primary,
@@ -630,6 +732,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                         ),
                                         child: Column(
                                           children: [
+                                            SuggestionPill(
+                                              text: 'Analyze my cart for missing items 🛒',
+                                              icon: Icons.analytics_outlined,
+                                              onTap: () {
+                                                _analyzeCart();
+                                              },
+                                            ),
                                             SuggestionPill(
                                               text: 'What snacks do you have under ₹50?',
                                               icon: Icons.local_offer_outlined,
@@ -772,12 +881,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 }
 
 class ChatHeaderPill extends StatelessWidget {
-  final VoidCallback onBackTap;
+  final VoidCallback onHomeTap;
   final VoidCallback onHistoryTap;
 
   const ChatHeaderPill({
     super.key,
-    required this.onBackTap,
+    required this.onHomeTap,
     required this.onHistoryTap,
   });
 
@@ -803,50 +912,9 @@ class ChatHeaderPill extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Left action: Back
+          // Left action: History
           Align(
             alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: onBackTap,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  border: Border.all(
-                    color: const Color(0xFFD2E4E6),
-                    width: 1.2,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.arrow_back_rounded,
-                    color: theme.colorScheme.primary,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Center Title
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 56),
-            child: Text(
-              'Qless Assistant',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: 'ClashDisplay',
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ),
-          // Right action: History
-          Align(
-            alignment: Alignment.centerRight,
             child: GestureDetector(
               onTap: onHistoryTap,
               child: Container(
@@ -863,6 +931,47 @@ class ChatHeaderPill extends StatelessWidget {
                 child: Center(
                   child: Icon(
                     Icons.history_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Center Title
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 56),
+            child: Text(
+              'Qless Assistant',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: theme.textTheme.titleLarge?.fontFamily,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          // Right action: Home
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: onHomeTap,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(
+                    color: const Color(0xFFD2E4E6),
+                    width: 1.2,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.home_outlined,
                     color: theme.colorScheme.primary,
                     size: 20,
                   ),
@@ -931,7 +1040,7 @@ class _WelcomeCardState extends State<WelcomeCard> {
                     TypewriterText(
                       text: 'Hi there!',
                       style: TextStyle(
-                        fontFamily: 'ClashDisplay',
+                        fontFamily: theme.textTheme.titleLarge?.fontFamily,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.primary,
@@ -946,7 +1055,7 @@ class _WelcomeCardState extends State<WelcomeCard> {
                       text: "I'm your Qless Assistant.",
                       startTyping: _startSecondSentence,
                       style: TextStyle(
-                        fontFamily: 'ClashDisplay',
+                        fontFamily: theme.textTheme.titleLarge?.fontFamily,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.primary,
@@ -961,7 +1070,7 @@ class _WelcomeCardState extends State<WelcomeCard> {
           Text(
             'Ask me questions, get item suggestions, update your cart, or find recipe ideas!',
             style: TextStyle(
-              fontFamily: 'ClashGrotesk',
+              fontFamily: theme.textTheme.bodyMedium?.fontFamily,
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: theme.colorScheme.primary.withValues(alpha: 0.7),
@@ -1179,7 +1288,7 @@ class _SuggestionPillState extends State<SuggestionPill> {
                 child: Text(
                   widget.text,
                   style: TextStyle(
-                    fontFamily: 'ClashGrotesk',
+                    fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: theme.colorScheme.primary,

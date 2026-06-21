@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/cart_item_model.dart';
 import '../../../services/inventory_service.dart';
 import 'payment_sheet.dart';
+import 'missing_regulars_sheet.dart';
 
 class DashboardSheets {
   static Future<void> showProfileSheet(
@@ -40,7 +41,7 @@ class DashboardSheets {
                 child: Text(
                   initial,
                   style: TextStyle(
-                    fontFamily: 'ClashDisplay',
+                    fontFamily: theme.textTheme.titleLarge?.fontFamily,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
@@ -300,6 +301,27 @@ class DashboardSheets {
         return PaymentSheet(
           amount: amount,
           onPaymentSuccess: onPaymentSuccess,
+        );
+      },
+    );
+  }
+
+  static Future<void> showMissingRegularsSheet(
+    BuildContext context, {
+    required List<dynamic> missingItems,
+    required VoidCallback onContinueToCheckout,
+  }) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return MissingRegularsSheet(
+          missingItems: missingItems,
+          onContinueToCheckout: () {
+            // we already popped in the sheet
+            onContinueToCheckout();
+          },
         );
       },
     );
