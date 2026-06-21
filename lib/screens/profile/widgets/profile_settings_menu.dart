@@ -84,12 +84,12 @@ class ProfileSettingsMenu extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
             children: [
               // Icon block
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: theme.colorScheme.primary.withValues(alpha: 0.05),
@@ -97,18 +97,18 @@ class ProfileSettingsMenu extends StatelessWidget {
                 child: Icon(
                   icon,
                   color: theme.colorScheme.primary,
-                  size: 22,
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               // Title text
               Expanded(
                 child: Text(
                   title,
                   style: TextStyle(
                     fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                     color: const Color(0xFF001A23),
                   ),
                 ),
@@ -116,7 +116,7 @@ class ProfileSettingsMenu extends StatelessWidget {
               // Arrow trailing icon
               Icon(
                 Icons.arrow_forward_ios_rounded,
-                size: 14,
+                size: 13,
                 color: theme.colorScheme.primary.withValues(alpha: 0.4),
               ),
             ],
@@ -130,7 +130,7 @@ class ProfileSettingsMenu extends StatelessWidget {
     return const Divider(
       height: 1,
       thickness: 1,
-      indent: 68, // align with the start of the text
+      indent: 68, // aligns perfectly with the start of the text now
       endIndent: 20,
       color: Color(0xFFF3F4F6),
     );
