@@ -469,14 +469,12 @@ class _ProfilePageState extends State<ProfilePage> {
                             onPressed: saving ? null : () => Navigator.pop(ctx),
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
+                              shape: const StadiumBorder(),
                               foregroundColor: const Color(0xFF4B5563),
                             ),
                             child: const Text(
                               'Cancel',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
@@ -489,9 +487,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF001A23),
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
+                              shape: const StadiumBorder(),
                               elevation: 0,
                             ),
                             onPressed: saving
@@ -543,7 +539,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   )
                                 : const Text(
                                     'Save',
-                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                                   ),
                           ),
                         ),
@@ -648,14 +644,12 @@ class _ProfilePageState extends State<ProfilePage> {
                           onPressed: saving ? null : () => Navigator.pop(ctx),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
+                            shape: const StadiumBorder(),
                             foregroundColor: const Color(0xFF4B5563),
                           ),
                           child: const Text(
                             'Cancel',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -710,9 +704,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF001A23),
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
+                            shape: const StadiumBorder(),
                             elevation: 0,
                           ),
                           child: saving
@@ -726,7 +718,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 )
                               : const Text(
                                   'Save',
-                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                                 ),
                         ),
                       ),
@@ -839,12 +831,10 @@ class _ProfilePageState extends State<ProfilePage> {
                         backgroundColor: const Color(0xFFEF4444),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(26),
-                        ),
+                        shape: const StadiumBorder(),
                         textStyle: TextStyle(
                           fontFamily: theme.textTheme.labelLarge?.fontFamily,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                           fontSize: 15,
                         ),
                       ),
