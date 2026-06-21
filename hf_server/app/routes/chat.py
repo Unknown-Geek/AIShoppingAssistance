@@ -29,6 +29,13 @@ async def send_chat_message(payload: ChatRequest):
         if payload.current_cart:
             current_cart = [{"sku": c.sku, "name": c.name, "quantity": c.quantity} for c in payload.current_cart]
 
+        # ── Source-of-truth sync ────────────────────────────────────────────────
+        # Flutter's CartService is the authoritative cart state. Any external
+        # modifications (dashboard scanner, checkout, manual cart clear) are
+        # reflected here by resetting the server-side memory to match before
+        # running any tool calls.
+        live_cart_memory.sync_from_client(user, current_cart)
+
         result = await agent.process_recipe_workflow(
             user_id=user,
             current_cart_slugs=slugs,

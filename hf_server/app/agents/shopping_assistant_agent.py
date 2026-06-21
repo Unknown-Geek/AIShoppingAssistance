@@ -77,6 +77,25 @@ def format_ingredient_quantity(quantity: Any, unit: Any) -> str:
             
     return f"{qty_str} {unit_str}"
 
+def _parse_qty(qty_str: Any) -> int:
+    """
+    Parses a human-readable quantity string into an integer for cart additions.
+    Examples: "2 cans" -> 2, "1.5 cups" -> 2, "3" -> 3, "half" -> 1, "" -> 1
+    """
+    import re
+    if not qty_str:
+        return 1
+    s = str(qty_str).strip().lower()
+    # Handle textual fractions
+    word_map = {"half": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+    for word, val in word_map.items():
+        if s.startswith(word):
+            return val
+    match = re.match(r"(\d+(?:\.\d+)?)", s)
+    if match:
+        return max(1, round(float(match.group(1))))
+    return 1
+
 def clean_ingredient_name(name: Any, unit: Any) -> str:
     """
     Cleans the ingredient name by removing any prepended unit words.
@@ -353,7 +372,21 @@ class ShoppingAssistantAgent:
 
             missing_ingredients_map = {}
             cart_additions_map = {}
-            normalized_cart_slugs = [str(slug).lower().strip() for slug in current_cart_slugs]
+
+            # Build two lookup sets for robust deduplication:
+            # 1. Normalized slugs (strip apostrophes/special chars Flutter adds)
+            # 2. SKU set from current_cart (authoritative — immune to slug drift)
+            import re as _re
+            def _norm_slug(s: str) -> str:
+                return _re.sub(r"[^a-z0-9\-]", "", str(s).lower().strip())
+
+            normalized_cart_slugs = [_norm_slug(slug) for slug in (current_cart_slugs or [])]
+            # current_cart_slugs are name-derived — also build a SKU set from current_cart
+            # NOTE: _generate_and_match_recipe_internal only receives cart_slugs, not
+            # the full current_cart. For now use the live_cart_memory which was just
+            # synced from Flutter as the SKU source of truth.
+            from app.utils.cart_state import live_cart_memory as _cart_mem
+            synced_skus = set(_cart_mem.get_cart(user_id).keys())
 
             # Parse and compose the final missing ingredients and cart additions lists
             for ing in ingredients:
@@ -366,7 +399,7 @@ class ShoppingAssistantAgent:
                 if not ing_slug:
                     ing_slug = ing_name_lower.replace(" ", "-")
 
-                if ing_slug in normalized_cart_slugs:
+                if _norm_slug(ing_slug) in normalized_cart_slugs:
                     continue
 
                 final_qty = format_ingredient_quantity(ing.get('quantity'), ing.get('unit'))
@@ -378,7 +411,7 @@ class ShoppingAssistantAgent:
                         item_sku = actual_item.get("sku")
                         item_slug = actual_item.get("slug", ing_slug).lower().strip()
                         
-                        if item_slug in normalized_cart_slugs:
+                        if item_sku in synced_skus or _norm_slug(item_slug) in normalized_cart_slugs:
                             continue
 
                         if item_sku in missing_ingredients_map:
@@ -395,13 +428,13 @@ class ShoppingAssistantAgent:
                             }
                         
                         if item_sku in cart_additions_map:
-                            cart_additions_map[item_sku]["quantity"] += 1
+                            cart_additions_map[item_sku]["quantity"] += _parse_qty(final_qty)
                         else:
                             cart_additions_map[item_sku] = {
                                 "sku": item_sku,
                                 "name": actual_item.get("name"),
                                 "price": float(actual_item.get("price_rupees", 0.0)),
-                                "quantity": 1
+                                "quantity": _parse_qty(final_qty)
                             }
                 else:
                     # Clean up substitute list if any (ensure thumbnail URLs from inventory match if applicable)
@@ -706,6 +739,8 @@ Current Cart Items:
    - If the user asks for general shopping recommendations, breakfast item suggestions, snacks, greetings, or conversational questions, do NOT call the `generate_and_match_recipe` tool.
    - Instead, respond conversationally using products that are available in the 'Available Store Catalog' list below (e.g., for breakfast suggest "Nestle Ceregrow Multigrain Cereal", "Standardised Milk", "Organic Eggs", etc.).
    - Only call the `generate_and_match_recipe` tool when the user is explicitly requesting a recipe or cooking instructions for a specific dish.
+9. **Parallel Tool Calls for Multiple Items**: When the user asks to add, remove, or search for multiple items in a single message (e.g., "add Lays, Snickers, and KitKat"), you MUST issue ALL required tool calls **in a single response as parallel calls** — not one-by-one across multiple turns. This ensures all items are processed reliably.
+
 
 Available Store Catalog (SKUs and Names):
 {catalog_str}
@@ -764,7 +799,8 @@ Available Store Catalog (SKUs and Names):
         })
 
         executed_tool_calls = set()
-        for loop_iter in range(3):
+        for loop_iter in range(6):  # increased from 3: multi-item requests can need up to 6 sequential tool steps
+
             content = ""
             tool_calls_dict = {}
             try:
