@@ -175,7 +175,7 @@ class InventoryFilterBar extends StatelessWidget {
                 children: categories.map((category) {
                 final isSelected = selectedCategory == category;
                 return Padding(
-                  padding: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.only(right: 6),
                   child: GestureDetector(
                     onTap: () => onCategorySelected(category),
                     child: AnimatedContainer(
@@ -212,6 +212,7 @@ class InventoryFilterBar extends StatelessWidget {
               }).toList(),
             ),
           ),
+        ),
         ],
       ),
     );
