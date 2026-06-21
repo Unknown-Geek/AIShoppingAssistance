@@ -518,85 +518,91 @@ class _ProfilePageState extends State<ProfilePage> {
                   Row(
                     children: [
                       Expanded(
-                        child: SizedBox(
-                          height: 40,
-                          child: OutlinedButton(
-                            onPressed: saving ? null : () => Navigator.pop(ctx),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
-                              shape: const StadiumBorder(),
-                              foregroundColor: const Color(0xFF4B5563),
+                        child: OutlinedButton(
+                          onPressed: saving ? null : () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
                             ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            side: const BorderSide(color: Color(0xFFD2E4E6)),
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              color: Color(0xFF4A5568),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: SizedBox(
-                          height: 40,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF001A23),
-                              foregroundColor: Colors.white,
-                              shape: const StadiumBorder(),
-                              elevation: 0,
-                            ),
-                            onPressed: saving
-                                ? null
-                                : () async {
-                                    if (!formKey.currentState!.validate()) return;
-                                    final newPassword = controller.text.trim();
+                        child: ElevatedButton(
+                          onPressed: saving
+                              ? null
+                              : () async {
+                                  if (!formKey.currentState!.validate()) return;
+                                  final newPassword = controller.text.trim();
 
-                                    setModalState(() => saving = true);
+                                  setModalState(() => saving = true);
 
-                                    try {
-                                      await Supabase.instance.client.auth.updateUser(
-                                        UserAttributes(password: newPassword),
-                                      );
+                                  try {
+                                    await Supabase.instance.client.auth.updateUser(
+                                      UserAttributes(password: newPassword),
+                                    );
 
-                                      if (!mounted) return;
+                                    if (!mounted) return;
 
-                                      if (ctx.mounted) {
-                                        Navigator.pop(ctx);
-                                      }
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: const Text('Password updated successfully!'),
-                                          backgroundColor: theme.colorScheme.primary,
-                                          behavior: SnackBarBehavior.fixed,
-                                        ),
-                                      );
-                                    } catch (e) {
-                                      debugPrint('Error updating password: $e');
-                                      setModalState(() => saving = false);
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Failed to update password.'),
-                                          backgroundColor: Colors.redAccent,
-                                          behavior: SnackBarBehavior.fixed,
-                                        ),
-                                      );
+                                    if (ctx.mounted) {
+                                      Navigator.pop(ctx);
                                     }
-                                  },
-                            child: saving
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation(Colors.white),
-                                    ),
-                                  )
-                                : const Text(
-                                    'Save',
-                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                  ),
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Text('Password updated successfully!'),
+                                        backgroundColor: theme.colorScheme.primary,
+                                        behavior: SnackBarBehavior.fixed,
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    debugPrint('Error updating password: $e');
+                                    setModalState(() => saving = false);
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Failed to update password.'),
+                                        backgroundColor: Colors.redAccent,
+                                        behavior: SnackBarBehavior.fixed,
+                                      ),
+                                    );
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
                           ),
+                          child: saving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                                  ),
+                                )
+                              : const Text(
+                                  'Save',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
                         ),
                       ),
                     ],
@@ -693,89 +699,95 @@ class _ProfilePageState extends State<ProfilePage> {
                 Row(
                   children: [
                     Expanded(
-                      child: SizedBox(
-                        height: 40,
-                        child: OutlinedButton(
-                          onPressed: saving ? null : () => Navigator.pop(ctx),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
-                            shape: const StadiumBorder(),
-                            foregroundColor: const Color(0xFF4B5563),
+                      child: OutlinedButton(
+                        onPressed: saving ? null : () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          side: const BorderSide(color: Color(0xFFD2E4E6)),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: Color(0xFF4A5568),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: SizedBox(
-                        height: 40,
-                        child: ElevatedButton(
-                          onPressed: saving
-                              ? null
-                              : () async {
-                                  final newName = controller.text.trim();
-                                  if (newName.isEmpty) return;
+                      child: ElevatedButton(
+                        onPressed: saving
+                            ? null
+                            : () async {
+                                final newName = controller.text.trim();
+                                if (newName.isEmpty) return;
 
-                                  setModalState(() => saving = true);
+                                setModalState(() => saving = true);
 
-                                  try {
-                                    await Supabase.instance.client.auth.updateUser(
-                                      UserAttributes(data: {'name': newName}),
-                                    );
+                                try {
+                                  await Supabase.instance.client.auth.updateUser(
+                                    UserAttributes(data: {'name': newName}),
+                                  );
 
-                                    if (!mounted) return;
+                                  if (!mounted) return;
 
-                                    setState(() {
-                                      _displayName = newName;
-                                    });
+                                  setState(() {
+                                    _displayName = newName;
+                                  });
 
-                                    if (ctx.mounted) {
-                                      Navigator.pop(ctx);
-                                    }
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Text('Name updated successfully!'),
-                                        backgroundColor: theme.colorScheme.primary,
-                                        behavior: SnackBarBehavior.fixed,
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    debugPrint('Error updating name: $e');
-                                    setModalState(() => saving = false);
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Failed to update name.'),
-                                        backgroundColor: Colors.redAccent,
-                                        behavior: SnackBarBehavior.fixed,
-                                      ),
-                                    );
+                                  if (ctx.mounted) {
+                                    Navigator.pop(ctx);
                                   }
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF001A23),
-                            foregroundColor: Colors.white,
-                            shape: const StadiumBorder(),
-                            elevation: 0,
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text('Name updated successfully!'),
+                                      backgroundColor: theme.colorScheme.primary,
+                                      behavior: SnackBarBehavior.fixed,
+                                    ),
+                                  );
+                                } catch (e) {
+                                  debugPrint('Error updating name: $e');
+                                  setModalState(() => saving = false);
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Failed to update name.'),
+                                      backgroundColor: Colors.redAccent,
+                                      behavior: SnackBarBehavior.fixed,
+                                    ),
+                                  );
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                          child: saving
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation(Colors.white),
-                                  ),
-                                )
-                              : const Text(
-                                  'Save',
-                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                ),
                         ),
+                        child: saving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Save',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
                       ),
                     ),
                   ],
