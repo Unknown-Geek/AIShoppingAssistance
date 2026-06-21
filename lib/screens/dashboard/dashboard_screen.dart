@@ -23,6 +23,7 @@ import 'widgets/checkout_bar.dart';
 import 'widgets/dashboard_sheets.dart';
 import '../profile/profile_page.dart';
 import 'notifications_page.dart';
+import 'inventory_page.dart';
 import '../../services/notification_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/web_blur_helper_stub.dart'
@@ -999,7 +1000,62 @@ class _DashboardScreenState extends State<DashboardScreen>
                 }
                 _startBackgroundScanning();
               },
-              onVoiceTap: () {},
+              onStoreTap: () async {
+                _isDashboardActive = false;
+                _stopBackgroundScanning();
+
+                // Pre-emptively pause camera preview
+                if (_cameraController != null && _cameraController!.value.isInitialized) {
+                  try {
+                    await _cameraController!.pausePreview();
+                  } catch (e) {
+                    debugPrint("Error pausing camera: $e");
+                  }
+                }
+
+                if (!context.mounted) return;
+
+                final route = PageRouteBuilder(
+                  pageBuilder: (_, animation, __) => const InventoryPage(),
+                  transitionsBuilder: (_, animation, secondaryAnimation, child) {
+                    final slideAnimation = Tween<Offset>(
+                      begin: const Offset(1.0, 0.0),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.fastOutSlowIn,
+                        reverseCurve: Curves.fastOutSlowIn.flipped,
+                      ),
+                    );
+
+                    return SlideTransition(
+                      position: slideAnimation,
+                      child: Material(
+                        elevation: 16,
+                        shadowColor: Colors.black38,
+                        child: child,
+                      ),
+                    );
+                  },
+                  transitionDuration: const Duration(milliseconds: 300),
+                  reverseTransitionDuration: const Duration(milliseconds: 250),
+                );
+
+                await Navigator.push(context, route);
+
+                _isDashboardActive = true;
+                if (_cameraController == null || !_cameraController!.value.isInitialized) {
+                  await _initializeCamera();
+                } else {
+                  try {
+                    await _cameraController!.resumePreview();
+                  } catch (e) {
+                    debugPrint("Error resuming camera: $e");
+                  }
+                }
+                _startBackgroundScanning();
+              },
               isSearchingImage: _isSearchingImage,
               onShutterTap: _takePictureAndSearch,
             ),

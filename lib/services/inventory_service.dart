@@ -86,6 +86,10 @@ class InventoryService {
     return null;
   }
 
+  List<Map<String, dynamic>> getAllProducts() {
+    return _localProducts.values.toList();
+  }
+
   String getImageUrl(String slug) {
     // Prefer Supabase Storage thumbnail over local JSON fallback
     if (_thumbnailUrls.containsKey(slug)) return _thumbnailUrls[slug]!;
