@@ -64,4 +64,14 @@ class NotificationStorageService {
       // silent fallback
     }
   }
+
+  static Future<void> saveNotificationsList(List<Map<String, dynamic>> list) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<String> stringList = list.map((item) => jsonEncode(item)).toList();
+      await prefs.setStringList(_storageKey, stringList);
+    } catch (e) {
+      // silent fallback
+    }
+  }
 }
