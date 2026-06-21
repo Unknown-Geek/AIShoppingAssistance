@@ -970,65 +970,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           end: Alignment.bottomCenter,
                         ),
                       ),
-                      if (_showScrollDownButton) ...[
-                        Positioned(
-                          left: 16,
-                          bottom: 16,
-                          child: GestureDetector(
-                            onTap: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (ctx) => const ChatCartSheet(),
-                              );
-                            },
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFFD2E4E6),
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: ListenableBuilder(
-                                  listenable: CartService(),
-                                  builder: (context, child) {
-                                    final count = CartService().itemCount;
-                                    return Badge(
-                                      label: Text(
-                                        '$count',
-                                        style: const TextStyle(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      isLabelVisible: count > 0,
-                                      backgroundColor: theme.colorScheme.secondary,
-                                      textColor: theme.colorScheme.primary,
-                                      child: Icon(
-                                        Icons.shopping_cart_rounded,
-                                        color: theme.colorScheme.primary,
-                                        size: 20,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                      if (_showScrollDownButton)
                         Positioned(
                           right: 16,
                           bottom: 16,
@@ -1060,7 +1002,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                             ),
                           ),
                         ),
-                      ],
                     ],
                   ),
                 ),
