@@ -334,6 +334,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dishName = widget.recipe['dish'] ?? 'Recipe';
+    final nutrition = widget.recipe['nutrition'] as Map<String, dynamic>?;
     final servings = widget.recipe['servings'] ?? 2;
     final readyTime = widget.recipe['ready_time'] ?? '20 min';
     final summary = widget.recipe['summary'] ?? 'A delicious dish crafted by your AI Chef.';
@@ -641,6 +642,58 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                             ),
                           );
                         }),
+                        if (nutrition != null) ...[
+                          const SizedBox(height: 20),
+                          const Divider(color: Color(0xFFD2E4E6), height: 1),
+                          const SizedBox(height: 18),
+                          Text(
+                            'Nutritional Facts (Per Serving)',
+                            style: TextStyle(
+                              fontFamily: theme.textTheme.titleLarge?.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.03),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildNutrientStat(
+                                  context,
+                                  'Calories',
+                                  '${_formatNutrient(nutrition['per_serving']?['calories'])} kcal',
+                                  Icons.local_fire_department_rounded,
+                                ),
+                                _buildNutrientStat(
+                                  context,
+                                  'Protein',
+                                  '${_formatNutrient(nutrition['per_serving']?['protein'])}g',
+                                  Icons.fitness_center_rounded,
+                                ),
+                                _buildNutrientStat(
+                                  context,
+                                  'Carbs',
+                                  '${_formatNutrient(nutrition['per_serving']?['carbs'])}g',
+                                  Icons.cookie_rounded,
+                                ),
+                                _buildNutrientStat(
+                                  context,
+                                  'Fat',
+                                  '${_formatNutrient(nutrition['per_serving']?['fat'])}g',
+                                  Icons.opacity_rounded,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ],
                   )
@@ -724,6 +777,46 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
           ],
         ),
       ),
+    );
+  }
+
+  String _formatNutrient(dynamic value) {
+    if (value == null) return '0';
+    if (value is num) {
+      if (value == value.roundToDouble()) {
+        return value.round().toString();
+      }
+      return value.toStringAsFixed(1);
+    }
+    return value.toString();
+  }
+
+  Widget _buildNutrientStat(BuildContext context, String label, String value, IconData icon) {
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: theme.colorScheme.secondary, size: 20),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+          ),
+        ),
+      ],
     );
   }
 }

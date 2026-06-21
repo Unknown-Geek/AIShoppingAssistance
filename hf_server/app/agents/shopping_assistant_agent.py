@@ -6,6 +6,7 @@ from groq import Groq
 from dotenv import load_dotenv
 from app.agents.recipe_agent import RecipeAgent
 from app.agents.tools.quantity_parser_tool import QuantityParserTool
+from app.services.nutrition_service import NutritionService
 
 # Explicitly load .env file from the hf_server directory
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -148,6 +149,7 @@ class ShoppingAssistantAgent:
         self.fallback_model = os.getenv("GROQ_FALLBACK_MODEL", "llama-3.3-70b-versatile")
         self.recipe_agent = RecipeAgent()
         self.quantity_parser = QuantityParserTool()
+        self.nutrition_service = NutritionService()
         self.inventory = self._load_inventory()
 
     def _load_inventory(self) -> List[Dict[str, Any]]:
@@ -702,6 +704,23 @@ class ShoppingAssistantAgent:
                         "properties": {}
                     }
                 }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_nutrition_info",
+                    "description": "Fetch real nutritional details (calories, protein, carbs, fats per 100g) for a single raw food or catalog product name from the USDA FoodData Central database. Use this tool when the user asks for nutritional facts, calorie counts, or macro information of specific foods.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "item_query": {
+                                "type": "string",
+                                "description": "The exact food or ingredient name to query (e.g. 'Standardised Milk', 'Egg', 'Oats', 'Apple')."
+                            }
+                        },
+                        "required": ["item_query"]
+                    }
+                }
             }
         ]
 
@@ -956,6 +975,21 @@ Available Store Catalog (SKUs and Names):
                         servings=arguments.get("servings", servings)
                     )
                     result_str = "Successfully generated recipe."
+                elif tool_name == "get_nutrition_info":
+                    item_query = arguments.get("item_query", "")
+                    res = await self.nutrition_service.get_nutrition(item_query)
+                    if res:
+                        result_str = json.dumps({
+                            "matched_item": item_query,
+                            "nutrients_per_100g": {
+                                "calories": f"{res.get('calories')} kcal",
+                                "protein": f"{res.get('protein')}g",
+                                "carbohydrates": f"{res.get('carbs')}g",
+                                "fats": f"{res.get('fat')}g"
+                            }
+                        })
+                    else:
+                        result_str = f"Sorry, could not find nutritional values for '{item_query}'."
                 else:
                     result_str = f"Error: Tool '{tool_name}' not found."
 
