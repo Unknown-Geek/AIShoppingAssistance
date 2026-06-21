@@ -163,13 +163,16 @@ class InventoryFilterBar extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           // Category chips row
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: categories.map((category) {
+            clipBehavior: Clip.none,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: categories.map((category) {
                 final isSelected = selectedCategory == category;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
