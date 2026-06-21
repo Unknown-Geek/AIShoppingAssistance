@@ -40,7 +40,9 @@ class InventoryFilterBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.02),
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.02,
+                        ),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -57,14 +59,19 @@ class InventoryFilterBar extends StatelessWidget {
                       hintText: 'Search products...',
                       hintStyle: TextStyle(
                         fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.6,
+                        ),
                         fontSize: 14,
                       ),
+
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
                               icon: Icon(
                                 Icons.clear_rounded,
-                                color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.6,
+                                ),
                                 size: 18,
                               ),
                               onPressed: () {
@@ -74,18 +81,29 @@ class InventoryFilterBar extends StatelessWidget {
                           : null,
                       filled: true,
                       fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(color: Color(0xFFD2E4E6), width: 1.2),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFD2E4E6),
+                          width: 1.2,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(color: Color(0xFFD2E4E6), width: 1.2),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFD2E4E6),
+                          width: 1.2,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: theme.colorScheme.secondary, width: 1.8),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.secondary,
+                          width: 1.8,
+                        ),
                       ),
                     ),
                   ),
@@ -132,17 +150,24 @@ class InventoryFilterBar extends StatelessWidget {
                         child: Row(
                           children: [
                             Icon(
-                              isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
-                              color: isSelected ? theme.colorScheme.primary : Colors.grey,
+                              isSelected
+                                  ? Icons.check_circle_rounded
+                                  : Icons.circle_outlined,
+                              color: isSelected
+                                  ? theme.colorScheme.primary
+                                  : Colors.grey,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               entry.value,
                               style: TextStyle(
-                                fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                fontFamily:
+                                    theme.textTheme.bodyMedium?.fontFamily,
                                 fontSize: 13,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
                                 color: theme.colorScheme.primary,
                               ),
                             ),
@@ -165,46 +190,61 @@ class InventoryFilterBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(
                 children: categories.map((category) {
-                final isSelected = selectedCategory == category;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: GestureDetector(
-                    onTap: () => onCategorySelected(category),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isSelected ? theme.colorScheme.primary : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected ? theme.colorScheme.primary : const Color(0xFFD2E4E6),
-                          width: 1.2,
+                  final isSelected = selectedCategory == category;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: GestureDetector(
+                      onTap: () => onCategorySelected(category),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                        boxShadow: [
-                          if (isSelected)
-                            BoxShadow(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.15),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                        ],
-                      ),
-                      child: Text(
-                        category,
-                        style: TextStyle(
-                          fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                          fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                          color: isSelected ? Colors.white : theme.colorScheme.primary.withValues(alpha: 0.8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : const Color(0xFFD2E4E6),
+                            width: 1.2,
+                          ),
+                          boxShadow: [
+                            if (isSelected)
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.15,
+                                ),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                          ],
+                        ),
+                        child: Text(
+                          category,
+                          style: TextStyle(
+                            fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                            fontSize: 12,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? Colors.white
+                                : theme.colorScheme.primary.withValues(
+                                    alpha: 0.8,
+                                  ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
           ),
-        ),
         ],
       ),
     );

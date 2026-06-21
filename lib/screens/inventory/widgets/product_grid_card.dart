@@ -86,7 +86,9 @@ class ProductGridCard extends StatelessWidget {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
                       ),
@@ -103,11 +105,17 @@ class ProductGridCard extends StatelessWidget {
                   top: 8,
                   left: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: badgeBg,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: badgeText.withValues(alpha: 0.15), width: 0.5),
+                      border: Border.all(
+                        color: badgeText.withValues(alpha: 0.15),
+                        width: 0.5,
+                      ),
                     ),
                     child: Text(
                       category.toUpperCase(),
@@ -143,42 +151,36 @@ class ProductGridCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.only(left: 12, right: 4, top: 4, bottom: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '₹${price.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      '₹${price.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontFamily: theme.textTheme.titleMedium?.fontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: onAddToCart,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
                           color: theme.colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 12,
                         ),
                       ),
-                      GestureDetector(
-                        onTap: onAddToCart,
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.add_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
