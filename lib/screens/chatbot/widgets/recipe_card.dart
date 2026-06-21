@@ -110,7 +110,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        addedItems.isEmpty ? 'Cart Update' : 'Added to Cart 🛒',
+                        addedItems.isEmpty ? 'Cart Update' : 'Added to Cart',
                         style: TextStyle(
                           fontFamily: theme.textTheme.titleLarge?.fontFamily,
                           fontSize: 16,
@@ -234,7 +234,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
               if (addedItems.isEmpty && missingItems.isEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
-                  'All ingredients are already in your cart! ✅',
+                  'All ingredients are already in your cart!',
                   style: TextStyle(
                     fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                     fontSize: 14,
@@ -283,7 +283,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
     final instructions = List<String>.from(widget.recipe['instructions'] ?? []);
 
     final buffer = StringBuffer();
-    buffer.writeln('🍳 Recipe: $dish');
+    buffer.writeln('Recipe: $dish');
     buffer.writeln('Servings: $servings | Ready in: $readyTime');
     buffer.writeln();
     buffer.writeln('Summary:');
@@ -291,7 +291,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
     buffer.writeln();
 
     if (ingredients.isNotEmpty) {
-      buffer.writeln('🛒 Ingredients:');
+      buffer.writeln('Ingredients:');
       for (final item in ingredients) {
         final name = item['name'] ?? '';
         final quantity = item['quantity'] ?? '';
@@ -305,7 +305,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
     }
 
     if (instructions.isNotEmpty) {
-      buffer.writeln('📖 Instructions:');
+      buffer.writeln('Instructions:');
       for (int i = 0; i < instructions.length; i++) {
         buffer.writeln('${i + 1}. ${instructions[i]}');
       }

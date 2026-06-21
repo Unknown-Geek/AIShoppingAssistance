@@ -100,7 +100,7 @@ class ChatInputField extends StatelessWidget {
             alignment: Alignment.topCenter,
             children: [
               Padding(
-                padding: const EdgeInsets.only(top: 54),
+                padding: const EdgeInsets.only(top: 48),
                 child: Container(
                 constraints: const BoxConstraints(
                   minHeight: 80,
