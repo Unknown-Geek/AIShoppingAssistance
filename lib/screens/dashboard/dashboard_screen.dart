@@ -23,7 +23,7 @@ import 'widgets/checkout_bar.dart';
 import 'widgets/dashboard_sheets.dart';
 import '../profile/profile_page.dart';
 import 'notifications_page.dart';
-import 'inventory_page.dart';
+import '../inventory/inventory_screen.dart';
 import '../../services/notification_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/web_blur_helper_stub.dart'
@@ -1016,7 +1016,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 if (!context.mounted) return;
 
                 final route = PageRouteBuilder(
-                  pageBuilder: (_, animation, __) => const InventoryPage(),
+                  pageBuilder: (_, animation, __) => const InventoryScreen(),
                   transitionsBuilder: (_, animation, secondaryAnimation, child) {
                     final slideAnimation = Tween<Offset>(
                       begin: const Offset(1.0, 0.0),
