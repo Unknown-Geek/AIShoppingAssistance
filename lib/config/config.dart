@@ -497,6 +497,16 @@ class BrandConfig {
       scaffoldBackgroundColor: c.background,
       colorScheme: colorScheme,
       textTheme: textTheme,
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.fixed,
+        backgroundColor: c.primary,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+      ),
     );
   }
 
