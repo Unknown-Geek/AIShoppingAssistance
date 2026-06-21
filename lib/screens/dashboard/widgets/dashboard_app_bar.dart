@@ -68,7 +68,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                           child: Text(
                             userInitial,
                             style: TextStyle(
-                              fontFamily: 'ClashDisplay',
+                              fontFamily: theme.textTheme.titleLarge?.fontFamily,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.primary,
