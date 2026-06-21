@@ -776,6 +776,27 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
+    final bool isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final bool hasImage = _selectedImage != null;
+
+    final double topGap = hasImage
+        ? 60.0
+        : (isKeyboardOpen
+            ? 8.0
+            : (bottomPadding > 0 ? 24.0 : 16.0));
+    final double bottomGap = isKeyboardOpen
+        ? 8.0
+        : (bottomPadding > 0 ? bottomPadding : 16.0);
+
+    // Height from screen bottom to top of white input container
+    final double inputFieldHeight = topGap + 80.0 + bottomGap + MediaQuery.of(context).viewInsets.bottom;
+
+    // Bottom padding for the list view to clear the floating input field and cart button
+    final double listBottomPadding = isKeyboardOpen
+        ? (hasImage ? 200.0 : 160.0)
+        : (hasImage ? 240.0 : 200.0) + (bottomPadding > 0 ? bottomPadding : 16.0);
+
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -852,7 +873,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           child: _messages.isEmpty
                               ? SingleChildScrollView(
                                   physics: const BouncingScrollPhysics(),
-                                  padding: const EdgeInsets.only(top: 12, bottom: 48),
+                                  padding: EdgeInsets.only(top: 12, bottom: listBottomPadding),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -923,7 +944,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                               : ListView.builder(
                                   controller: _scrollController,
                                   reverse: true,
-                                  padding: const EdgeInsets.only(top: 12, bottom: 64),
+                                  padding: EdgeInsets.only(top: 12, bottom: listBottomPadding),
                                   itemCount: _messages.length + (_loading ? 1 : 0),
                                   itemBuilder: (_, index) {
                                     if (_loading) {
@@ -959,127 +980,42 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           end: Alignment.topCenter,
                         ),
                       ),
-                      const Positioned(
-                        bottom: 0,
+                      Positioned(
+                        bottom: inputFieldHeight,
                         left: 0,
                         right: 0,
-                        child: GradualBlur(
-                          height: 48.0,
-                          strength: 12,
+                        child: const GradualBlur(
+                          height: 40.0,
+                          strength: 8,
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                         ),
                       ),
-                      if (_showScrollDownButton) ...[
-                        Positioned(
-                          left: 16,
-                          bottom: 16,
-                          child: GestureDetector(
-                            onTap: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (ctx) => const ChatCartSheet(),
-                              );
-                            },
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFFD2E4E6),
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: ListenableBuilder(
-                                  listenable: CartService(),
-                                  builder: (context, child) {
-                                    final count = CartService().itemCount;
-                                    return Badge(
-                                      label: Text(
-                                        '$count',
-                                        style: const TextStyle(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      isLabelVisible: count > 0,
-                                      backgroundColor: theme.colorScheme.secondary,
-                                      textColor: theme.colorScheme.primary,
-                                      child: Icon(
-                                        Icons.shopping_cart_rounded,
-                                        color: theme.colorScheme.primary,
-                                        size: 20,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: ChatInputField(
+                          controller: _controller,
+                          loading: _loading,
+                          onSend: _sendMessage,
+                          selectedImage: _selectedImage,
+                          showScrollDownButton: _showScrollDownButton,
+                          onScrollToBottom: _scrollToBottom,
+                          onImageSelected: (image) {
+                            setState(() {
+                              _selectedImage = image;
+                            });
+                          },
+                          onClearImage: () {
+                            setState(() {
+                              _selectedImage = null;
+                            });
+                          },
                         ),
-                        Positioned(
-                          right: 16,
-                          bottom: 16,
-                          child: GestureDetector(
-                            onTap: _scrollToBottom,
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFFD2E4E6),
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.keyboard_arrow_down_rounded,
-                                color: theme.colorScheme.primary,
-                                size: 28,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ],
                   ),
-                ),
-                ChatInputField(
-                  controller: _controller,
-                  loading: _loading,
-                  onSend: _sendMessage,
-                  selectedImage: _selectedImage,
-                  showScrollDownButton: _showScrollDownButton,
-                  onImageSelected: (image) {
-                    setState(() {
-                      _selectedImage = image;
-                    });
-                  },
-                  onClearImage: () {
-                    setState(() {
-                      _selectedImage = null;
-                    });
-                  },
                 ),
               ],
             ),
