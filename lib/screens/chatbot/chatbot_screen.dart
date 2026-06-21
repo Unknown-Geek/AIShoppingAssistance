@@ -596,7 +596,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                         child: Text(
                                           'Try asking me',
                                           style: TextStyle(
-                                            fontFamily: 'ClashDisplay',
+                                            fontFamily: theme.textTheme.titleLarge?.fontFamily,
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,
                                             color: theme.colorScheme.primary,
@@ -816,7 +816,7 @@ class ChatHeaderPill extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'ClashDisplay',
+                fontFamily: theme.textTheme.titleLarge?.fontFamily,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.primary,
@@ -910,7 +910,7 @@ class _WelcomeCardState extends State<WelcomeCard> {
                     TypewriterText(
                       text: 'Hi there!',
                       style: TextStyle(
-                        fontFamily: 'ClashDisplay',
+                        fontFamily: theme.textTheme.titleLarge?.fontFamily,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.primary,
@@ -925,7 +925,7 @@ class _WelcomeCardState extends State<WelcomeCard> {
                       text: "I'm your Qless Assistant.",
                       startTyping: _startSecondSentence,
                       style: TextStyle(
-                        fontFamily: 'ClashDisplay',
+                        fontFamily: theme.textTheme.titleLarge?.fontFamily,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.primary,
@@ -940,7 +940,7 @@ class _WelcomeCardState extends State<WelcomeCard> {
           Text(
             'Ask me questions, get item suggestions, update your cart, or find recipe ideas!',
             style: TextStyle(
-              fontFamily: 'ClashGrotesk',
+              fontFamily: theme.textTheme.bodyMedium?.fontFamily,
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: theme.colorScheme.primary.withValues(alpha: 0.7),
@@ -1158,7 +1158,7 @@ class _SuggestionPillState extends State<SuggestionPill> {
                 child: Text(
                   widget.text,
                   style: TextStyle(
-                    fontFamily: 'ClashGrotesk',
+                    fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: theme.colorScheme.primary,

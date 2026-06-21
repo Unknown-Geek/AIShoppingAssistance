@@ -321,12 +321,12 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Razorpay Checkout',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'ClashDisplay',
+                    fontFamily: theme.textTheme.titleLarge?.fontFamily,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -382,7 +382,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,
-                  fontFamily: 'ClashDisplay',
+                  fontFamily: theme.textTheme.titleLarge?.fontFamily,
                 ),
               ),
             ],
@@ -488,12 +488,12 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Sandbox Simulator',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'ClashDisplay',
+                    fontFamily: theme.textTheme.titleLarge?.fontFamily,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -671,7 +671,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                           fontWeight: FontWeight.bold,
                           letterSpacing: 2,
                           fontSize: 16,
-                          fontFamily: 'ClashDisplay',
+                          fontFamily: theme.textTheme.titleLarge?.fontFamily,
                         ),
                       ),
                     ],
@@ -1141,13 +1141,13 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Payment Confirmed!',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF001A23),
-              fontFamily: 'ClashDisplay',
+              color: theme.colorScheme.primary,
+              fontFamily: theme.textTheme.titleLarge?.fontFamily,
             ),
           ),
           const SizedBox(height: 8),
@@ -1214,7 +1214,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,
-              fontFamily: 'ClashDisplay',
+              fontFamily: theme.textTheme.titleLarge?.fontFamily,
             ),
           ),
           const SizedBox(height: 12),

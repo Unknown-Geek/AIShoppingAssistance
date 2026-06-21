@@ -49,7 +49,7 @@ class AuthBrandHeader extends StatelessWidget {
         Text(
           BrandConfig.active.identity.appName,
           style: theme.textTheme.headlineMedium?.copyWith(
-            fontFamily: 'ClashDisplay',
+            fontFamily: theme.textTheme.titleLarge?.fontFamily,
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.primary,
             letterSpacing: -0.5,
