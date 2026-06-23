@@ -116,14 +116,14 @@ class _ProductGridCardState extends State<ProductGridCard> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                    horizontal: 6,
+                    vertical: 2.5,
                   ),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? theme.colorScheme.primary
                         : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isSelected
                           ? theme.colorScheme.primary
@@ -145,7 +145,7 @@ class _ProductGridCardState extends State<ProductGridCard> {
                     sizeStr,
                     style: TextStyle(
                       fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: isSelected
                           ? FontWeight.w600
                           : FontWeight.w500,
@@ -171,12 +171,12 @@ class _ProductGridCardState extends State<ProductGridCard> {
       );
       variantsWidget = Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 4,
+          horizontal: 6,
+          vertical: 2.5,
         ),
         decoration: BoxDecoration(
           color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: const Color(0xFFD2E4E6),
             width: 1.0,
@@ -186,7 +186,7 @@ class _ProductGridCardState extends State<ProductGridCard> {
           sizeStr,
           style: TextStyle(
             fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-            fontSize: 10,
+            fontSize: 9,
             fontWeight: FontWeight.w500,
             color: theme.colorScheme.primary.withValues(alpha: 0.6),
           ),
@@ -221,10 +221,10 @@ class _ProductGridCardState extends State<ProductGridCard> {
               Stack(
                 children: [
                   AspectRatio(
-                    aspectRatio: 1.2,
+                    aspectRatio: 1.45,
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.5),
                         borderRadius: const BorderRadius.vertical(
@@ -240,10 +240,10 @@ class _ProductGridCardState extends State<ProductGridCard> {
                           fit: BoxFit.contain,
                           placeholder: (context, url) => Center(
                             child: SizedBox(
-                              width: 24,
-                              height: 24,
+                              width: 18,
+                              height: 18,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2,
+                                strokeWidth: 1.5,
                                 color: theme.colorScheme.primary.withValues(
                                   alpha: 0.3,
                                 ),
@@ -255,7 +255,7 @@ class _ProductGridCardState extends State<ProductGridCard> {
                             color: theme.colorScheme.primary.withValues(
                               alpha: 0.2,
                             ),
-                            size: 32,
+                            size: 24,
                           ),
                         ),
                       ),
@@ -263,16 +263,16 @@ class _ProductGridCardState extends State<ProductGridCard> {
                   ),
                   // Category Label Overlay
                   Positioned(
-                    top: 8,
-                    left: 8,
+                    top: 6,
+                    left: 6,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                        horizontal: 6,
+                        vertical: 2,
                       ),
                       decoration: BoxDecoration(
                         color: badgeBg,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(
                           color: badgeText.withValues(alpha: 0.15),
                           width: 0.5,
@@ -282,10 +282,10 @@ class _ProductGridCardState extends State<ProductGridCard> {
                         widget.category.toUpperCase(),
                         style: TextStyle(
                           fontFamily: theme.textTheme.labelSmall?.fontFamily,
-                          fontSize: 8,
+                          fontSize: 7,
                           fontWeight: FontWeight.w800,
                           color: badgeText,
-                          letterSpacing: 0.6,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
@@ -295,7 +295,7 @@ class _ProductGridCardState extends State<ProductGridCard> {
               // Product Info Section
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.start,
@@ -304,15 +304,15 @@ class _ProductGridCardState extends State<ProductGridCard> {
                         name,
                         style: TextStyle(
                           fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: theme.colorScheme.primary,
-                          height: 1.3,
+                          height: 1.25,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       variantsWidget,
                       const Spacer(),
                       Row(
@@ -324,7 +324,7 @@ class _ProductGridCardState extends State<ProductGridCard> {
                             style: TextStyle(
                               fontFamily:
                                   theme.textTheme.titleMedium?.fontFamily,
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color: theme.colorScheme.primary,
                             ),
@@ -332,8 +332,8 @@ class _ProductGridCardState extends State<ProductGridCard> {
                           GestureDetector(
                             onTap: () => widget.onAddToCart(_selectedPrice ?? price),
                             child: Container(
-                              width: 28,
-                              height: 28,
+                              width: 24,
+                              height: 24,
                               decoration: BoxDecoration(
                                 color: theme.colorScheme.primary,
                                 shape: BoxShape.circle,
@@ -341,7 +341,7 @@ class _ProductGridCardState extends State<ProductGridCard> {
                               child: const Icon(
                                 Icons.add,
                                 color: Colors.white,
-                                size: 14,
+                                size: 12,
                               ),
                             ),
                           ),
