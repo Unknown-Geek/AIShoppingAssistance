@@ -26,8 +26,18 @@ class OrderCard extends StatelessWidget {
       }
 
       final months = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
       ];
 
       final monthStr = months[dt.month - 1];
@@ -54,7 +64,8 @@ class OrderCard extends StatelessWidget {
     final isSuccess = status.toLowerCase() == 'processed';
     final totalPrice = (order['total_price'] as num?)?.toDouble() ?? 0.0;
 
-    final createdAt = order['vreated_at'] ?? order['created_at'] ?? order['createdAt'];
+    final createdAt =
+        order['vreated_at'] ?? order['created_at'] ?? order['createdAt'];
     final formattedDate = _formatOrderDate(createdAt);
 
     return Container(
@@ -106,7 +117,9 @@ class OrderCard extends StatelessWidget {
                             fontSize: 10,
                             fontWeight: FontWeight.normal,
                             letterSpacing: 0.6,
-                            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                         ),
                       ],
@@ -120,13 +133,19 @@ class OrderCard extends StatelessWidget {
                             fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                            color: isSuccess
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFEF4444),
                           ),
                         ),
                         const SizedBox(width: 4),
                         Icon(
-                          isSuccess ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                          color: isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                          isSuccess
+                              ? Icons.check_circle_rounded
+                              : Icons.cancel_rounded,
+                          color: isSuccess
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
                           size: 16,
                         ),
                       ],
@@ -147,33 +166,49 @@ class OrderCard extends StatelessWidget {
                           // Expanded state: show all items with prices
                           ...items.map((item) {
                             final itemMap = item as Map<String, dynamic>;
-                            final name = itemMap['name']?.toString() ?? 'Unknown item';
-                            final qty = itemMap['quantity'] ?? itemMap['qty'] ?? 1;
-                            final price = (itemMap['price'] as num?)?.toDouble() ??
+                            final name =
+                                itemMap['name']?.toString() ?? 'Unknown item';
+                            final qty =
+                                itemMap['quantity'] ?? itemMap['qty'] ?? 1;
+                            final price =
+                                (itemMap['price'] as num?)?.toDouble() ??
                                 (itemMap['unit_price'] as num?)?.toDouble() ??
                                 0.0;
-                            final lineTotal = (qty is num ? qty.toDouble() : 1.0) * price;
+                            final lineTotal =
+                                (qty is num ? qty.toDouble() : 1.0) * price;
 
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 8.0),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
                                     child: Row(
                                       children: [
                                         // Quantity badge
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFF3F4F6),
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(color: Colors.grey.shade300, width: 0.8),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.grey.shade300,
+                                              width: 0.8,
+                                            ),
                                           ),
                                           child: Text(
                                             '${qty}x',
                                             style: TextStyle(
-                                              fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                              fontFamily: theme
+                                                  .textTheme
+                                                  .bodyMedium
+                                                  ?.fontFamily,
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
                                               color: const Color(0xFF4B5563),
@@ -188,10 +223,14 @@ class OrderCard extends StatelessWidget {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
-                                              fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                              fontFamily: theme
+                                                  .textTheme
+                                                  .bodyMedium
+                                                  ?.fontFamily,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w500,
-                                              color: theme.colorScheme.primary.withValues(alpha: 0.8),
+                                              color: theme.colorScheme.primary
+                                                  .withValues(alpha: 0.8),
                                             ),
                                           ),
                                         ),
@@ -202,7 +241,10 @@ class OrderCard extends StatelessWidget {
                                   Text(
                                     '₹${lineTotal.toStringAsFixed(2)}',
                                     style: TextStyle(
-                                      fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                      fontFamily: theme
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.fontFamily,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       color: theme.colorScheme.primary,
@@ -216,8 +258,10 @@ class OrderCard extends StatelessWidget {
                           // Collapsed state: show first 2 items
                           ...items.take(2).map((item) {
                             final itemMap = item as Map<String, dynamic>;
-                            final name = itemMap['name']?.toString() ?? 'Unknown item';
-                            final qty = itemMap['quantity'] ?? itemMap['qty'] ?? 1;
+                            final name =
+                                itemMap['name']?.toString() ?? 'Unknown item';
+                            final qty =
+                                itemMap['quantity'] ?? itemMap['qty'] ?? 1;
 
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 8.0),
@@ -225,16 +269,25 @@ class OrderCard extends StatelessWidget {
                                 children: [
                                   // Quantity badge
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFF3F4F6),
                                       borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: Colors.grey.shade300, width: 0.8),
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                        width: 0.8,
+                                      ),
                                     ),
                                     child: Text(
                                       '${qty}x',
                                       style: TextStyle(
-                                        fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                        fontFamily: theme
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.fontFamily,
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
                                         color: const Color(0xFF4B5563),
@@ -249,10 +302,14 @@ class OrderCard extends StatelessWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                        fontFamily: theme
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.fontFamily,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
-                                        color: theme.colorScheme.primary.withValues(alpha: 0.8),
+                                        color: theme.colorScheme.primary
+                                            .withValues(alpha: 0.8),
                                       ),
                                     ),
                                   ),
@@ -266,10 +323,13 @@ class OrderCard extends StatelessWidget {
                               child: Text(
                                 '& ${items.length - 2} more',
                                 style: TextStyle(
-                                  fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                  fontFamily:
+                                      theme.textTheme.bodyMedium?.fontFamily,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                                  color: theme.colorScheme.primary.withValues(
+                                    alpha: 0.6,
+                                  ),
                                   decoration: TextDecoration.underline,
                                 ),
                               ),
@@ -297,7 +357,9 @@ class OrderCard extends StatelessWidget {
                             ScaffoldMessenger.of(context).hideCurrentSnackBar();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: const Text('Transaction ID copied to clipboard!'),
+                                content: const Text(
+                                  'Transaction ID copied to clipboard!',
+                                ),
                                 backgroundColor: theme.colorScheme.primary,
                                 behavior: SnackBarBehavior.fixed,
                                 duration: const Duration(seconds: 2),

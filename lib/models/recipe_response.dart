@@ -17,7 +17,8 @@ class RecipeResponse {
     return RecipeResponse(
       dishName: json['dishName'] as String? ?? '',
       servings: json['servings'] as int? ?? 1,
-      ingredients: (json['ingredients'] as List<dynamic>?)
+      ingredients:
+          (json['ingredients'] as List<dynamic>?)
               ?.map((e) => IngredientModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],

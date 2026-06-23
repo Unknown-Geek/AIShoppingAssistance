@@ -26,11 +26,7 @@ class _ChatCartSheetState extends State<ChatCartSheet> {
     // Trigger Missing Regulars Agent before checkout
     try {
       final currentCart = _cartService.items.map((item) {
-        return {
-          "sku": item.id,
-          "name": item.name,
-          "quantity": item.quantity,
-        };
+        return {"sku": item.id, "name": item.name, "quantity": item.quantity};
       }).toList();
 
       final result = await ChatAgentService().analyzeCart(currentCart);
@@ -120,9 +116,7 @@ class _ChatCartSheetState extends State<ChatCartSheet> {
       builder: (context, child) {
         return Container(
           constraints: BoxConstraints(maxHeight: maxHeight),
-          padding: EdgeInsets.only(
-            bottom: mediaQuery.viewInsets.bottom + 20,
-          ),
+          padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom + 20),
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -153,7 +147,10 @@ class _ChatCartSheetState extends State<ChatCartSheet> {
 
               // Title Header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -208,8 +205,9 @@ class _ChatCartSheetState extends State<ChatCartSheet> {
                                 height: 72,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: theme.colorScheme.primary
-                                      .withValues(alpha: 0.05),
+                                  color: theme.colorScheme.primary.withValues(
+                                    alpha: 0.05,
+                                  ),
                                 ),
                                 child: Icon(
                                   Icons.shopping_cart_outlined,
@@ -264,10 +262,16 @@ class _ChatCartSheetState extends State<ChatCartSheet> {
                               ),
                               onDismissed: (_) => _removeItem(index),
                               child: () {
-                                final slug = InventoryService().getSlugByName(item.name);
-                                final displayImageUrl = (item.imageUrl.startsWith('http') && !item.imageUrl.contains('string'))
+                                final slug = InventoryService().getSlugByName(
+                                  item.name,
+                                );
+                                final displayImageUrl =
+                                    (item.imageUrl.startsWith('http') &&
+                                        !item.imageUrl.contains('string'))
                                     ? item.imageUrl
-                                    : (slug != null ? InventoryService().getImageUrl(slug) : item.imageUrl);
+                                    : (slug != null
+                                          ? InventoryService().getImageUrl(slug)
+                                          : item.imageUrl);
                                 return CartItem(
                                   imageUrl: displayImageUrl,
                                   name: item.name,

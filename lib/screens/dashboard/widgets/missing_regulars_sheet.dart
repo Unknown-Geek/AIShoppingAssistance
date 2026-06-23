@@ -34,7 +34,10 @@ class _MissingRegularsSheetState extends State<MissingRegularsSheet> {
     for (int i in _selectedIndices) {
       final item = widget.missingItems[i];
       if (item['sku'] != 'UNKNOWN' && item['sku'] != null) {
-        final double price = (item['price'] as num?)?.toDouble() ?? (item['price_rupees'] as num?)?.toDouble() ?? 0.0;
+        final double price =
+            (item['price'] as num?)?.toDouble() ??
+            (item['price_rupees'] as num?)?.toDouble() ??
+            0.0;
         CartItemModel missingItem = CartItemModel(
           id: item['sku'],
           name: item['name'] ?? 'Unknown Item',
@@ -87,10 +90,7 @@ class _MissingRegularsSheetState extends State<MissingRegularsSheet> {
           const Text(
             'Based on your past orders, you usually buy these items.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF4A5568),
-            ),
+            style: TextStyle(fontSize: 14, color: Color(0xFF4A5568)),
           ),
           const SizedBox(height: 24),
           Flexible(
@@ -99,9 +99,13 @@ class _MissingRegularsSheetState extends State<MissingRegularsSheet> {
                 children: List.generate(widget.missingItems.length, (index) {
                   final item = widget.missingItems[index];
                   final name = item['name'] ?? 'Unknown Item';
-                  final price = (item['price'] as num?)?.toDouble() ?? (item['price_rupees'] as num?)?.toDouble() ?? 0.0;
+                  final price =
+                      (item['price'] as num?)?.toDouble() ??
+                      (item['price_rupees'] as num?)?.toDouble() ??
+                      0.0;
                   final avgGap = item['avg_gap_days'] ?? 0;
-                  final imageUrl = item['thumbnail_url'] ?? item['image_url'] ?? '';
+                  final imageUrl =
+                      item['thumbnail_url'] ?? item['image_url'] ?? '';
                   final isSelected = _selectedIndices.contains(index);
 
                   return GestureDetector(
@@ -118,9 +122,15 @@ class _MissingRegularsSheetState extends State<MissingRegularsSheet> {
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isSelected ? theme.colorScheme.secondary.withValues(alpha: 0.05) : Colors.white,
+                        color: isSelected
+                            ? theme.colorScheme.secondary.withValues(
+                                alpha: 0.05,
+                              )
+                            : Colors.white,
                         border: Border.all(
-                          color: isSelected ? theme.colorScheme.secondary : const Color(0xFFE2E8F0),
+                          color: isSelected
+                              ? theme.colorScheme.secondary
+                              : const Color(0xFFE2E8F0),
                           width: isSelected ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(16),
@@ -139,7 +149,8 @@ class _MissingRegularsSheetState extends State<MissingRegularsSheet> {
                               imageUrl: imageUrl,
                               fit: BoxFit.cover,
                               placeholder: (context, url) => const SizedBox(),
-                              errorWidget: (context, url, error) => const Icon(Icons.image, size: 20),
+                              errorWidget: (context, url, error) =>
+                                  const Icon(Icons.image, size: 20),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -176,8 +187,12 @@ class _MissingRegularsSheetState extends State<MissingRegularsSheet> {
                           ),
                           const SizedBox(width: 12),
                           Icon(
-                            isSelected ? Icons.check_circle : Icons.circle_outlined,
-                            color: isSelected ? theme.colorScheme.secondary : const Color(0xFFCBD5E0),
+                            isSelected
+                                ? Icons.check_circle
+                                : Icons.circle_outlined,
+                            color: isSelected
+                                ? theme.colorScheme.secondary
+                                : const Color(0xFFCBD5E0),
                           ),
                         ],
                       ),
@@ -229,7 +244,9 @@ class _MissingRegularsSheetState extends State<MissingRegularsSheet> {
                     ),
                   ),
                   child: Text(
-                    _selectedIndices.isEmpty ? 'Continue to Checkout' : 'Add & Checkout',
+                    _selectedIndices.isEmpty
+                        ? 'Continue to Checkout'
+                        : 'Add & Checkout',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

@@ -146,7 +146,7 @@ class _TypewriterTextState extends State<TypewriterText> {
         }
       });
     }
-    
+
     if (widget.startTyping) {
       _triggerStart();
     }
@@ -215,15 +215,14 @@ class _TypewriterTextState extends State<TypewriterText> {
     return RichText(
       text: TextSpan(
         children: [
-          TextSpan(
-            text: typedPart,
-            style: widget.style,
-          ),
+          TextSpan(text: typedPart, style: widget.style),
           if (widget.showCursor && !_isDone && _cursorVisible)
             TextSpan(
               text: widget.cursorCharacter,
               style: widget.style.copyWith(
-                color: widget.style.color?.withValues(alpha: 0.8) ?? Colors.black54,
+                color:
+                    widget.style.color?.withValues(alpha: 0.8) ??
+                    Colors.black54,
               ),
             ),
           TextSpan(

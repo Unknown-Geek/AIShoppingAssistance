@@ -56,12 +56,19 @@ class ProfileInfoCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                  border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
+                  border: Border.all(
+                    color: const Color(0xFFD2E4E6),
+                    width: 1.5,
+                  ),
                   image: profilePicBase64 != null
                       ? DecorationImage(
-                          image: (profilePicBase64!.startsWith('http')
-                              ? NetworkImage(profilePicBase64!)
-                              : MemoryImage(base64Decode(profilePicBase64!))) as ImageProvider,
+                          image:
+                              (profilePicBase64!.startsWith('http')
+                                      ? NetworkImage(profilePicBase64!)
+                                      : MemoryImage(
+                                          base64Decode(profilePicBase64!),
+                                        ))
+                                  as ImageProvider,
                           fit: BoxFit.cover,
                         )
                       : null,

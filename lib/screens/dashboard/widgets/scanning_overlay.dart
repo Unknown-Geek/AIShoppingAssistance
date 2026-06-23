@@ -74,7 +74,9 @@ class _ScanningOverlayState extends State<ScanningOverlay>
                       color: theme.colorScheme.secondary,
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.secondary.withValues(alpha: 0.8),
+                          color: theme.colorScheme.secondary.withValues(
+                            alpha: 0.8,
+                          ),
                           blurRadius: 8,
                           spreadRadius: 1.5,
                         ),

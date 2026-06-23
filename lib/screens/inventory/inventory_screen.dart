@@ -6,6 +6,7 @@ import 'widgets/inventory_header_pill.dart';
 import 'widgets/inventory_filter_bar.dart';
 import 'widgets/product_grid_card.dart';
 import 'widgets/inventory_empty_state.dart';
+import '../dashboard/widgets/dashboard_sheets.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -215,34 +216,50 @@ class _InventoryScreenState extends State<InventoryScreen> {
     _filteredProducts = temp;
   }
 
-  void _addToCart(Map<String, dynamic> product) {
+  Future<void> _addToCart(Map<String, dynamic> product) async {
     final slug = product['slug']?.toString() ?? '';
     final name = product['name']?.toString() ?? 'Unknown Item';
     final price = (product['price_rupees'] as num?)?.toDouble() ?? 50.0;
     final imageUrl = _inventoryService.getImageUrl(slug);
+    final pricesRaw = product['prices'];
+    final prices = (pricesRaw as List?)
+        ?.map((e) => (e as num).toDouble())
+        .toList();
 
-    final item = CartItemModel(
+    CartItemModel item = CartItemModel(
       id:
           product['sku']?.toString() ??
           'sku_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
       price: price,
+      prices: prices,
       quantity: 1,
       details: 'Added from Store',
       imageUrl: imageUrl,
     );
 
+    if (prices != null && prices.length > 1) {
+      final confirmedItem = await DashboardSheets.showItemConfirmSheet(
+        context,
+        item: item,
+      );
+      if (confirmedItem == null) return;
+      item = confirmedItem;
+    }
+
     _cartService.addItem(item);
 
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        content: Text('$name added to cart!'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        duration: const Duration(seconds: 1),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('${item.name} added to cart!'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
   }
 
   @override

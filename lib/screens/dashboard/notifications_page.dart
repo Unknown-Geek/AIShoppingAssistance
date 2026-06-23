@@ -110,7 +110,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
       final item = notifications[0];
       _listKey.currentState?.removeItem(
         0,
-        (context, animation) => _buildAnimatedItem(item, animation, 0, isRemoving: true),
+        (context, animation) =>
+            _buildAnimatedItem(item, animation, 0, isRemoving: true),
         duration: const Duration(milliseconds: 250),
       );
       notifications.removeAt(0);
@@ -148,10 +149,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       } catch (_) {}
     }
 
-    final card = NotificationCard(
-      notification: item,
-      timeLabel: timeLabel,
-    );
+    final card = NotificationCard(notification: item, timeLabel: timeLabel);
 
     Widget itemWidget;
     if (isRemoving) {
@@ -200,7 +198,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         notifications.insert(index, removedItem);
                         _listKey.currentState?.insertItem(index);
                       });
-                      await NotificationStorageService.saveNotificationsList(notifications);
+                      await NotificationStorageService.saveNotificationsList(
+                        notifications,
+                      );
                     }
                   },
                 ),
@@ -287,23 +287,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   child: loading
                       ? const Center(child: CircularProgressIndicator())
                       : notifications.isEmpty
-                          ? SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
-                              child: _buildEmptyState(theme),
-                            )
-                          : AnimatedList(
-                              key: _listKey,
-                              physics: const BouncingScrollPhysics(),
-                              padding: const EdgeInsets.only(top: 12, bottom: 24),
-                              initialItemCount: notifications.length,
-                              itemBuilder: (context, index, animation) {
-                                return _buildAnimatedItem(
-                                  notifications[index],
-                                  animation,
-                                  index,
-                                );
-                              },
-                            ),
+                      ? SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: _buildEmptyState(theme),
+                        )
+                      : AnimatedList(
+                          key: _listKey,
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.only(top: 12, bottom: 24),
+                          initialItemCount: notifications.length,
+                          itemBuilder: (context, index, animation) {
+                            return _buildAnimatedItem(
+                              notifications[index],
+                              animation,
+                              index,
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -410,10 +410,7 @@ class NotificationsHeaderPill extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white,
-                border: Border.all(
-                  color: const Color(0xFFD2E4E6),
-                  width: 1.2,
-                ),
+                border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
               ),
               child: Center(
                 child: Icon(
@@ -534,7 +531,9 @@ class NotificationCard extends StatelessWidget {
                           fontSize: 10,
                           fontWeight: FontWeight.normal,
                           letterSpacing: 0.6,
-                          color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
                   ],
@@ -548,13 +547,19 @@ class NotificationCard extends StatelessWidget {
                         fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        color: success ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                        color: success
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFEF4444),
                       ),
                     ),
                     const SizedBox(width: 4),
                     Icon(
-                      success ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                      color: success ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      success
+                          ? Icons.check_circle_rounded
+                          : Icons.cancel_rounded,
+                      color: success
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFEF4444),
                       size: 16,
                     ),
                   ],
@@ -600,7 +605,9 @@ class NotificationCard extends StatelessWidget {
                       }
                     },
                     child: Text(
-                      txId != null && txId.isNotEmpty ? 'Ref ID: $txId' : 'Ref ID: N/A',
+                      txId != null && txId.isNotEmpty
+                          ? 'Ref ID: $txId'
+                          : 'Ref ID: N/A',
                       style: TextStyle(
                         fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                         fontSize: 10,

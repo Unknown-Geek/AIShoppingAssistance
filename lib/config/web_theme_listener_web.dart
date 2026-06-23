@@ -8,8 +8,9 @@ void initWebThemeListener(VoidCallback onUpdate) {
     final message = event as html.MessageEvent;
     if (message.data != null && message.data['type'] == 'UPDATE_THEME') {
       try {
-        final Map<String, dynamic> themeData =
-            Map<String, dynamic>.from(message.data['theme']);
+        final Map<String, dynamic> themeData = Map<String, dynamic>.from(
+          message.data['theme'],
+        );
         BrandConfig.active = BrandConfig.fromJson(themeData);
         onUpdate();
       } catch (e) {

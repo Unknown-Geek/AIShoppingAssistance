@@ -86,16 +86,24 @@ class ProfileSkeletonList extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ShimmerPlaceholder(width: 80, height: 18, borderRadius: 6),
+                      ShimmerPlaceholder(
+                        width: 80,
+                        height: 18,
+                        borderRadius: 6,
+                      ),
                       SizedBox(height: 6),
-                      ShimmerPlaceholder(width: 100, height: 12, borderRadius: 4),
+                      ShimmerPlaceholder(
+                        width: 100,
+                        height: 12,
+                        borderRadius: 4,
+                      ),
                     ],
                   ),
                   ShimmerPlaceholder(width: 70, height: 22, borderRadius: 12),
                 ],
               ),
               SizedBox(height: 20),
-              
+
               // Body items
               Row(
                 children: [
@@ -112,11 +120,11 @@ class ProfileSkeletonList extends StatelessWidget {
                   ShimmerPlaceholder(width: 120, height: 14, borderRadius: 4),
                 ],
               ),
-              
+
               SizedBox(height: 16),
               Divider(height: 1, color: Color(0xFFEEEEEE)),
               SizedBox(height: 12),
-              
+
               // Footer
               ShimmerPlaceholder(width: 220, height: 10, borderRadius: 4),
             ],

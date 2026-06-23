@@ -18,10 +18,6 @@ class IngredientModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'quantity': quantity,
-      'unit': unit,
-    };
+    return {'name': name, 'quantity': quantity, 'unit': unit};
   }
 }

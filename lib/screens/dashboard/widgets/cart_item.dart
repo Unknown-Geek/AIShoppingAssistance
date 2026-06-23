@@ -79,7 +79,10 @@ class _CartItemState extends State<CartItem> {
                         child: SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.primary),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.primary,
+                          ),
                         ),
                       ),
                       errorWidget: (context, url, error) => const Icon(
@@ -145,29 +148,36 @@ class _CartItemState extends State<CartItem> {
                   behavior: HitTestBehavior.opaque,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Icon(Icons.remove, size: 14, color: theme.colorScheme.primary),
+                    child: Icon(
+                      Icons.remove,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                 ),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   switchInCurve: Curves.easeOutBack,
                   switchOutCurve: Curves.easeIn,
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    final childKey = child.key as ValueKey<int>;
-                    final isCurrent = childKey.value == widget.quantity;
-                    final goingUp = widget.quantity > _previousQuantity;
-                    final offset = goingUp ? 1.0 : -1.0;
- 
-                    return ClipRect(
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: isCurrent ? Offset(0.0, offset) : Offset(0.0, -offset),
-                          end: Offset.zero,
-                        ).animate(animation),
-                        child: child,
-                      ),
-                    );
-                  },
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                        final childKey = child.key as ValueKey<int>;
+                        final isCurrent = childKey.value == widget.quantity;
+                        final goingUp = widget.quantity > _previousQuantity;
+                        final offset = goingUp ? 1.0 : -1.0;
+
+                        return ClipRect(
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: isCurrent
+                                  ? Offset(0.0, offset)
+                                  : Offset(0.0, -offset),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: child,
+                          ),
+                        );
+                      },
                   child: SizedBox(
                     key: ValueKey<int>(widget.quantity),
                     width: 18,
@@ -189,7 +199,11 @@ class _CartItemState extends State<CartItem> {
                   behavior: HitTestBehavior.opaque,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Icon(Icons.add, size: 14, color: theme.colorScheme.primary),
+                    child: Icon(
+                      Icons.add,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                 ),
               ],

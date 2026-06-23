@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/cart_item_model.dart';
 
-
 /// Singleton cart service that acts as the session-scoped cart database.
 /// Persists cart state across page refreshes via SharedPreferences and syncs
 /// with Supabase for logged-in users.
@@ -135,7 +134,9 @@ class CartService extends ChangeNotifier {
         _activeCartId = activeCart['id'] as String?;
         final List<dynamic> dbItems = activeCart['items'] as List<dynamic>;
         _items.clear();
-        _items.addAll(dbItems.map((e) => CartItemModel.fromJson(e as Map<String, dynamic>)));
+        _items.addAll(
+          dbItems.map((e) => CartItemModel.fromJson(e as Map<String, dynamic>)),
+        );
         _persist();
         _lastSyncedHash = _cartHash();
         _loadedUserId = userId;
@@ -217,10 +218,12 @@ class CartService extends ChangeNotifier {
 
   void removeItemBySkuOrName(String sku, String name) {
     final nameLower = name.toLowerCase();
-    final index = _items.indexWhere((e) =>
-        e.id == sku ||
-        (sku.isNotEmpty && e.details.contains(sku)) ||
-        e.name.toLowerCase() == nameLower);
+    final index = _items.indexWhere(
+      (e) =>
+          e.id == sku ||
+          (sku.isNotEmpty && e.details.contains(sku)) ||
+          e.name.toLowerCase() == nameLower,
+    );
     if (index != -1) {
       removeItem(index);
     }
@@ -228,10 +231,12 @@ class CartService extends ChangeNotifier {
 
   void removeOrDecrementItemBySkuOrName(String sku, String name, int quantity) {
     final nameLower = name.toLowerCase();
-    final index = _items.indexWhere((e) =>
-        e.id == sku ||
-        (sku.isNotEmpty && e.details.contains(sku)) ||
-        e.name.toLowerCase() == nameLower);
+    final index = _items.indexWhere(
+      (e) =>
+          e.id == sku ||
+          (sku.isNotEmpty && e.details.contains(sku)) ||
+          e.name.toLowerCase() == nameLower,
+    );
     if (index != -1) {
       final currentQty = _items[index].quantity;
       if (currentQty > quantity) {
@@ -248,7 +253,9 @@ class CartService extends ChangeNotifier {
   /// (case-insensitive), its quantity is incremented instead of adding a duplicate.
   void addItem(CartItemModel item) {
     final nameLower = item.name.toLowerCase();
-    final existingIdx = _items.indexWhere((e) => e.name.toLowerCase() == nameLower);
+    final existingIdx = _items.indexWhere(
+      (e) => e.name.toLowerCase() == nameLower,
+    );
     if (existingIdx != -1) {
       _items[existingIdx].quantity += item.quantity;
     } else {
@@ -286,7 +293,8 @@ class CartService extends ChangeNotifier {
     // If the cart becomes empty, delete the active cart from Supabase
     final user = _supabase.auth.currentUser;
     if (user != null && _items.isEmpty) {
-      _syncTimer?.cancel(); // Cancel any pending sync if we are deleting the cart
+      _syncTimer
+          ?.cancel(); // Cancel any pending sync if we are deleting the cart
       final cartIdToDelete = _activeCartId;
       _activeCartId = null;
       _lastSyncedHash = null;
@@ -295,14 +303,22 @@ class CartService extends ChangeNotifier {
             .from('user_carts')
             .delete()
             .eq('id', cartIdToDelete)
-            .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
+            .then(
+              (_) => null,
+              onError: (e) =>
+                  debugPrint('[CartService] Error deleting active cart: $e'),
+            );
       } else {
         _supabase
             .from('user_carts')
             .delete()
             .eq('user_id', user.id)
             .eq('status', 'active')
-            .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
+            .then(
+              (_) => null,
+              onError: (e) =>
+                  debugPrint('[CartService] Error deleting active cart: $e'),
+            );
       }
     } else {
       _scheduleSync();
@@ -324,14 +340,22 @@ class CartService extends ChangeNotifier {
             .from('user_carts')
             .delete()
             .eq('id', cartIdToDelete)
-            .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
+            .then(
+              (_) => null,
+              onError: (e) =>
+                  debugPrint('[CartService] Error deleting active cart: $e'),
+            );
       } else {
         _supabase
             .from('user_carts')
             .delete()
             .eq('user_id', user.id)
             .eq('status', 'active')
-            .then((_) => null, onError: (e) => debugPrint('[CartService] Error deleting active cart: $e'));
+            .then(
+              (_) => null,
+              onError: (e) =>
+                  debugPrint('[CartService] Error deleting active cart: $e'),
+            );
       }
     }
     notifyListeners();
@@ -363,14 +387,12 @@ class CartService extends ChangeNotifier {
               .eq('id', activeCart['id']);
         } else if (_items.isNotEmpty) {
           // If no active cart exists in DB but we have local items, write direct processed entry
-          await _supabase
-              .from('user_carts')
-              .insert({
-                'user_id': user.id,
-                'items': _items.map((e) => e.toJson()).toList(),
-                'total_price': totalPrice,
-                'status': 'processed',
-              });
+          await _supabase.from('user_carts').insert({
+            'user_id': user.id,
+            'items': _items.map((e) => e.toJson()).toList(),
+            'total_price': totalPrice,
+            'status': 'processed',
+          });
         }
       } catch (e) {
         debugPrint('[CartService] Supabase checkout sync error: $e');

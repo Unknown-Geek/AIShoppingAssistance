@@ -36,9 +36,7 @@ class ChatInputField extends StatelessWidget {
     // Calculate equal visual gaps above and below the floating white pill
     final double topGap = selectedImage != null
         ? 60.0
-        : (isKeyboardOpen
-            ? 8.0
-            : (bottomPadding > 0 ? 24.0 : 16.0));
+        : (isKeyboardOpen ? 8.0 : (bottomPadding > 0 ? 24.0 : 16.0));
     final double bottomGap = isKeyboardOpen
         ? 8.0
         : (bottomPadding > 0 ? bottomPadding : 16.0);
@@ -54,10 +52,7 @@ class ChatInputField extends StatelessWidget {
           // Floating File/Image Chips above the text input pill
           if (selectedImage != null)
             Padding(
-              padding: const EdgeInsets.only(
-                top: 12.0,
-                bottom: 4.0,
-              ),
+              padding: const EdgeInsets.only(top: 12.0, bottom: 4.0),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -66,8 +61,14 @@ class ChatInputField extends StatelessWidget {
                     InputChip(
                       visualDensity: VisualDensity.compact,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      labelPadding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 0,
+                      ),
                       labelStyle: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
@@ -83,7 +84,9 @@ class ChatInputField extends StatelessWidget {
                       deleteIcon: Icon(
                         Icons.close,
                         size: 14,
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.5),
                       ),
                       backgroundColor: Theme.of(context).colorScheme.surface,
                       side: const BorderSide(
@@ -115,97 +118,105 @@ class ChatInputField extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 48),
                 child: Container(
-                constraints: const BoxConstraints(
-                  minHeight: 80,
-                  maxHeight: 160,
-                ),
-                margin: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  top: topGap,
-                  bottom: bottomGap,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(42),
-                  border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.06),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
+                  constraints: const BoxConstraints(
+                    minHeight: 80,
+                    maxHeight: 160,
+                  ),
+                  margin: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: topGap,
+                    bottom: bottomGap,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(42),
+                    border: Border.all(
+                      color: const Color(0xFFD2E4E6),
+                      width: 1.5,
                     ),
-                  ],
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    // Plus Menu Button
-                    GestureDetector(
-                      onTap: () {
-                        _showAttachmentBottomSheet(context, imagePicker);
-                      },
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.add_rounded,
-                            color: Theme.of(context).colorScheme.onSecondary,
-                            size: 24,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.06),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Plus Menu Button
+                      GestureDetector(
+                        onTap: () {
+                          _showAttachmentBottomSheet(context, imagePicker);
+                        },
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.add_rounded,
+                              color: Theme.of(context).colorScheme.onSecondary,
+                              size: 24,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Text Field
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: TextField(
-                          controller: controller,
-                          onSubmitted: loading ? null : (_) => onSend(),
-                          maxLines: null,
-                          minLines: 1,
-                          keyboardType: TextInputType.multiline,
-                          style: TextStyle(
-                            fontFamily: 'ClashGrotesk',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Ask me anything...',
-                            hintStyle: TextStyle(
+                      const SizedBox(width: 12),
+                      // Text Field
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: TextField(
+                            controller: controller,
+                            onSubmitted: loading ? null : (_) => onSend(),
+                            maxLines: null,
+                            minLines: 1,
+                            keyboardType: TextInputType.multiline,
+                            style: TextStyle(
                               fontFamily: 'ClashGrotesk',
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
-                            border: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
+                            decoration: InputDecoration(
+                              hintText: 'Ask me anything...',
+                              hintStyle: TextStyle(
+                                fontFamily: 'ClashGrotesk',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                              border: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    // Send Button
-                    AnimSendButton(
-                      onTap: loading ? null : onSend,
-                      loading: loading,
-                    ),
-                  ],
+                      // Send Button
+                      AnimSendButton(
+                        onTap: loading ? null : onSend,
+                        loading: loading,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               ),
               ListenableBuilder(
                 listenable: CartService(),
@@ -236,13 +247,15 @@ class ChatInputField extends StatelessWidget {
                             color: const Color(0xFFD2E4E6),
                             width: 1.2,
                           ),
-                           boxShadow: [
-                             BoxShadow(
-                               color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-                               blurRadius: 12,
-                               offset: const Offset(0, 4),
-                             ),
-                           ],
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.12),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Center(
                           child: Row(
@@ -256,15 +269,22 @@ class ChatInputField extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1.5,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.secondary,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.secondary,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
                                   '$count',
                                   style: TextStyle(
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -307,7 +327,9 @@ class ChatInputField extends StatelessWidget {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.12),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),

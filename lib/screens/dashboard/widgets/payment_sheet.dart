@@ -23,9 +23,10 @@ class PaymentSheet extends StatefulWidget {
   State<PaymentSheet> createState() => _PaymentSheetState();
 }
 
-class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderStateMixin {
+class _PaymentSheetState extends State<PaymentSheet>
+    with SingleTickerProviderStateMixin {
   final PaymentService _paymentService = PaymentService();
-  
+
   // UI States
   bool _showSimulator = false;
   PaymentMethodType _selectedSimulatorMethod = PaymentMethodType.card;
@@ -62,7 +63,8 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    final email = Supabase.instance.client.auth.currentUser?.email ?? 'GUEST USER';
+    final email =
+        Supabase.instance.client.auth.currentUser?.email ?? 'GUEST USER';
     _cardHolderStr = email.split('@')[0].toUpperCase();
     _cardHolderController.text = _cardHolderStr;
 
@@ -77,7 +79,9 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
 
     _expiryController.addListener(() {
       setState(() {
-        _expiryStr = _expiryController.text.isEmpty ? 'MM/YY' : _expiryController.text;
+        _expiryStr = _expiryController.text.isEmpty
+            ? 'MM/YY'
+            : _expiryController.text;
       });
     });
 
@@ -115,7 +119,8 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
 
   // Launch official Razorpay SDK Checkout
   Future<void> _handleRazorpayCheckout() async {
-    final email = Supabase.instance.client.auth.currentUser?.email ?? 'guest@example.com';
+    final email =
+        Supabase.instance.client.auth.currentUser?.email ?? 'guest@example.com';
     final appName = BrandConfig.active.identity.appName;
 
     setState(() {
@@ -131,7 +136,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
       if (!kIsWeb && !(Platform.isAndroid || Platform.isIOS)) {
         throw UnsupportedError(
           'Razorpay SDK requires Web, Android or iOS.\n'
-          'Use the Sandbox Simulator below for testing on desktop.'
+          'Use the Sandbox Simulator below for testing on desktop.',
         );
       }
 
@@ -187,17 +192,15 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
         });
       }
     } catch (e) {
-      final String errMsg = e is UnsupportedError ? (e.message ?? 'Unsupported platform error.') : 'SDK Error: $e';
+      final String errMsg = e is UnsupportedError
+          ? (e.message ?? 'Unsupported platform error.')
+          : 'SDK Error: $e';
       NotificationStorageService.saveNotification(
         success: false,
         message: errMsg,
         transactionId: '',
       );
-      PaymentNotificationService.show(
-        context,
-        success: false,
-        message: errMsg,
-      );
+      PaymentNotificationService.show(context, success: false, message: errMsg);
       if (mounted) {
         setState(() {
           _isProcessing = false;
@@ -241,9 +244,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
         'cvv': _cvvController.text,
       };
     } else if (_selectedSimulatorMethod == PaymentMethodType.upi) {
-      details = {
-        'upiId': _upiController.text,
-      };
+      details = {'upiId': _upiController.text};
     }
 
     try {
@@ -305,11 +306,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
         message: errMsg,
         transactionId: '',
       );
-      PaymentNotificationService.show(
-        context,
-        success: false,
-        message: errMsg,
-      );
+      PaymentNotificationService.show(context, success: false, message: errMsg);
       if (mounted) {
         setState(() {
           _isProcessing = false;
@@ -336,11 +333,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           color: theme.colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 16,
-              spreadRadius: 2,
-            )
+            BoxShadow(color: Colors.black12, blurRadius: 16, spreadRadius: 2),
           ],
         ),
         child: AnimatedSize(
@@ -349,12 +342,12 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           child: _isProcessing
               ? _buildProcessingState(theme)
               : _isSuccess
-                  ? _buildSuccessState(theme)
-                  : _isError
-                      ? _buildErrorState(theme)
-                      : _showSimulator
-                          ? _buildSimulatorFormState(theme, isDark)
-                          : _buildRazorpayCheckoutState(theme),
+              ? _buildSuccessState(theme)
+              : _isError
+              ? _buildErrorState(theme)
+              : _showSimulator
+              ? _buildSimulatorFormState(theme, isDark)
+              : _buildRazorpayCheckoutState(theme),
         ),
       ),
     );
@@ -409,7 +402,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             IconButton(
               icon: const Icon(Icons.close),
               onPressed: () => Navigator.pop(context),
-            )
+            ),
           ],
         ),
         const SizedBox(height: 20),
@@ -433,12 +426,20 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                 children: [
                   Text(
                     'Order Amount',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
+                    ),
                   ),
                   SizedBox(height: 4),
                   Text(
                     'Secure Transaction',
-                    style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -474,7 +475,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                   color: const Color(0xFF3399FF).withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
-                )
+                ),
               ],
             ),
             child: const Row(
@@ -499,7 +500,10 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
         Center(
           child: Text(
             'Supports UPI, Cards, Netbanking, Wallets',
-            style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: 12,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -584,7 +588,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
               style: TextButton.styleFrom(
                 foregroundColor: theme.colorScheme.primary,
               ),
-            )
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -661,7 +665,9 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
               Icon(
                 icon,
                 size: 18,
-                color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
+                color: isSelected
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.primary,
               ),
               const SizedBox(width: 6),
               Text(
@@ -669,7 +675,9 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
+                  color: isSelected
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.primary,
                 ),
               ),
             ],
@@ -708,7 +716,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                     color: theme.colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -813,7 +821,11 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             focusNode: _cardNumberFocus,
             keyboardType: TextInputType.number,
             style: const TextStyle(fontWeight: FontWeight.w600),
-            decoration: _getInputDecoration(theme, 'Card Number', Icons.credit_card),
+            decoration: _getInputDecoration(
+              theme,
+              'Card Number',
+              Icons.credit_card,
+            ),
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(16),
@@ -841,7 +853,11 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                   focusNode: _expiryFocus,
                   keyboardType: TextInputType.number,
                   style: const TextStyle(fontWeight: FontWeight.w600),
-                  decoration: _getInputDecoration(theme, 'Expiry (MM/YY)', Icons.calendar_month),
+                  decoration: _getInputDecoration(
+                    theme,
+                    'Expiry (MM/YY)',
+                    Icons.calendar_month,
+                  ),
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(4),
@@ -889,7 +905,11 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             controller: _cardHolderController,
             keyboardType: TextInputType.text,
             style: const TextStyle(fontWeight: FontWeight.w600),
-            decoration: _getInputDecoration(theme, 'Cardholder Name', Icons.person),
+            decoration: _getInputDecoration(
+              theme,
+              'Cardholder Name',
+              Icons.person,
+            ),
             validator: (val) {
               if (val == null || val.trim().isEmpty) {
                 return 'Cardholder name is required';
@@ -898,7 +918,11 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             },
           ),
           const SizedBox(height: 24),
-          _buildActionButton(theme, 'Pay ₹${widget.amount.toStringAsFixed(2)}', _handleSimulationCheckout),
+          _buildActionButton(
+            theme,
+            'Pay ₹${widget.amount.toStringAsFixed(2)}',
+            _handleSimulationCheckout,
+          ),
         ],
       ),
     );
@@ -913,7 +937,11 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
         children: [
           const Text(
             'UPI Provider Apps',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: Colors.grey,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
@@ -927,7 +955,11 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           const SizedBox(height: 24),
           const Text(
             'Or Enter UPI ID Manually',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: Colors.grey,
+            ),
           ),
           const SizedBox(height: 12),
           TextFormField(
@@ -935,7 +967,11 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             focusNode: _upiFocus,
             keyboardType: TextInputType.emailAddress,
             style: const TextStyle(fontWeight: FontWeight.w600),
-            decoration: _getInputDecoration(theme, 'UPI ID (e.g. name@bank)', Icons.alternate_email_rounded),
+            decoration: _getInputDecoration(
+              theme,
+              'UPI ID (e.g. name@bank)',
+              Icons.alternate_email_rounded,
+            ),
             validator: (val) {
               if (val == null || !val.contains('@') || val.length < 5) {
                 return 'Please enter a valid UPI VPA ID';
@@ -944,7 +980,11 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             },
           ),
           const SizedBox(height: 24),
-          _buildActionButton(theme, 'Pay ₹${widget.amount.toStringAsFixed(2)}', _handleSimulationCheckout),
+          _buildActionButton(
+            theme,
+            'Pay ₹${widget.amount.toStringAsFixed(2)}',
+            _handleSimulationCheckout,
+          ),
         ],
       ),
     );
@@ -968,7 +1008,9 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected ? theme.colorScheme.secondary : theme.colorScheme.primary.withValues(alpha: 0.1),
+              color: isSelected
+                  ? theme.colorScheme.secondary
+                  : theme.colorScheme.primary.withValues(alpha: 0.1),
               width: 1.5,
             ),
           ),
@@ -978,7 +1020,9 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
               Icon(
                 Icons.mobile_screen_share_rounded,
                 size: 24,
-                color: isSelected ? theme.colorScheme.secondary : theme.colorScheme.primary,
+                color: isSelected
+                    ? theme.colorScheme.secondary
+                    : theme.colorScheme.primary,
               ),
               const SizedBox(height: 8),
               Text(
@@ -987,7 +1031,9 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: isSelected ? theme.colorScheme.primary : Colors.grey[800],
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : Colors.grey[800],
                 ),
               ),
             ],
@@ -1013,7 +1059,11 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           ),
           child: Row(
             children: [
-              Icon(Icons.payment_outlined, color: theme.colorScheme.secondary, size: 28),
+              Icon(
+                Icons.payment_outlined,
+                color: theme.colorScheme.secondary,
+                size: 28,
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -1021,16 +1071,22 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                   children: [
                     const Text(
                       'Google Pay',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Simulate one-tap biometric sandbox credentials',
-                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -1048,7 +1104,7 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                   color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
-                )
+                ),
               ],
             ),
             child: Row(
@@ -1095,21 +1151,35 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
   }
 
   // ── UTILS AND COMMON FIELDS ──────────────────────────────────────────────
-  InputDecoration _getInputDecoration(ThemeData theme, String label, IconData icon) {
+  InputDecoration _getInputDecoration(
+    ThemeData theme,
+    String label,
+    IconData icon,
+  ) {
     return InputDecoration(
       labelText: label,
       labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-      prefixIcon: Icon(icon, size: 20, color: theme.colorScheme.primary.withValues(alpha: 0.7)),
+      prefixIcon: Icon(
+        icon,
+        size: 20,
+        color: theme.colorScheme.primary.withValues(alpha: 0.7),
+      ),
       filled: true,
       fillColor: theme.colorScheme.primary.withValues(alpha: 0.02),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.1), width: 1),
+        borderSide: BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+          width: 1,
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.1), width: 1),
+        borderSide: BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+          width: 1,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -1122,7 +1192,11 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildActionButton(ThemeData theme, String text, VoidCallback onPressed) {
+  Widget _buildActionButton(
+    ThemeData theme,
+    String text,
+    VoidCallback onPressed,
+  ) {
     return SizedBox(
       width: double.infinity,
       height: 52,
@@ -1131,7 +1205,9 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
         style: ElevatedButton.styleFrom(
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: theme.colorScheme.onPrimary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(26),
+          ),
           elevation: 0,
         ),
         child: Text(
@@ -1158,7 +1234,9 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
             height: 80,
             child: CircularProgressIndicator(
               strokeWidth: 4,
-              valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                theme.colorScheme.secondary,
+              ),
               backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
             ),
           ),
@@ -1239,11 +1317,19 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
               children: [
                 const Text(
                   'Transaction ID',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Colors.grey,
+                  ),
                 ),
                 SelectableText(
                   _transactionId,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ],
             ),
@@ -1285,7 +1371,8 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
           ),
           const SizedBox(height: 12),
           Text(
-            _errorMessage ?? 'Gateway error processing transaction credentials.',
+            _errorMessage ??
+                'Gateway error processing transaction credentials.',
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 14,
@@ -1301,12 +1388,19 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
-                    side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(26),
+                    ),
+                    side: BorderSide(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Text(
                     'Cancel',
-                    style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -1322,11 +1416,16 @@ class _PaymentSheetState extends State<PaymentSheet> with SingleTickerProviderSt
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(26),
+                    ),
                   ),
                   child: const Text(
                     'Try Again',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),

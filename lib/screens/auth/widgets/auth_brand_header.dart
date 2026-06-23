@@ -17,10 +17,7 @@ class AuthBrandHeader extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: const Color(0xFFD2E4E6),
-              width: 1.2,
-            ),
+            border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
             boxShadow: [
               BoxShadow(
                 color: theme.colorScheme.primary.withValues(alpha: 0.06),
@@ -57,7 +54,8 @@ class AuthBrandHeader extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          BrandConfig.active.identity.tagline ?? 'Your Intelligent Shopping Assistant',
+          BrandConfig.active.identity.tagline ??
+              'Your Intelligent Shopping Assistant',
           style: const TextStyle(
             fontSize: 14,
             color: Color(0xFF4A5568),

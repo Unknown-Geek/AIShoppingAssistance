@@ -12,7 +12,8 @@ class RecipeCard extends StatefulWidget {
   State<RecipeCard> createState() => _RecipeCardState();
 }
 
-class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateMixin {
+class _RecipeCardState extends State<RecipeCard>
+    with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
   bool get _enableSubstitutes => false;
 
@@ -23,7 +24,9 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
   }
 
   void _addIngredientsToCart(BuildContext context) {
-    final missingIngredients = List<dynamic>.from(widget.recipe['missing_ingredients'] ?? []);
+    final missingIngredients = List<dynamic>.from(
+      widget.recipe['missing_ingredients'] ?? [],
+    );
     final addedItems = <String>[];
     final missingItems = <String>[];
 
@@ -54,7 +57,11 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
       }
     }
 
-    _showCartAddedSheet(context, addedItems: addedItems, missingItems: missingItems);
+    _showCartAddedSheet(
+      context,
+      addedItems: addedItems,
+      missingItems: missingItems,
+    );
   }
 
   void _showCartAddedSheet(
@@ -124,7 +131,9 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                           fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
                     ],
@@ -161,7 +170,8 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                               child: Text(
                                 name,
                                 style: TextStyle(
-                                  fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                  fontFamily:
+                                      theme.textTheme.bodyMedium?.fontFamily,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: theme.colorScheme.primary,
@@ -216,10 +226,13 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                 child: Text(
                                   name,
                                   style: TextStyle(
-                                    fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                    fontFamily:
+                                        theme.textTheme.bodyMedium?.fontFamily,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
-                                    color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                                    color: theme.colorScheme.primary.withValues(
+                                      alpha: 0.7,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -278,8 +291,11 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
     final dish = widget.recipe['dish'] ?? 'Recipe';
     final servings = widget.recipe['servings'] ?? 2;
     final readyTime = widget.recipe['ready_time'] ?? '20 min';
-    final summary = widget.recipe['summary'] ?? 'A delicious dish crafted by your AI Chef.';
-    final ingredients = List<Map<String, dynamic>>.from(widget.recipe['ingredients'] ?? []);
+    final summary =
+        widget.recipe['summary'] ?? 'A delicious dish crafted by your AI Chef.';
+    final ingredients = List<Map<String, dynamic>>.from(
+      widget.recipe['ingredients'] ?? [],
+    );
     final instructions = List<String>.from(widget.recipe['instructions'] ?? []);
 
     final buffer = StringBuffer();
@@ -337,13 +353,22 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
     final nutrition = widget.recipe['nutrition'] as Map<String, dynamic>?;
     final servings = widget.recipe['servings'] ?? 2;
     final readyTime = widget.recipe['ready_time'] ?? '20 min';
-    final summary = widget.recipe['summary'] ?? 'A delicious dish crafted by your AI Chef.';
-    final ingredients = List<Map<String, dynamic>>.from(widget.recipe['ingredients'] ?? []);
-    final instructions = List<String>.from(
-      widget.recipe['instructions'] ?? widget.recipe['recipe_instructions'] ?? [],
+    final summary =
+        widget.recipe['summary'] ?? 'A delicious dish crafted by your AI Chef.';
+    final ingredients = List<Map<String, dynamic>>.from(
+      widget.recipe['ingredients'] ?? [],
     );
-    final missingIngredients = List<dynamic>.from(widget.recipe['missing_ingredients'] ?? []);
-    final hasAnyAvailable = missingIngredients.any((item) => item is Map && item['sku'] != 'UNKNOWN');
+    final instructions = List<String>.from(
+      widget.recipe['instructions'] ??
+          widget.recipe['recipe_instructions'] ??
+          [],
+    );
+    final missingIngredients = List<dynamic>.from(
+      widget.recipe['missing_ingredients'] ?? [],
+    );
+    final hasAnyAvailable = missingIngredients.any(
+      (item) => item is Map && item['sku'] != 'UNKNOWN',
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -421,24 +446,29 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                       const SizedBox(height: 10),
                       ...ingredients.map((item) {
                         final rawName = item['name'] ?? '';
-                        
+
                         // Find this ingredient in missing_ingredients to check for substitutes
-                        final missingIngredients = List<dynamic>.from(widget.recipe['missing_ingredients'] ?? []);
+                        final missingIngredients = List<dynamic>.from(
+                          widget.recipe['missing_ingredients'] ?? [],
+                        );
                         Map<String, dynamic>? matchingMissing;
                         for (final m in missingIngredients) {
-                          if (m is Map && (m['name'] as String).toLowerCase() == rawName.toLowerCase()) {
+                          if (m is Map &&
+                              (m['name'] as String).toLowerCase() ==
+                                  rawName.toLowerCase()) {
                             matchingMissing = Map<String, dynamic>.from(m);
                             break;
                           }
                         }
-                        
+
                         // If no direct name match, try substring matching
                         if (matchingMissing == null) {
                           for (final m in missingIngredients) {
                             if (m is Map) {
                               final mName = (m['name'] as String).toLowerCase();
                               final rName = rawName.toLowerCase();
-                              if (mName.contains(rName) || rName.contains(mName)) {
+                              if (mName.contains(rName) ||
+                                  rName.contains(mName)) {
                                 matchingMissing = Map<String, dynamic>.from(m);
                                 break;
                               }
@@ -446,7 +476,8 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                           }
                         }
 
-                        final hasSubstitutes = _enableSubstitutes &&
+                        final hasSubstitutes =
+                            _enableSubstitutes &&
                             matchingMissing != null &&
                             matchingMissing['sku'] == 'UNKNOWN' &&
                             matchingMissing['substitutes'] != null &&
@@ -474,7 +505,10 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                     child: Text(
                                       '${item['quantity'] ?? ''} ${item['name'] ?? ''}',
                                       style: TextStyle(
-                                        fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                        fontFamily: theme
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.fontFamily,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
                                         color: theme.colorScheme.primary,
@@ -483,17 +517,24 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                   ),
                                 ],
                               ),
-                              if (matchingMissing != null && matchingMissing['sku'] == 'UNKNOWN' && !hasSubstitutes) ...[
+                              if (matchingMissing != null &&
+                                  matchingMissing['sku'] == 'UNKNOWN' &&
+                                  !hasSubstitutes) ...[
                                 const SizedBox(height: 6),
                                 Padding(
                                   padding: const EdgeInsets.only(left: 18),
                                   child: Text(
                                     'Not in inventory',
                                     style: TextStyle(
-                                      fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                      fontFamily: theme
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.fontFamily,
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.redAccent.withValues(alpha: 0.8),
+                                      color: Colors.redAccent.withValues(
+                                        alpha: 0.8,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -505,10 +546,15 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                   child: Text(
                                     'Not in inventory. Substitutes:',
                                     style: TextStyle(
-                                      fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                      fontFamily: theme
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.fontFamily,
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.redAccent.withValues(alpha: 0.8),
+                                      color: Colors.redAccent.withValues(
+                                        alpha: 0.8,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -518,79 +564,126 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                   child: Wrap(
                                     spacing: 6,
                                     runSpacing: 6,
-                                    children: List<dynamic>.from(matchingMissing['substitutes']).map((sub) {
-                                      final subMap = Map<String, dynamic>.from(sub);
-                                      final sSku = subMap['sku'] ?? '';
-                                      final sName = subMap['name'] ?? '';
-                                      final sPrice = (subMap['price_rupees'] as num?)?.toDouble() ?? 0.0;
-                                      final sImage = subMap['thumbnail_url'] ?? '';
+                                    children:
+                                        List<dynamic>.from(
+                                          matchingMissing['substitutes'],
+                                        ).map((sub) {
+                                          final subMap =
+                                              Map<String, dynamic>.from(sub);
+                                          final sSku = subMap['sku'] ?? '';
+                                          final sName = subMap['name'] ?? '';
+                                          final sPrice =
+                                              (subMap['price_rupees'] as num?)
+                                                  ?.toDouble() ??
+                                              0.0;
+                                          final sImage =
+                                              subMap['thumbnail_url'] ?? '';
 
-                                      return InkWell(
-                                        onTap: () {
-                                          CartService().addItem(
-                                            CartItemModel(
-                                              id: sSku,
-                                              name: sName,
-                                              details: 'Substitute for $rawName',
-                                              imageUrl: sImage,
-                                              price: sPrice,
-                                              quantity: 1,
-                                            ),
-                                          );
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'Added substitute: $sName to cart!',
-                                                style: TextStyle(
-                                                  fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                                                  fontWeight: FontWeight.w500,
+                                          return InkWell(
+                                            onTap: () {
+                                              CartService().addItem(
+                                                CartItemModel(
+                                                  id: sSku,
+                                                  name: sName,
+                                                  details:
+                                                      'Substitute for $rawName',
+                                                  imageUrl: sImage,
+                                                  price: sPrice,
+                                                  quantity: 1,
                                                 ),
-                                              ),
-                                              backgroundColor: theme.colorScheme.primary,
-                                              behavior: SnackBarBehavior.floating,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(16),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        borderRadius: BorderRadius.circular(16),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey.shade50,
-                                            borderRadius: BorderRadius.circular(16),
-                                            border: Border.all(color: const Color(0xFFD2E4E6), width: 1.0),
-                                          ),
-                                          child: Text.rich(
-                                            TextSpan(
-                                              children: [
-                                                WidgetSpan(
-                                                  alignment: PlaceholderAlignment.middle,
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.only(right: 4),
-                                                    child: Icon(
-                                                      Icons.add_shopping_cart_rounded,
-                                                      size: 12,
-                                                      color: theme.colorScheme.secondary,
+                                              );
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Added substitute: $sName to cart!',
+                                                    style: TextStyle(
+                                                      fontFamily: theme
+                                                          .textTheme
+                                                          .bodyMedium
+                                                          ?.fontFamily,
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                     ),
                                                   ),
-                                                ),
-                                                TextSpan(
-                                                  text: '$sName - ₹${sPrice.toStringAsFixed(0)}',
-                                                  style: TextStyle(
-                                                    fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: theme.colorScheme.primary,
+                                                  backgroundColor:
+                                                      theme.colorScheme.primary,
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          16,
+                                                        ),
                                                   ),
                                                 ),
-                                              ],
+                                              );
+                                            },
+                                            borderRadius: BorderRadius.circular(
+                                              16,
                                             ),
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 6,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey.shade50,
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                border: Border.all(
+                                                  color: const Color(
+                                                    0xFFD2E4E6,
+                                                  ),
+                                                  width: 1.0,
+                                                ),
+                                              ),
+                                              child: Text.rich(
+                                                TextSpan(
+                                                  children: [
+                                                    WidgetSpan(
+                                                      alignment:
+                                                          PlaceholderAlignment
+                                                              .middle,
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets.only(
+                                                              right: 4,
+                                                            ),
+                                                        child: Icon(
+                                                          Icons
+                                                              .add_shopping_cart_rounded,
+                                                          size: 12,
+                                                          color: theme
+                                                              .colorScheme
+                                                              .secondary,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    TextSpan(
+                                                      text:
+                                                          '$sName - ₹${sPrice.toStringAsFixed(0)}',
+                                                      style: TextStyle(
+                                                        fontFamily: theme
+                                                            .textTheme
+                                                            .bodyMedium
+                                                            ?.fontFamily,
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: theme
+                                                            .colorScheme
+                                                            .primary,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
                                   ),
                                 ),
                               ],
@@ -619,7 +712,8 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                 Text(
                                   '${entry.key + 1}.',
                                   style: TextStyle(
-                                    fontFamily: theme.textTheme.titleLarge?.fontFamily,
+                                    fontFamily:
+                                        theme.textTheme.titleLarge?.fontFamily,
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
                                     color: theme.colorScheme.primary,
@@ -630,7 +724,10 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                                   child: Text(
                                     entry.value,
                                     style: TextStyle(
-                                      fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                      fontFamily: theme
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.fontFamily,
                                       fontSize: 14,
                                       height: 1.4,
                                       fontWeight: FontWeight.w500,
@@ -649,7 +746,8 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                           Text(
                             'Nutritional Facts (Per Serving)',
                             style: TextStyle(
-                              fontFamily: theme.textTheme.titleLarge?.fontFamily,
+                              fontFamily:
+                                  theme.textTheme.titleLarge?.fontFamily,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.primary,
@@ -657,11 +755,19 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
                           ),
                           const SizedBox(height: 10),
                           Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 8,
+                            ),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.03),
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.03,
+                              ),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
+                              border: Border.all(
+                                color: const Color(0xFFD2E4E6),
+                                width: 1.2,
+                              ),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -706,7 +812,9 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
             child: Row(
               children: [
                 _buildActionChip(
-                  icon: _isExpanded ? Icons.expand_less_rounded : Icons.menu_book_rounded,
+                  icon: _isExpanded
+                      ? Icons.expand_less_rounded
+                      : Icons.menu_book_rounded,
                   label: _isExpanded ? 'Hide Recipe' : 'View Recipe',
                   onTap: _toggleExpanded,
                 ),
@@ -759,11 +867,7 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(icon, size: 16, color: theme.colorScheme.primary),
             const SizedBox(width: 6),
             Text(
               label,
@@ -791,7 +895,12 @@ class _RecipeCardState extends State<RecipeCard> with SingleTickerProviderStateM
     return value.toString();
   }
 
-  Widget _buildNutrientStat(BuildContext context, String label, String value, IconData icon) {
+  Widget _buildNutrientStat(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
     final theme = Theme.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,

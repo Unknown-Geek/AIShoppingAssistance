@@ -137,159 +137,15 @@ class DashboardSheets {
     );
   }
 
-  static Future<bool?> showItemConfirmSheet(
+  static Future<CartItemModel?> showItemConfirmSheet(
     BuildContext context, {
     required CartItemModel item,
   }) {
-    return showModalBottomSheet<bool>(
+    return showModalBottomSheet<CartItemModel>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        final theme = Theme.of(ctx);
-        return Container(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag handle
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Row(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      color: const Color(0xFFF3F4F6),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: FutureBuilder<Map<String, dynamic>?>(
-                      future: () async {
-                        final inventoryService = InventoryService();
-                        final slug = inventoryService.getSlugByName(item.name);
-                        if (slug != null) {
-                          return await inventoryService.getProductBySlug(slug);
-                        }
-                        return null;
-                      }(),
-                      builder: (context, snapshot) {
-                        String displayUrl = item.imageUrl;
-                        if (snapshot.hasData && snapshot.data != null) {
-                          final thumbnail =
-                              snapshot.data!['thumbnail_url'] as String?;
-                          if (thumbnail != null && thumbnail.isNotEmpty) {
-                            displayUrl = thumbnail;
-                          }
-                        }
-                        return CachedNetworkImage(
-                          imageUrl: displayUrl,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 1.5,
-                              ),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) =>
-                              const Icon(Icons.image, size: 20),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Item detected',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF4A5568),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.name,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '₹${item.price.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(26),
-                    ),
-                  ),
-                  child: const Text(
-                    'Add to Cart',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(26),
-                    ),
-                  ),
-                  child: const Text(
-                    'Not this item',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF4A5568),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
+        return _ItemConfirmSheetContent(item: item);
       },
     );
   }
@@ -454,6 +310,226 @@ class _RagSheetContentState extends State<_RagSheetContent> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ItemConfirmSheetContent extends StatefulWidget {
+  final CartItemModel item;
+  const _ItemConfirmSheetContent({required this.item});
+
+  @override
+  State<_ItemConfirmSheetContent> createState() =>
+      _ItemConfirmSheetContentState();
+}
+
+class _ItemConfirmSheetContentState extends State<_ItemConfirmSheetContent> {
+  late double _selectedPrice;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedPrice = widget.item.price;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final item = widget.item;
+    final prices = item.prices ?? [];
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: const Color(0xFFF3F4F6),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: FutureBuilder<Map<String, dynamic>?>(
+                  future: () async {
+                    final inventoryService = InventoryService();
+                    final slug = inventoryService.getSlugByName(item.name);
+                    if (slug != null) {
+                      return await inventoryService.getProductBySlug(slug);
+                    }
+                    return null;
+                  }(),
+                  builder: (context, snapshot) {
+                    String displayUrl = item.imageUrl;
+                    if (snapshot.hasData && snapshot.data != null) {
+                      final thumbnail =
+                          snapshot.data!['thumbnail_url'] as String?;
+                      if (thumbnail != null && thumbnail.isNotEmpty) {
+                        displayUrl = thumbnail;
+                      }
+                    }
+                    return CachedNetworkImage(
+                      imageUrl: displayUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.image, size: 20),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Item detected',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF4A5568),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.name,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (prices.length <= 1)
+                      Text(
+                        '₹${_selectedPrice.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (prices.length > 1) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Select Variant',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF4A5568),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: prices.map((p) {
+                final isSelected = p == _selectedPrice;
+                return ChoiceChip(
+                  label: Text('₹${p.toStringAsFixed(2)}'),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() {
+                        _selectedPrice = p;
+                      });
+                    }
+                  },
+                  selectedColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.1,
+                  ),
+                  labelStyle: TextStyle(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : const Color(0xFF4A5568),
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : const Color(0xFFD2E4E6),
+                      width: 1,
+                    ),
+                  ),
+                  backgroundColor: Colors.white,
+                );
+              }).toList(),
+            ),
+          ],
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () =>
+                  Navigator.pop(context, item.copyWith(price: _selectedPrice)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(26),
+                ),
+              ),
+              child: const Text(
+                'Add to Cart',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.pop(context, null),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(26),
+                ),
+              ),
+              child: const Text(
+                'Not this item',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF4A5568),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

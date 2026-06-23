@@ -81,7 +81,9 @@ class _AuthScreenState extends State<AuthScreen> {
                         height: 60,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.1),
                         ),
                         child: Icon(
                           Icons.mark_email_unread_outlined,
@@ -120,7 +122,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             });
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             elevation: 0,
@@ -219,7 +223,9 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.04),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.04,
+                            ),
                             blurRadius: 24,
                             offset: const Offset(0, 12),
                           ),
@@ -284,9 +290,10 @@ class _AuthScreenState extends State<AuthScreen> {
                             Text(
                               'Email Address',
                               style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: theme.colorScheme.primary),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.primary,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             TextFormField(
@@ -435,7 +442,10 @@ class _AuthScreenState extends State<AuthScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: theme.colorScheme.primary,
                                   foregroundColor: Colors.white,
-                                  disabledBackgroundColor: theme.colorScheme.primary.withValues(alpha: 0.6),
+                                  disabledBackgroundColor: theme
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.6),
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(26),
@@ -449,8 +459,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                           strokeWidth: 2.5,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                            Colors.white,
-                                          ),
+                                                Colors.white,
+                                              ),
                                         ),
                                       )
                                     : Text(
@@ -462,7 +472,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                               ),
+                              ),
                             ),
                           ],
                         ),

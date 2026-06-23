@@ -4,7 +4,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import 'razorpay_checkout_non_web.dart'
-    if (dart.library.js_interop) 'razorpay_checkout_web.dart' as rzp;
+    if (dart.library.js_interop) 'razorpay_checkout_web.dart'
+    as rzp;
 
 enum PaymentMethodType { card, upi, googlePay, razorpay }
 
@@ -41,36 +42,47 @@ class PaymentService {
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
     if (_razorpayCompleter != null && !_razorpayCompleter!.isCompleted) {
-      final amountStr = _razorpayAmount != null ? ' ₹${_razorpayAmount!.toStringAsFixed(2)}' : '';
-      _razorpayCompleter!.complete(PaymentResult(
-        success: true,
-        transactionId: response.paymentId ?? 'RZP-${DateTime.now().millisecondsSinceEpoch}',
-        message: 'Payment of$amountStr processed via Razorpay SDK.',
-      ));
+      final amountStr = _razorpayAmount != null
+          ? ' ₹${_razorpayAmount!.toStringAsFixed(2)}'
+          : '';
+      _razorpayCompleter!.complete(
+        PaymentResult(
+          success: true,
+          transactionId:
+              response.paymentId ??
+              'RZP-${DateTime.now().millisecondsSinceEpoch}',
+          message: 'Payment of$amountStr processed via Razorpay SDK.',
+        ),
+      );
     }
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
     if (_razorpayCompleter != null && !_razorpayCompleter!.isCompleted) {
-      _razorpayCompleter!.complete(PaymentResult(
-        success: false,
-        transactionId: '',
-        message: response.message ?? 'Payment cancelled or declined.',
-      ));
+      _razorpayCompleter!.complete(
+        PaymentResult(
+          success: false,
+          transactionId: '',
+          message: response.message ?? 'Payment cancelled or declined.',
+        ),
+      );
     }
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
     if (_razorpayCompleter != null && !_razorpayCompleter!.isCompleted) {
-      _razorpayCompleter!.complete(PaymentResult(
-        success: true,
-        transactionId: 'RZP-WALLET-${response.walletName}',
-        message: 'Payment via external wallet ${response.walletName} selected.',
-      ));
+      _razorpayCompleter!.complete(
+        PaymentResult(
+          success: true,
+          transactionId: 'RZP-WALLET-${response.walletName}',
+          message:
+              'Payment via external wallet ${response.walletName} selected.',
+        ),
+      );
     }
   }
 
-  /// Launches Razorpay Checkout. 
+  /// Launches Razorpay Checkout.
   /// Uses JS SDK for Web platform and native SDK for Mobile (Android/iOS).
   Future<PaymentResult> startRazorpayCheckout({
     required double amount,
@@ -98,7 +110,8 @@ class PaymentService {
     _razorpayCompleter = Completer<PaymentResult>();
     _razorpayAmount = amount;
 
-    final keyId = dotenv.env['RAZORPAY_KEY_ID']?.trim() ?? 'rzp_test_mockKey123';
+    final keyId =
+        dotenv.env['RAZORPAY_KEY_ID']?.trim() ?? 'rzp_test_mockKey123';
 
     final options = {
       'key': keyId,
@@ -107,13 +120,15 @@ class PaymentService {
       'name': appName.isNotEmpty ? appName : 'Qless',
       'description': 'Shopping Cart Checkout',
       'prefill': {
-        'contact': (contact != null && contact.trim().isNotEmpty) ? contact.trim() : '9999999999',
+        'contact': (contact != null && contact.trim().isNotEmpty)
+            ? contact.trim()
+            : '9999999999',
         'email': email.trim().isNotEmpty ? email.trim() : 'guest@example.com',
-        'name': email.trim().isNotEmpty ? email.trim().split('@')[0] : 'Guest User',
+        'name': email.trim().isNotEmpty
+            ? email.trim().split('@')[0]
+            : 'Guest User',
       },
-      'theme': {
-        'color': '#001A23',
-      },
+      'theme': {'color': '#001A23'},
       'timeout': 300,
     };
 
@@ -121,11 +136,14 @@ class PaymentService {
       _razorpay!.open(options);
     } catch (e) {
       if (_razorpayCompleter != null && !_razorpayCompleter!.isCompleted) {
-        _razorpayCompleter!.complete(PaymentResult(
-          success: false,
-          transactionId: '',
-          message: 'Failed to launch Razorpay SDK: $e. Make sure you are testing on Android/iOS.',
-        ));
+        _razorpayCompleter!.complete(
+          PaymentResult(
+            success: false,
+            transactionId: '',
+            message:
+                'Failed to launch Razorpay SDK: $e. Make sure you are testing on Android/iOS.',
+          ),
+        );
       }
     }
 
@@ -141,7 +159,8 @@ class PaymentService {
   }) async {
     await Future.delayed(const Duration(milliseconds: 2200));
 
-    final txId = 'SIM-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+    final txId =
+        'SIM-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
 
     switch (method) {
       case PaymentMethodType.card:
@@ -182,7 +201,8 @@ class PaymentService {
         return PaymentResult(
           success: true,
           transactionId: txId,
-          message: 'Payment of ₹${amount.toStringAsFixed(2)} successful via Card Simulator.',
+          message:
+              'Payment of ₹${amount.toStringAsFixed(2)} successful via Card Simulator.',
         );
 
       case PaymentMethodType.upi:
@@ -206,20 +226,23 @@ class PaymentService {
         return PaymentResult(
           success: true,
           transactionId: txId,
-          message: 'Payment of ₹${amount.toStringAsFixed(2)} successful via UPI Simulator ($upiId).',
+          message:
+              'Payment of ₹${amount.toStringAsFixed(2)} successful via UPI Simulator ($upiId).',
         );
 
       case PaymentMethodType.googlePay:
         return PaymentResult(
           success: true,
           transactionId: txId,
-          message: 'Payment of ₹${amount.toStringAsFixed(2)} successful via Google Pay Simulator.',
+          message:
+              'Payment of ₹${amount.toStringAsFixed(2)} successful via Google Pay Simulator.',
         );
       case PaymentMethodType.razorpay:
         return PaymentResult(
           success: true,
           transactionId: txId,
-          message: 'Payment of ₹${amount.toStringAsFixed(2)} successful via Razorpay Simulator.',
+          message:
+              'Payment of ₹${amount.toStringAsFixed(2)} successful via Razorpay Simulator.',
         );
     }
   }

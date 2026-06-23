@@ -9,7 +9,8 @@ import '../models/cart_item_model.dart';
 import 'inventory_service.dart';
 
 class ChromaDbClient {
-  static const String _baseUrl = 'https://api.trychroma.com/api/v1'; // Update to the specific cloud endpoint if different
+  static const String _baseUrl =
+      'https://api.trychroma.com/api/v1'; // Update to the specific cloud endpoint if different
   final String _tenant = '99526d4b-48cf-4b20-896b-0947aa36d4ab';
   final String _database = 'QLESS';
 
@@ -23,9 +24,9 @@ class ChromaDbClient {
   }
 
   Map<String, String> get _headers => {
-        'x-chroma-token': _apiKey,
-        'Content-Type': 'application/json',
-      };
+    'x-chroma-token': _apiKey,
+    'Content-Type': 'application/json',
+  };
 
   // Helper method to build query parameters
   String _buildUrl(String path) {
@@ -53,7 +54,9 @@ class ChromaDbClient {
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
-        debugPrint('ChromaDB query failed: ${response.statusCode} - ${response.body}');
+        debugPrint(
+          'ChromaDB query failed: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -65,7 +68,9 @@ class ChromaDbClient {
   /// Temporary method to check database connectivity
   Future<String> checkConnectivity() async {
     const collectionId = 'c1102322-920e-4775-96c1-e324bdadaa1d';
-    final url = Uri.parse('https://api.trychroma.com/api/v2/tenants/$_tenant/databases/$_database/collections/$collectionId/get');
+    final url = Uri.parse(
+      'https://api.trychroma.com/api/v2/tenants/$_tenant/databases/$_database/collections/$collectionId/get',
+    );
     try {
       final response = await http.post(
         url,
@@ -96,13 +101,15 @@ class ChromaDbClient {
   Future<CartItemModel?> searchItemByPhoto(XFile photo) async {
     debugPrint('--- CHROMA SIMILARITY SEARCH START ---');
     debugPrint('Captured photo path: ${photo.path}');
-    
+
     // The collection ID for 'supermarket_catalog'
     const collectionId = 'c1102322-920e-4775-96c1-e324bdadaa1d';
     // Use the v2 API endpoint for ChromaDB Cloud
-    final url = Uri.parse('https://api.trychroma.com/api/v2/tenants/$_tenant/databases/$_database/collections/$collectionId/query');
+    final url = Uri.parse(
+      'https://api.trychroma.com/api/v2/tenants/$_tenant/databases/$_database/collections/$collectionId/query',
+    );
     debugPrint('Request URL: $url');
-    
+
     List<double> queryEmbedding = [];
     bool embeddingSuccess = false;
 
@@ -115,11 +122,18 @@ class ChromaDbClient {
     if (backup.isNotEmpty) urls.add(backup);
     final hfSpace = dotenv.env['HF_SPACE_URL']?.trim() ?? '';
     if (hfSpace.isNotEmpty) urls.add(hfSpace);
-    
-    final cleanedUrls = urls.map((url) {
-      var clean = url.replaceAll('/health', '').replaceAll('/detect', '').replaceAll('/embed', '').replaceAll(RegExp(r'/$'), '');
-      return '$clean/embed';
-    }).where((url) => url.isNotEmpty).toList();
+
+    final cleanedUrls = urls
+        .map((url) {
+          var clean = url
+              .replaceAll('/health', '')
+              .replaceAll('/detect', '')
+              .replaceAll('/embed', '')
+              .replaceAll(RegExp(r'/$'), '');
+          return '$clean/embed';
+        })
+        .where((url) => url.isNotEmpty)
+        .toList();
 
     for (final spaceUrl in cleanedUrls) {
       try {
@@ -135,7 +149,9 @@ class ChromaDbClient {
           ),
         );
 
-        final streamedResponse = await request.send().timeout(const Duration(seconds: 8));
+        final streamedResponse = await request.send().timeout(
+          const Duration(seconds: 8),
+        );
         final response = await http.Response.fromStream(streamedResponse);
 
         if (response.statusCode == 200) {
@@ -149,7 +165,9 @@ class ChromaDbClient {
             debugPrint('Server $spaceUrl error: ${data['message']}');
           }
         } else {
-          debugPrint('Server $spaceUrl returned status code: ${response.statusCode}');
+          debugPrint(
+            'Server $spaceUrl returned status code: ${response.statusCode}',
+          );
         }
       } catch (e) {
         debugPrint('Failed to generate embedding from $spaceUrl: $e');
@@ -157,12 +175,16 @@ class ChromaDbClient {
     }
 
     if (!embeddingSuccess) {
-      debugPrint('All embedding backends failed. Falling back to mock embedding.');
+      debugPrint(
+        'All embedding backends failed. Falling back to mock embedding.',
+      );
       queryEmbedding = _generateMockEmbedding();
     }
 
     try {
-      debugPrint('Sending POST request to ChromaDB with actual CLIP embedding...');
+      debugPrint(
+        'Sending POST request to ChromaDB with actual CLIP embedding...',
+      );
       final response = await http.post(
         url,
         headers: _headers,
@@ -179,12 +201,13 @@ class ChromaDbClient {
         final data = jsonDecode(response.body);
         final metadatas = data['metadatas'] as List;
         final distances = data['distances'] as List;
-        
+
         if (metadatas.isNotEmpty && metadatas[0].isNotEmpty) {
           final itemMeta = metadatas[0][0];
           final rawProductName = itemMeta['product_name'] ?? 'Unknown Item';
           final productName = _normalizeSlug(rawProductName.toString());
-          final double distance = (distances.isNotEmpty && distances[0].isNotEmpty)
+          final double distance =
+              (distances.isNotEmpty && distances[0].isNotEmpty)
               ? (distances[0][0] as num).toDouble()
               : 2.0;
 
@@ -195,23 +218,34 @@ class ChromaDbClient {
           // caused similar-looking products (e.g. Lays variants) to be confused.
           const double threshold = 0.95;
           if (distance > threshold) {
-            debugPrint('Match rejected: Distance $distance exceeds threshold $threshold');
-            debugPrint('--- CHROMA SIMILARITY SEARCH END (NO CONFIDENT MATCH) ---');
+            debugPrint(
+              'Match rejected: Distance $distance exceeds threshold $threshold',
+            );
+            debugPrint(
+              '--- CHROMA SIMILARITY SEARCH END (NO CONFIDENT MATCH) ---',
+            );
             return null;
           }
-          
+
           debugPrint('--- CHROMA SIMILARITY SEARCH END (SUCCESS) ---');
-          
-          debugPrint('[ChromaDbClient] Initiating Supabase fetch for slug: "$productName"');
+
+          debugPrint(
+            '[ChromaDbClient] Initiating Supabase fetch for slug: "$productName"',
+          );
           // Query Supabase for detailed product info
-          final productData = await InventoryService().getProductBySlug(productName);
+          final productData = await InventoryService().getProductBySlug(
+            productName,
+          );
 
           if (productData != null) {
             final String officialName = productData['name'] as String;
-            final double priceRupees = (productData['price_rupees'] as num).toDouble();
+            final double priceRupees = (productData['price_rupees'] as num)
+                .toDouble();
             final String sku = productData['sku'] as String;
 
-            debugPrint('[ChromaDbClient] Supabase match found: $officialName (SKU: $sku, Price: ₹$priceRupees)');
+            debugPrint(
+              '[ChromaDbClient] Supabase match found: $officialName (SKU: $sku, Price: ₹$priceRupees)',
+            );
 
             return CartItemModel(
               id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -222,7 +256,9 @@ class ChromaDbClient {
               quantity: 1,
             );
           } else {
-            debugPrint('[ChromaDbClient] Supabase match failed/null for slug: "$productName". Using fallback model.');
+            debugPrint(
+              '[ChromaDbClient] Supabase match failed/null for slug: "$productName". Using fallback model.',
+            );
             // Fallback if the database doesn't have the matched product
             return CartItemModel(
               id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -234,10 +270,14 @@ class ChromaDbClient {
             );
           }
         } else {
-          debugPrint('Warning: Empty results or metadata returned from ChromaDB.');
+          debugPrint(
+            'Warning: Empty results or metadata returned from ChromaDB.',
+          );
         }
       } else {
-        throw Exception('ChromaDB query failed: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          'ChromaDB query failed: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       debugPrint('Error querying ChromaDB: $e');
@@ -261,11 +301,10 @@ class ChromaDbClient {
     const mapping = {
       'roasted-almond-chocolate-bar-cadbury': 'dairy-milk-roast-almond-cadbury',
       'cadbury-dairy-milk-crispello': 'dairy-milk-crispello-cadbury',
-      'fruit-and-nut-milk-chocolate-bar-cadbury': 'dairy-milk-chocolate-cadbury',
+      'fruit-and-nut-milk-chocolate-bar-cadbury':
+          'dairy-milk-chocolate-cadbury',
     };
 
     return mapping[cleanSlug] ?? cleanSlug;
   }
-
-
 }
