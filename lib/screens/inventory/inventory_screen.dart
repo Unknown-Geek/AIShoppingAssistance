@@ -345,7 +345,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
-                                childAspectRatio: 0.70,
+                                childAspectRatio: 0.74,
                                 crossAxisSpacing: 16,
                                 mainAxisSpacing: 16,
                               ),

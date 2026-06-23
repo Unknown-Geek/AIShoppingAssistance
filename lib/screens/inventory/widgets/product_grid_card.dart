@@ -221,7 +221,7 @@ class _ProductGridCardState extends State<ProductGridCard> {
               Stack(
                 children: [
                   AspectRatio(
-                    aspectRatio: 1.45,
+                    aspectRatio: 1.65,
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(4),
@@ -295,7 +295,7 @@ class _ProductGridCardState extends State<ProductGridCard> {
               // Product Info Section
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                  padding: const EdgeInsets.fromLTRB(10, 6, 10, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.start,
