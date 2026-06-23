@@ -362,7 +362,7 @@ class OrderCard extends StatelessWidget {
                                 ),
                                 backgroundColor: theme.colorScheme.primary,
                                 behavior: SnackBarBehavior.fixed,
-                                duration: const Duration(seconds: 2),
+                                duration: const Duration(milliseconds: 1500),
                               ),
                             );
                           }

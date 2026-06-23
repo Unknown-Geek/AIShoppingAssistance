@@ -340,8 +340,8 @@ class _RecipeCardState extends State<RecipeCard>
           ),
         ),
         backgroundColor: theme.colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        behavior: SnackBarBehavior.fixed,
+        duration: const Duration(milliseconds: 1500),
       ),
     );
   }
@@ -610,13 +610,8 @@ class _RecipeCardState extends State<RecipeCard>
                                                   backgroundColor:
                                                       theme.colorScheme.primary,
                                                   behavior:
-                                                      SnackBarBehavior.floating,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          16,
-                                                        ),
-                                                  ),
+                                                      SnackBarBehavior.fixed,
+                                                  duration: const Duration(milliseconds: 1500),
                                                 ),
                                               );
                                             },

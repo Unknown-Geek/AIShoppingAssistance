@@ -531,7 +531,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               behavior: SnackBarBehavior.fixed,
               content: Text('${confirmedItem.name} added to cart!'),
               backgroundColor: Theme.of(context).colorScheme.primary,
-              duration: const Duration(seconds: 1),
+              duration: const Duration(milliseconds: 1500),
             ),
           );
         }
@@ -561,7 +561,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           behavior: SnackBarBehavior.fixed,
           content: const Text('Camera is unavailable or not ready.'),
           backgroundColor: Theme.of(context).colorScheme.primary,
-          duration: const Duration(seconds: 1),
+          duration: const Duration(milliseconds: 1500),
         ),
       );
       return;
@@ -611,7 +611,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               behavior: SnackBarBehavior.fixed,
               content: Text('${confirmedItem.name} added to cart!'),
               backgroundColor: Theme.of(context).colorScheme.primary,
-              duration: const Duration(seconds: 1),
+              duration: const Duration(milliseconds: 1500),
             ),
           );
         }
@@ -625,7 +625,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               style: TextStyle(color: Colors.white),
             ),
             backgroundColor: Theme.of(context).colorScheme.primary,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(milliseconds: 1500),
           ),
         );
       }
@@ -640,6 +640,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               style: TextStyle(color: Colors.white),
             ),
             backgroundColor: Color(0xFFEF4444),
+            duration: Duration(milliseconds: 1500),
           ),
         );
       }
@@ -800,7 +801,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           backgroundColor: (isChromaOk && isSupabaseOk && isBackendOk)
               ? Theme.of(context).colorScheme.primary
               : const Color(0xFFEF4444),
-          duration: const Duration(seconds: 4),
+          duration: const Duration(milliseconds: 1500),
         ),
       );
       // Also update only the DB indicator
@@ -1309,6 +1310,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                                                     ? InventoryService()
                                                           .getImageUrl(slug)
                                                     : item.imageUrl);
+                                          
+                                          final localProduct = slug != null ? InventoryService().getProductFromLocal(slug) : null;
+                                          final List<dynamic>? pricesRaw = item.prices ?? (localProduct != null ? localProduct['prices'] : null);
+                                          final List<double> itemPrices = pricesRaw != null
+                                              ? pricesRaw.map((e) => (e as num).toDouble()).toList()
+                                              : [];
+                                          if (itemPrices.isNotEmpty && !itemPrices.contains(item.price)) {
+                                            itemPrices.insert(0, item.price);
+                                          }
+
                                           return CartItem(
                                             imageUrl: displayImageUrl,
                                             name: item.name,
@@ -1320,6 +1331,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                                             onDecrement: () =>
                                                 _decrementQuantity(index),
                                             onRemove: () => _removeItem(index),
+                                            prices: itemPrices.isNotEmpty ? itemPrices : null,
+                                            selectedPrice: item.price,
+                                            onPriceChanged: (newPrice) {
+                                              _cartService.updateItemPrice(index, newPrice);
+                                            },
                                           );
                                         }(),
                                       );

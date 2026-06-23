@@ -185,4 +185,55 @@ class InventoryService {
       return "Failed: $e";
     }
   }
+
+  static String getSizeForProduct({
+    required String name,
+    required String slug,
+    required double price,
+  }) {
+    final cleanSlug = slug.toLowerCase();
+
+    if (cleanSlug.contains('cheez-puffs-cheetos')) {
+      if (price <= 10) return '25g';
+      return '50g';
+    }
+    if (cleanSlug.contains('ceregrow-multigrain-cereal-nestle')) {
+      if (price <= 300) return '300g';
+      return '600g';
+    }
+    if (cleanSlug.contains('american-style-cream-and-onion-chips-lays')) {
+      if (price <= 10) return '20g';
+      if (price <= 20) return '50g';
+      if (price <= 35) return '90g';
+      return '130g';
+    }
+    if (cleanSlug.contains('corn-flakes-original-kelloggs')) {
+      if (price <= 120) return '250g';
+      return '500g';
+    }
+    if (cleanSlug.contains('health-drink-boost')) {
+      if (price <= 120) return '200g';
+      if (price <= 260) return '500g';
+      return '1kg';
+    }
+    if (cleanSlug.contains('indias-magic-masala-chips-lays')) {
+      if (price <= 20) return '50g';
+      return '115g';
+    }
+    if (cleanSlug.contains('spanish-tomato-tango-chips-lays')) {
+      if (price <= 20) return '50g';
+      return '115g';
+    }
+    if (cleanSlug.contains('womens-plus-caramel-horlicks')) {
+      if (price >= 290) return '400g (Jar)';
+      return '400g (Refill)';
+    }
+
+    // Generic fallback based on price
+    if (price <= 20) return '50g';
+    if (price <= 50) return '100g';
+    if (price <= 150) return '250g';
+    if (price <= 300) return '500g';
+    return '1kg';
+  }
 }
