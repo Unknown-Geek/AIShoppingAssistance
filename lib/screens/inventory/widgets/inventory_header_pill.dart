@@ -8,9 +8,9 @@ class InventoryHeaderPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      height: 72,
+      height: 64,
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFFFFFFF),
         borderRadius: BorderRadius.circular(32),
@@ -21,7 +21,7 @@ class InventoryHeaderPill extends StatelessWidget {
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: const Color(0xFFD2E4E6)),
+        border: Border.all(color: const Color(0xFFD2E4E6), width: 1.5),
       ),
       child: Stack(
         alignment: Alignment.center,
