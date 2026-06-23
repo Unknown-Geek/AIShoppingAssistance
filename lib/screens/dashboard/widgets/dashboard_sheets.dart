@@ -532,16 +532,16 @@ class _ItemConfirmSheetContentState extends State<_ItemConfirmSheetContent> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              '₹${p.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                    : const Color(0xFF718096),
-                            ),
-                          ),
+                             Text(
+                               '₹${p.toStringAsFixed(0)}',
+                               style: TextStyle(
+                                 fontSize: 12,
+                                 fontWeight: FontWeight.normal,
+                                 color: isSelected
+                                     ? theme.colorScheme.primary
+                                     : const Color(0xFF718096),
+                               ),
+                             ),
                         ],
                       ),
                     ),
