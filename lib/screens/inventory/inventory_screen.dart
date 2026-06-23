@@ -17,10 +17,10 @@ class InventoryScreen extends StatefulWidget {
 class _InventoryScreenState extends State<InventoryScreen> {
   final _inventoryService = InventoryService();
   final _cartService = CartService();
-  
+
   List<Map<String, dynamic>> _allProducts = [];
   List<Map<String, dynamic>> _filteredProducts = [];
-  
+
   String _selectedCategory = 'All';
   String _selectedSort = 'az';
   final TextEditingController _searchController = TextEditingController();
@@ -31,14 +31,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
     'Pantry',
     'Beverages',
     'Cereals',
-    'Household'
+    'Household',
   ];
 
   final Map<String, String> _sortOptions = {
     'az': 'Name (A-Z)',
     'za': 'Name (Z-A)',
     'priceLow': 'Price: Low to High',
-    'priceHigh': 'Price: High to Low'
+    'priceHigh': 'Price: High to Low',
   };
 
   @override
@@ -65,7 +65,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   String _getProductCategory(Map<String, dynamic> product) {
     final slug = product['slug']?.toString().toLowerCase() ?? '';
     final name = product['name']?.toString().toLowerCase() ?? '';
-    
+
     if (slug.contains('chips') ||
         slug.contains('kurkure') ||
         slug.contains('puffcorn') ||
@@ -163,7 +163,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   void _applyFiltersAndSort() {
     final query = _searchController.text.toLowerCase().trim();
-    
+
     // 1. Filter
     List<Map<String, dynamic>> temp = _allProducts.where((product) {
       // Category match
@@ -171,13 +171,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
         final cat = _getProductCategory(product);
         if (cat != _selectedCategory) return false;
       }
-      
+
       // Search query match
       if (query.isNotEmpty) {
         final name = product['name']?.toString().toLowerCase() ?? '';
         if (!name.contains(query)) return false;
       }
-      
+
       return true;
     }).toList();
 
@@ -222,7 +222,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
     final imageUrl = _inventoryService.getImageUrl(slug);
 
     final item = CartItemModel(
-      id: product['sku']?.toString() ?? 'sku_${DateTime.now().millisecondsSinceEpoch}',
+      id:
+          product['sku']?.toString() ??
+          'sku_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
       price: price,
       quantity: 1,
@@ -324,17 +326,20 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       : GridView.builder(
                           physics: const BouncingScrollPhysics(),
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.68,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                childAspectRatio: 0.68,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                              ),
                           itemCount: _filteredProducts.length,
                           itemBuilder: (context, index) {
                             final product = _filteredProducts[index];
                             final slug = product['slug']?.toString() ?? '';
-                            final imageUrl = _inventoryService.getImageUrl(slug);
+                            final imageUrl = _inventoryService.getImageUrl(
+                              slug,
+                            );
                             final category = _getProductCategory(product);
 
                             return ProductGridCard(

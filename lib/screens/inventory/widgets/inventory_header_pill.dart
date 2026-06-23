@@ -19,7 +19,10 @@ class InventoryHeaderPill extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.7),
             borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
             boxShadow: [
               BoxShadow(
                 color: theme.colorScheme.primary.withValues(alpha: 0.04),
@@ -28,48 +31,49 @@ class InventoryHeaderPill extends StatelessWidget {
               ),
             ],
           ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Left action: Back
-          Align(
-            alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: onBackTap,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.8),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    width: 1.2,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.arrow_back_rounded,
-                    color: theme.colorScheme.primary,
-                    size: 20,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Left action: Back
+              Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: onBackTap,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.8),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.arrow_back_rounded,
+                        color: theme.colorScheme.primary,
+                        size: 20,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+              // Title
+              Text(
+                'Store Inventory',
+                style: TextStyle(
+                  fontFamily: theme.textTheme.titleLarge?.fontFamily,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
           ),
-          // Title
-          Text(
-            'Store Inventory',
-            style: TextStyle(
-              fontFamily: theme.textTheme.titleLarge?.fontFamily,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-        ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
