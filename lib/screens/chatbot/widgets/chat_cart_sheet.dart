@@ -94,7 +94,7 @@ class _ChatCartSheetState extends State<ChatCartSheet> {
               ],
             ),
             backgroundColor: theme.colorScheme.primary,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(milliseconds: 1500),
           ),
         );
       }
@@ -272,16 +272,30 @@ class _ChatCartSheetState extends State<ChatCartSheet> {
                                     : (slug != null
                                           ? InventoryService().getImageUrl(slug)
                                           : item.imageUrl);
-                                return CartItem(
-                                  imageUrl: displayImageUrl,
-                                  name: item.name,
-                                  details:
-                                      "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
-                                  quantity: item.quantity,
-                                  onIncrement: () => _incrementQuantity(index),
-                                  onDecrement: () => _decrementQuantity(index),
-                                  onRemove: () => _removeItem(index),
-                                );
+                                 final localProduct = slug != null ? InventoryService().getProductFromLocal(slug) : null;
+                                 final List<dynamic>? pricesRaw = item.prices ?? (localProduct != null ? localProduct['prices'] : null);
+                                 final List<double> itemPrices = pricesRaw != null
+                                     ? pricesRaw.map((e) => (e as num).toDouble()).toList()
+                                     : [];
+                                 if (itemPrices.isNotEmpty && !itemPrices.contains(item.price)) {
+                                   itemPrices.insert(0, item.price);
+                                 }
+
+                                 return CartItem(
+                                   imageUrl: displayImageUrl,
+                                   name: item.name,
+                                   details:
+                                       "${item.quantity} ${item.quantity == 1 ? 'Item' : 'Items'} • ₹${(item.price * item.quantity).toStringAsFixed(2)}",
+                                   quantity: item.quantity,
+                                   onIncrement: () => _incrementQuantity(index),
+                                   onDecrement: () => _decrementQuantity(index),
+                                   onRemove: () => _removeItem(index),
+                                   prices: itemPrices.isNotEmpty ? itemPrices : null,
+                                   selectedPrice: item.price,
+                                   onPriceChanged: (newPrice) {
+                                     _cartService.updateItemPrice(index, newPrice);
+                                   },
+                                 );
                               }(),
                             );
                           },

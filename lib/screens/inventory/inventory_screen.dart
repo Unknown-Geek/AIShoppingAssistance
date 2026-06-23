@@ -216,10 +216,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
     _filteredProducts = temp;
   }
 
-  Future<void> _addToCart(Map<String, dynamic> product) async {
+  Future<void> _addToCart(Map<String, dynamic> product, [double? selectedPrice]) async {
     final slug = product['slug']?.toString() ?? '';
     final name = product['name']?.toString() ?? 'Unknown Item';
-    final price = (product['price_rupees'] as num?)?.toDouble() ?? 50.0;
+    final price = selectedPrice ?? (product['price_rupees'] as num?)?.toDouble() ?? 50.0;
     final imageUrl = _inventoryService.getImageUrl(slug);
     final pricesRaw = product['prices'];
     final prices = (pricesRaw as List?)
@@ -238,7 +238,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       imageUrl: imageUrl,
     );
 
-    if (prices != null && prices.length > 1) {
+    if (selectedPrice == null && prices != null && prices.length > 1) {
       final confirmedItem = await DashboardSheets.showItemConfirmSheet(
         context,
         item: item,
@@ -253,10 +253,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          behavior: SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.fixed,
           content: Text('${item.name} added to cart!'),
           backgroundColor: Theme.of(context).colorScheme.primary,
-          duration: const Duration(seconds: 1),
+          duration: const Duration(milliseconds: 1500),
         ),
       );
     }
@@ -333,7 +333,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   categories: _categories,
                   sortOptions: _sortOptions,
                 ),
-                const SizedBox(height: 4),
                 Expanded(
                   child: _filteredProducts.isEmpty
                       ? const SingleChildScrollView(
@@ -346,7 +345,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
-                                childAspectRatio: 0.68,
+                                childAspectRatio: 0.63,
                                 crossAxisSpacing: 16,
                                 mainAxisSpacing: 16,
                               ),
@@ -359,11 +358,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
                             );
                             final category = _getProductCategory(product);
 
-                            return ProductGridCard(
+                             return ProductGridCard(
                               product: product,
                               imageUrl: imageUrl,
                               category: category,
-                              onAddToCart: () => _addToCart(product),
+                              onAddToCart: (selectedPrice) => _addToCart(product, selectedPrice),
                             );
                           },
                         ),

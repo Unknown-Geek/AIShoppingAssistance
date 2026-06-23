@@ -101,6 +101,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
             },
           ),
           behavior: SnackBarBehavior.fixed,
+          duration: const Duration(milliseconds: 1500),
+          persist: false,
         ),
       );
     }
@@ -205,6 +207,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   },
                 ),
                 behavior: SnackBarBehavior.fixed,
+                duration: const Duration(milliseconds: 1500),
+                persist: false,
               ),
             );
           }
@@ -599,7 +603,7 @@ class NotificationCard extends StatelessWidget {
                             content: const Text('Ref ID copied to clipboard!'),
                             backgroundColor: theme.colorScheme.primary,
                             behavior: SnackBarBehavior.fixed,
-                            duration: const Duration(seconds: 2),
+                            duration: const Duration(milliseconds: 1500),
                           ),
                         );
                       }

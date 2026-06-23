@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class InventoryHeaderPill extends StatelessWidget {
@@ -8,71 +7,59 @@ class InventoryHeaderPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(32),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          height: 64,
-          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.5),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withValues(alpha: 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    return Container(
+      height: 72,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Left action: Back
-              Align(
-                alignment: Alignment.centerLeft,
-                child: GestureDetector(
-                  onTap: onBackTap,
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.8),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        width: 1.2,
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.arrow_back_rounded,
-                        color: theme.colorScheme.primary,
-                        size: 20,
-                      ),
-                    ),
+        ],
+        border: Border.all(color: const Color(0xFFD2E4E6)),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Left action: Back
+          Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: onBackTap,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFFFFFFF),
+                  border: Border.all(color: const Color(0xFFD2E4E6)),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 20,
                   ),
                 ),
               ),
-              // Title
-              Text(
-                'Store Inventory',
-                style: TextStyle(
-                  fontFamily: theme.textTheme.titleLarge?.fontFamily,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          // Title
+          Text(
+            'Store Inventory',
+            style: TextStyle(
+              fontFamily: theme.textTheme.titleLarge?.fontFamily,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ],
       ),
     );
   }

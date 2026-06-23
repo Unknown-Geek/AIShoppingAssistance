@@ -257,7 +257,10 @@ class CartService extends ChangeNotifier {
       (e) => e.name.toLowerCase() == nameLower,
     );
     if (existingIdx != -1) {
-      _items[existingIdx].quantity += item.quantity;
+      _items[existingIdx] = _items[existingIdx].copyWith(
+        quantity: _items[existingIdx].quantity + item.quantity,
+        price: item.price,
+      );
     } else {
       _items.add(item);
     }
@@ -283,6 +286,15 @@ class CartService extends ChangeNotifier {
     } else {
       removeItem(index);
     }
+    notifyListeners();
+  }
+
+  void updateItemPrice(int index, double newPrice) {
+    if (index < 0 || index >= _items.length) return;
+    final item = _items[index];
+    _items[index] = item.copyWith(price: newPrice);
+    _persist();
+    _scheduleSync();
     notifyListeners();
   }
 

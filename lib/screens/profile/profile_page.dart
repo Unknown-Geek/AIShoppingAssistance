@@ -130,6 +130,7 @@ class _ProfilePageState extends State<ProfilePage> {
             content: const Text('Profile picture updated successfully!'),
             backgroundColor: Theme.of(context).colorScheme.primary,
             behavior: SnackBarBehavior.fixed,
+            duration: const Duration(milliseconds: 1500),
           ),
         );
       }
@@ -141,6 +142,7 @@ class _ProfilePageState extends State<ProfilePage> {
             content: Text('Failed to pick image.'),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.fixed,
+            duration: Duration(milliseconds: 1500),
           ),
         );
       }
@@ -166,6 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
             content: const Text('Profile picture removed.'),
             backgroundColor: Theme.of(context).colorScheme.primary,
             behavior: SnackBarBehavior.fixed,
+            duration: const Duration(milliseconds: 1500),
           ),
         );
       }
@@ -658,6 +661,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                         backgroundColor:
                                             theme.colorScheme.primary,
                                         behavior: SnackBarBehavior.fixed,
+                                        duration: const Duration(milliseconds: 1500),
                                       ),
                                     );
                                   } catch (e) {
@@ -671,6 +675,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                         ),
                                         backgroundColor: Colors.redAccent,
                                         behavior: SnackBarBehavior.fixed,
+                                        duration: Duration(milliseconds: 1500),
                                       ),
                                     );
                                   }
@@ -883,6 +888,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       backgroundColor:
                                           theme.colorScheme.primary,
                                       behavior: SnackBarBehavior.fixed,
+                                      duration: const Duration(milliseconds: 1500),
                                     ),
                                   );
                                 } catch (e) {
@@ -894,6 +900,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       content: Text('Failed to update name.'),
                                       backgroundColor: Colors.redAccent,
                                       behavior: SnackBarBehavior.fixed,
+                                      duration: Duration(milliseconds: 1500),
                                     ),
                                   );
                                 }

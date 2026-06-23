@@ -96,6 +96,7 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
             content: const Text('Card added successfully!'),
             backgroundColor: theme.colorScheme.primary,
             behavior: SnackBarBehavior.fixed,
+            duration: const Duration(milliseconds: 1500),
           ),
         );
       }
@@ -105,18 +106,36 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
   }
 
   Future<void> _deleteCard(int index) async {
+    final removedCard = cards[index];
     setState(() {
       cards.removeAt(index);
     });
+
+    final theme = Theme.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('saved_payment_cards', jsonEncode(cards));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
           SnackBar(
-            content: const Text('Card removed.'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
+            content: const Text('Card removed'),
+            action: SnackBarAction(
+              label: 'Undo',
+              textColor: theme.colorScheme.inversePrimary,
+              onPressed: () async {
+                setState(() {
+                  cards.insert(index, removedCard);
+                });
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('saved_payment_cards', jsonEncode(cards));
+              },
+            ),
             behavior: SnackBarBehavior.fixed,
+            duration: const Duration(milliseconds: 1500),
+            persist: false,
           ),
         );
       }
@@ -277,16 +296,15 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
           direction: DismissDirection.endToStart,
           background: Container(
             margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.only(right: 20),
+            padding: const EdgeInsets.only(right: 24),
             alignment: Alignment.centerRight,
             decoration: BoxDecoration(
-              color: Colors.redAccent.shade100,
+              color: theme.colorScheme.error.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(24),
             ),
-            child: const Icon(
-              Icons.delete_sweep_rounded,
-              color: Colors.white,
-              size: 28,
+            child: Icon(
+              Icons.delete_outline_rounded,
+              color: theme.colorScheme.error,
             ),
           ),
           onDismissed: (_) => _deleteCard(index),

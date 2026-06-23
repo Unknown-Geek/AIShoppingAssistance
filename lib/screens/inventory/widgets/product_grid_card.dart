@@ -1,12 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../services/inventory_service.dart';
 
-class ProductGridCard extends StatelessWidget {
+class ProductGridCard extends StatefulWidget {
   final Map<String, dynamic> product;
   final String imageUrl;
   final String category;
-  final VoidCallback onAddToCart;
+  final ValueChanged<double> onAddToCart;
 
   const ProductGridCard({
     super.key,
@@ -17,12 +18,56 @@ class ProductGridCard extends StatelessWidget {
   });
 
   @override
+  State<ProductGridCard> createState() => _ProductGridCardState();
+}
+
+class _ProductGridCardState extends State<ProductGridCard> {
+  double? _selectedPrice;
+
+  @override
+  void initState() {
+    super.initState();
+    _initSelectedPrice();
+  }
+
+  @override
+  void didUpdateWidget(ProductGridCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.product['sku'] != oldWidget.product['sku']) {
+      _initSelectedPrice();
+    }
+  }
+
+  void _initSelectedPrice() {
+    final pricesRaw = widget.product['prices'];
+    final prices = (pricesRaw as List?)
+        ?.map((e) => (e as num).toDouble())
+        .toList();
+    if (prices != null && prices.isNotEmpty) {
+      prices.sort();
+      _selectedPrice = prices.first; // Keep lowest size/price selected by default
+    } else {
+      _selectedPrice = (widget.product['price_rupees'] as num?)?.toDouble() ?? 0.0;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final name = product['name']?.toString() ?? 'Unknown Item';
-    final price = (product['price_rupees'] as num?)?.toDouble() ?? 0.0;
+    final name = widget.product['name']?.toString() ?? 'Unknown Item';
+    final price = (widget.product['price_rupees'] as num?)?.toDouble() ?? 0.0;
+    final slug = widget.product['slug']?.toString() ?? '';
 
-    final String catKey = category.trim().toLowerCase();
+    final pricesRaw = widget.product['prices'];
+    final prices = (pricesRaw as List?)
+        ?.map((e) => (e as num).toDouble())
+        .toList();
+
+    if (prices != null && prices.length > 1) {
+      prices.sort();
+    }
+
+    final String catKey = widget.category.trim().toLowerCase();
     Color badgeBg;
     Color badgeText;
 
@@ -44,6 +89,109 @@ class ProductGridCard extends StatelessWidget {
     } else {
       badgeBg = theme.colorScheme.secondary.withValues(alpha: 0.15);
       badgeText = theme.colorScheme.primary;
+    }
+
+    Widget variantsWidget;
+    if (prices != null && prices.length > 1) {
+      variantsWidget = SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        clipBehavior: Clip.none,
+        child: Row(
+          children: prices.map((p) {
+            final sizeStr = InventoryService.getSizeForProduct(
+              name: name,
+              slug: slug,
+              price: p,
+            );
+            final isSelected = _selectedPrice == p;
+            return Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedPrice = p;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : const Color(0xFFD2E4E6),
+                      width: 1.0,
+                    ),
+                    boxShadow: [
+                      if (isSelected)
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.15,
+                          ),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                    ],
+                  ),
+                  child: Text(
+                    sizeStr,
+                    style: TextStyle(
+                      fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                      fontSize: 10,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? Colors.white
+                          : theme.colorScheme.primary.withValues(
+                              alpha: 0.8,
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    } else {
+      final singlePrice = _selectedPrice ?? price;
+      final sizeStr = InventoryService.getSizeForProduct(
+        name: name,
+        slug: slug,
+        price: singlePrice,
+      );
+      variantsWidget = Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 4,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFFD2E4E6),
+            width: 1.0,
+          ),
+        ),
+        child: Text(
+          sizeStr,
+          style: TextStyle(
+            fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.primary.withValues(alpha: 0.6),
+          ),
+        ),
+      );
     }
 
     return ClipRRect(
@@ -73,7 +221,7 @@ class ProductGridCard extends StatelessWidget {
               Stack(
                 children: [
                   AspectRatio(
-                    aspectRatio: 1.15,
+                    aspectRatio: 1.2,
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(8),
@@ -88,7 +236,7 @@ class ProductGridCard extends StatelessWidget {
                           top: Radius.circular(15),
                         ),
                         child: CachedNetworkImage(
-                          imageUrl: imageUrl,
+                          imageUrl: widget.imageUrl,
                           fit: BoxFit.contain,
                           placeholder: (context, url) => Center(
                             child: SizedBox(
@@ -131,7 +279,7 @@ class ProductGridCard extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        category.toUpperCase(),
+                        widget.category.toUpperCase(),
                         style: TextStyle(
                           fontFamily: theme.textTheme.labelSmall?.fontFamily,
                           fontSize: 8,
@@ -147,7 +295,7 @@ class ProductGridCard extends StatelessWidget {
               // Product Info Section
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                  padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.start,
@@ -164,13 +312,15 @@ class ProductGridCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
+                      variantsWidget,
+                      const Spacer(),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            '₹${price.toStringAsFixed(2)}',
+                            '₹${(_selectedPrice ?? price).toStringAsFixed(2)}',
                             style: TextStyle(
                               fontFamily:
                                   theme.textTheme.titleMedium?.fontFamily,
@@ -180,7 +330,7 @@ class ProductGridCard extends StatelessWidget {
                             ),
                           ),
                           GestureDetector(
-                            onTap: onAddToCart,
+                            onTap: () => widget.onAddToCart(_selectedPrice ?? price),
                             child: Container(
                               width: 28,
                               height: 28,

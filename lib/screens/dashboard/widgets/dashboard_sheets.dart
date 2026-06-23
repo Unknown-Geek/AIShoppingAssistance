@@ -333,11 +333,33 @@ class _ItemConfirmSheetContentState extends State<_ItemConfirmSheetContent> {
     _selectedPrice = widget.item.price;
   }
 
+  String _getSizeForProduct(String name, String slug, double price) {
+    return InventoryService.getSizeForProduct(
+      name: name,
+      slug: slug,
+      price: price,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final item = widget.item;
-    final prices = item.prices ?? [];
+    
+    final inventoryService = InventoryService();
+    final slug = inventoryService.getSlugByName(item.name);
+    final localProduct = slug != null ? inventoryService.getProductFromLocal(slug) : null;
+    
+    final List<dynamic>? pricesRaw = item.prices ?? (localProduct != null ? localProduct['prices'] : null);
+    final List<double> prices = pricesRaw != null
+        ? pricesRaw.map((e) => (e as num).toDouble()).toList()
+        : [];
+        
+    if (prices.isEmpty) {
+      prices.add(item.price);
+    } else if (!prices.contains(item.price)) {
+      prices.insert(0, item.price);
+    }
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
@@ -425,15 +447,14 @@ class _ItemConfirmSheetContentState extends State<_ItemConfirmSheetContent> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    if (prices.length <= 1)
-                      Text(
-                        '₹${_selectedPrice.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.primary,
-                        ),
+                    Text(
+                      '₹${_selectedPrice.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -441,52 +462,94 @@ class _ItemConfirmSheetContentState extends State<_ItemConfirmSheetContent> {
           ),
           if (prices.length > 1) ...[
             const SizedBox(height: 16),
-            const Text(
-              'Select Variant',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF4A5568),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Select Variant',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF4A5568),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: prices.map((p) {
-                final isSelected = p == _selectedPrice;
-                return ChoiceChip(
-                  label: Text('₹${p.toStringAsFixed(2)}'),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedPrice = p;
-                      });
-                    }
-                  },
-                  selectedColor: theme.colorScheme.primary.withValues(
-                    alpha: 0.1,
-                  ),
-                  labelStyle: TextStyle(
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : const Color(0xFF4A5568),
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(
-                      color: isSelected
-                          ? theme.colorScheme.primary
-                          : const Color(0xFFD2E4E6),
-                      width: 1,
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: prices.map((p) {
+                    final isSelected = p == _selectedPrice;
+                    final sizeStr = _getSizeForProduct(item.name, slug ?? '', p);
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedPrice = p;
+                        });
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? theme.colorScheme.primary.withValues(alpha: 0.05)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : const Color(0xFFE2E8F0),
+                            width: isSelected ? 2 : 1,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: theme.colorScheme.primary.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              sizeStr,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : const Color(0xFF1A202C),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '₹${p.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : const Color(0xFF718096),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  backgroundColor: Colors.white,
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
+          ),
           ],
           const SizedBox(height: 20),
           SizedBox(

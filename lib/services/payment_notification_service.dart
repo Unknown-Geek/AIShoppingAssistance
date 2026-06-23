@@ -53,7 +53,7 @@ class PaymentNotificationService {
         ),
         backgroundColor: theme.colorScheme.primary,
         behavior: SnackBarBehavior.fixed,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(milliseconds: 1500),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(20),
