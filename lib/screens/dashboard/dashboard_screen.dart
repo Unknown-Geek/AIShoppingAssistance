@@ -511,10 +511,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         _isConfirmSheetOpen = true;
       });
 
-      final confirmed = await DashboardSheets.showItemConfirmSheet(
-        context,
-        item: item,
-      );
+      final CartItemModel? confirmedItem =
+          await DashboardSheets.showItemConfirmSheet(context, item: item);
 
       if (mounted) {
         setState(() {
@@ -526,12 +524,12 @@ class _DashboardScreenState extends State<DashboardScreen>
           _cachedDetectedItem = null;
           _cachedDetectionTime = null;
         });
-        if (confirmed == true) {
-          _cartService.addItem(item);
+        if (confirmedItem != null) {
+          _cartService.addItem(confirmedItem);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               behavior: SnackBarBehavior.fixed,
-              content: Text('${item.name} added to cart!'),
+              content: Text('${confirmedItem.name} added to cart!'),
               backgroundColor: Theme.of(context).colorScheme.primary,
               duration: const Duration(seconds: 1),
             ),
@@ -593,10 +591,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         // Show confirmation sheet — CLIP can confuse similar-looking products
         // (e.g. different Lays flavours). User verifies before cart is updated.
         setState(() => _isConfirmSheetOpen = true);
-        final confirmed = await DashboardSheets.showItemConfirmSheet(
-          context,
-          item: item,
-        );
+        final CartItemModel? confirmedItem =
+            await DashboardSheets.showItemConfirmSheet(context, item: item);
         if (mounted) {
           setState(() {
             _isConfirmSheetOpen = false;
@@ -608,12 +604,12 @@ class _DashboardScreenState extends State<DashboardScreen>
             _cachedDetectionTime = null;
           });
         }
-        if (confirmed == true && mounted) {
-          _cartService.addItem(item);
+        if (confirmedItem != null && mounted) {
+          _cartService.addItem(confirmedItem);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               behavior: SnackBarBehavior.fixed,
-              content: Text('${item.name} added to cart!'),
+              content: Text('${confirmedItem.name} added to cart!'),
               backgroundColor: Theme.of(context).colorScheme.primary,
               duration: const Duration(seconds: 1),
             ),
@@ -665,8 +661,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       if (mounted) setState(() => _isSearchingImage = false);
     }
   }
-
-
 
   Future<String> _checkBackendStatus() async {
     final primary = dotenv.env['PRIMARY_DETECTION_URL']?.trim() ?? '';
@@ -1005,7 +999,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 _stopBackgroundScanning();
 
                 // Pre-emptively pause camera preview
-                if (_cameraController != null && _cameraController!.value.isInitialized) {
+                if (_cameraController != null &&
+                    _cameraController!.value.isInitialized) {
                   try {
                     await _cameraController!.pausePreview();
                   } catch (e) {
@@ -1017,27 +1012,29 @@ class _DashboardScreenState extends State<DashboardScreen>
 
                 final route = PageRouteBuilder(
                   pageBuilder: (_, animation, __) => const InventoryScreen(),
-                  transitionsBuilder: (_, animation, secondaryAnimation, child) {
-                    final slideAnimation = Tween<Offset>(
-                      begin: const Offset(1.0, 0.0),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.fastOutSlowIn,
-                        reverseCurve: Curves.fastOutSlowIn.flipped,
-                      ),
-                    );
+                  transitionsBuilder:
+                      (_, animation, secondaryAnimation, child) {
+                        final slideAnimation =
+                            Tween<Offset>(
+                              begin: const Offset(1.0, 0.0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.fastOutSlowIn,
+                                reverseCurve: Curves.fastOutSlowIn.flipped,
+                              ),
+                            );
 
-                    return SlideTransition(
-                      position: slideAnimation,
-                      child: Material(
-                        elevation: 16,
-                        shadowColor: Colors.black38,
-                        child: child,
-                      ),
-                    );
-                  },
+                        return SlideTransition(
+                          position: slideAnimation,
+                          child: Material(
+                            elevation: 16,
+                            shadowColor: Colors.black38,
+                            child: child,
+                          ),
+                        );
+                      },
                   transitionDuration: const Duration(milliseconds: 300),
                   reverseTransitionDuration: const Duration(milliseconds: 250),
                 );
@@ -1045,7 +1042,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 await Navigator.push(context, route);
 
                 _isDashboardActive = true;
-                if (_cameraController == null || !_cameraController!.value.isInitialized) {
+                if (_cameraController == null ||
+                    !_cameraController!.value.isInitialized) {
                   await _initializeCamera();
                 } else {
                   try {

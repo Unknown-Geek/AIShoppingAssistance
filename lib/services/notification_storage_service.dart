@@ -12,7 +12,7 @@ class NotificationStorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final List<String> list = prefs.getStringList(_storageKey) ?? [];
-      
+
       final Map<String, dynamic> newNotification = {
         'success': success,
         'message': message,
@@ -20,7 +20,7 @@ class NotificationStorageService {
         'timestamp': DateTime.now().toIso8601String(),
         'read': false,
       };
-      
+
       list.insert(0, jsonEncode(newNotification));
       await prefs.setStringList(_storageKey, list);
     } catch (e) {
@@ -32,7 +32,9 @@ class NotificationStorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final List<String> list = prefs.getStringList(_storageKey) ?? [];
-      return list.map((item) => jsonDecode(item) as Map<String, dynamic>).toList();
+      return list
+          .map((item) => jsonDecode(item) as Map<String, dynamic>)
+          .toList();
     } catch (e) {
       return [];
     }
@@ -45,7 +47,8 @@ class NotificationStorageService {
       if (list.isEmpty) return;
 
       final List<String> updatedList = list.map((itemStr) {
-        final Map<String, dynamic> item = jsonDecode(itemStr) as Map<String, dynamic>;
+        final Map<String, dynamic> item =
+            jsonDecode(itemStr) as Map<String, dynamic>;
         item['read'] = true;
         return jsonEncode(item);
       }).toList();
@@ -65,10 +68,14 @@ class NotificationStorageService {
     }
   }
 
-  static Future<void> saveNotificationsList(List<Map<String, dynamic>> list) async {
+  static Future<void> saveNotificationsList(
+    List<Map<String, dynamic>> list,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final List<String> stringList = list.map((item) => jsonEncode(item)).toList();
+      final List<String> stringList = list
+          .map((item) => jsonEncode(item))
+          .toList();
       await prefs.setStringList(_storageKey, stringList);
     } catch (e) {
       // silent fallback

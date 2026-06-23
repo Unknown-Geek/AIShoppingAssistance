@@ -26,7 +26,7 @@ class GradualBlur extends StatelessWidget {
           children: List.generate(divCount, (index) {
             final double progress = (index + 1) / divCount;
             final double blurValue = progress * strength;
-            
+
             final double start = index / divCount;
             final double endVal = progress;
 
@@ -36,23 +36,18 @@ class GradualBlur extends StatelessWidget {
                   return LinearGradient(
                     begin: begin,
                     end: end,
-                    colors: const [
-                      Colors.transparent,
-                      Colors.black,
-                    ],
-                    stops: [
-                      start,
-                      endVal,
-                    ],
+                    colors: const [Colors.transparent, Colors.black],
+                    stops: [start, endVal],
                   ).createShader(rect);
                 },
                 blendMode: BlendMode.dstIn,
                 child: ClipRect(
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: blurValue, sigmaY: blurValue),
-                    child: Container(
-                      color: Colors.transparent,
+                    filter: ImageFilter.blur(
+                      sigmaX: blurValue,
+                      sigmaY: blurValue,
                     ),
+                    child: Container(color: Colors.transparent),
                   ),
                 ),
               ),

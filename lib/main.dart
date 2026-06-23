@@ -58,8 +58,13 @@ Future<void> _initDynamicTheme() async {
       BrandConfig.active = config;
       // Cache it for the next startup
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('cached_tenant_config_$tenantId', json.encode(response));
-      debugPrint('[ThemeService] Successfully synchronized and cached theme config for: $tenantId');
+      await prefs.setString(
+        'cached_tenant_config_$tenantId',
+        json.encode(response),
+      );
+      debugPrint(
+        '[ThemeService] Successfully synchronized and cached theme config for: $tenantId',
+      );
     }
   } catch (e) {
     debugPrint('[ThemeService] Failed to synchronize tenant config: $e');

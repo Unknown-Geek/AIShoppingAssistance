@@ -6,6 +6,7 @@ import 'widgets/inventory_header_pill.dart';
 import 'widgets/inventory_filter_bar.dart';
 import 'widgets/product_grid_card.dart';
 import 'widgets/inventory_empty_state.dart';
+import '../dashboard/widgets/dashboard_sheets.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -17,10 +18,10 @@ class InventoryScreen extends StatefulWidget {
 class _InventoryScreenState extends State<InventoryScreen> {
   final _inventoryService = InventoryService();
   final _cartService = CartService();
-  
+
   List<Map<String, dynamic>> _allProducts = [];
   List<Map<String, dynamic>> _filteredProducts = [];
-  
+
   String _selectedCategory = 'All';
   String _selectedSort = 'az';
   final TextEditingController _searchController = TextEditingController();
@@ -31,14 +32,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
     'Pantry',
     'Beverages',
     'Cereals',
-    'Household'
+    'Household',
   ];
 
   final Map<String, String> _sortOptions = {
     'az': 'Name (A-Z)',
     'za': 'Name (Z-A)',
     'priceLow': 'Price: Low to High',
-    'priceHigh': 'Price: High to Low'
+    'priceHigh': 'Price: High to Low',
   };
 
   @override
@@ -65,7 +66,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   String _getProductCategory(Map<String, dynamic> product) {
     final slug = product['slug']?.toString().toLowerCase() ?? '';
     final name = product['name']?.toString().toLowerCase() ?? '';
-    
+
     if (slug.contains('chips') ||
         slug.contains('kurkure') ||
         slug.contains('puffcorn') ||
@@ -163,7 +164,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   void _applyFiltersAndSort() {
     final query = _searchController.text.toLowerCase().trim();
-    
+
     // 1. Filter
     List<Map<String, dynamic>> temp = _allProducts.where((product) {
       // Category match
@@ -171,18 +172,28 @@ class _InventoryScreenState extends State<InventoryScreen> {
         final cat = _getProductCategory(product);
         if (cat != _selectedCategory) return false;
       }
-      
+
       // Search query match
       if (query.isNotEmpty) {
         final name = product['name']?.toString().toLowerCase() ?? '';
         if (!name.contains(query)) return false;
       }
-      
+
       return true;
     }).toList();
 
     // 2. Sort
     temp.sort((a, b) {
+      final slugA = a['slug']?.toString() ?? '';
+      final slugB = b['slug']?.toString() ?? '';
+      final imageA = _inventoryService.getImageUrl(slugA);
+      final imageB = _inventoryService.getImageUrl(slugB);
+      final isPlaceholderA = imageA.contains('unsplash.com');
+      final isPlaceholderB = imageB.contains('unsplash.com');
+
+      if (isPlaceholderA && !isPlaceholderB) return 1;
+      if (!isPlaceholderA && isPlaceholderB) return -1;
+
       final nameA = a['name']?.toString() ?? '';
       final nameB = b['name']?.toString() ?? '';
       final priceA = (a['price_rupees'] as num?)?.toDouble() ?? 0.0;
@@ -205,32 +216,50 @@ class _InventoryScreenState extends State<InventoryScreen> {
     _filteredProducts = temp;
   }
 
-  void _addToCart(Map<String, dynamic> product) {
+  Future<void> _addToCart(Map<String, dynamic> product) async {
     final slug = product['slug']?.toString() ?? '';
     final name = product['name']?.toString() ?? 'Unknown Item';
     final price = (product['price_rupees'] as num?)?.toDouble() ?? 50.0;
     final imageUrl = _inventoryService.getImageUrl(slug);
+    final pricesRaw = product['prices'];
+    final prices = (pricesRaw as List?)
+        ?.map((e) => (e as num).toDouble())
+        .toList();
 
-    final item = CartItemModel(
-      id: product['sku']?.toString() ?? 'sku_${DateTime.now().millisecondsSinceEpoch}',
+    CartItemModel item = CartItemModel(
+      id:
+          product['sku']?.toString() ??
+          'sku_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
       price: price,
+      prices: prices,
       quantity: 1,
       details: 'Added from Store',
       imageUrl: imageUrl,
     );
 
+    if (prices != null && prices.length > 1) {
+      final confirmedItem = await DashboardSheets.showItemConfirmSheet(
+        context,
+        item: item,
+      );
+      if (confirmedItem == null) return;
+      item = confirmedItem;
+    }
+
     _cartService.addItem(item);
 
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        content: Text('$name added to cart!'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        duration: const Duration(seconds: 1),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('${item.name} added to cart!'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
   }
 
   @override
@@ -314,17 +343,20 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       : GridView.builder(
                           physics: const BouncingScrollPhysics(),
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.68,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                childAspectRatio: 0.68,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                              ),
                           itemCount: _filteredProducts.length,
                           itemBuilder: (context, index) {
                             final product = _filteredProducts[index];
                             final slug = product['slug']?.toString() ?? '';
-                            final imageUrl = _inventoryService.getImageUrl(slug);
+                            final imageUrl = _inventoryService.getImageUrl(
+                              slug,
+                            );
                             final category = _getProductCategory(product);
 
                             return ProductGridCard(

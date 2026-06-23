@@ -66,15 +66,16 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       var raw = prefs.getString(_storageKey);
-      
+
       // Fallback to old storage key if new storage key doesn't exist yet
       if (raw == null || raw.isEmpty) {
         raw = prefs.getString('chat_history_v1');
       }
-      
+
       if (raw == null || raw.isEmpty) {
         _isInitialized = true;
-        _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
+        _currentChatSessionId =
+            'session_${DateTime.now().millisecondsSinceEpoch}';
         return;
       }
 
@@ -96,8 +97,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         }).toList();
 
         final title = data['title'] as String? ?? 'New Chat';
-        final id = data['id'] as String? ?? 'session_${DateTime.now().microsecondsSinceEpoch}_${title.hashCode}';
-        
+        final id =
+            data['id'] as String? ??
+            'session_${DateTime.now().microsecondsSinceEpoch}_${title.hashCode}';
+
         final lastActiveStr = data['lastActive'] as String?;
         final lastActive = lastActiveStr != null
             ? (DateTime.tryParse(lastActiveStr) ?? DateTime.now())
@@ -123,7 +126,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         _currentChatTitle = mostRecent.title;
         _currentChatSessionId = mostRecent.id;
       } else {
-        _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
+        _currentChatSessionId =
+            'session_${DateTime.now().millisecondsSinceEpoch}';
       }
       _isInitialized = true;
     } catch (e) {
@@ -147,7 +151,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     super.initState();
     _updateNotifier.addListener(_onGlobalUpdate);
     if (!_isInitialized) {
-      _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
+      _currentChatSessionId =
+          'session_${DateTime.now().millisecondsSinceEpoch}';
       _loadChatHistory();
       _isInitialized = true;
     } else {
@@ -212,10 +217,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       var raw = prefs.getString(_storageKey);
-      
+
       // Fallback hierarchy for legacy or dynamic v1 chat history migration
       if (raw == null || raw.isEmpty) {
-        final email = Supabase.instance.client.auth.currentUser?.email ?? 'guest';
+        final email =
+            Supabase.instance.client.auth.currentUser?.email ?? 'guest';
         raw = prefs.getString('chat_history_v1_$email');
       }
       if (raw == null || raw.isEmpty) {
@@ -224,7 +230,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       if (raw == null || raw.isEmpty) {
         raw = prefs.getString('chat_history_v1'); // Legacy global v1 fallback
       }
-      
+
       if (raw == null || raw.isEmpty) return;
 
       final List<dynamic> decoded = jsonDecode(raw);
@@ -245,8 +251,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         }).toList();
 
         final title = data['title'] as String? ?? 'New Chat';
-        final id = data['id'] as String? ?? 'session_${DateTime.now().microsecondsSinceEpoch}_${title.hashCode}';
-        
+        final id =
+            data['id'] as String? ??
+            'session_${DateTime.now().microsecondsSinceEpoch}_${title.hashCode}';
+
         final lastActiveStr = data['lastActive'] as String?;
         final lastActive = lastActiveStr != null
             ? (DateTime.tryParse(lastActiveStr) ?? DateTime.now())
@@ -322,7 +330,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     setState(() {
       _messages.clear();
       _currentChatTitle = 'New Chat';
-      _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
+      _currentChatSessionId =
+          'session_${DateTime.now().millisecondsSinceEpoch}';
     });
     if (_scaffoldKey.currentState?.isDrawerOpen == true) {
       Navigator.pop(context);
@@ -345,7 +354,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       if (_currentChatSessionId == session.id) {
         _messages.clear();
         _currentChatTitle = 'New Chat';
-        _currentChatSessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
+        _currentChatSessionId =
+            'session_${DateTime.now().millisecondsSinceEpoch}';
       }
     });
     _saveChatHistory();
@@ -380,7 +390,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
     void updateState() {
       if (_currentChatSessionId != null) {
-        final index = _chatHistory.indexWhere((chat) => chat.id == _currentChatSessionId);
+        final index = _chatHistory.indexWhere(
+          (chat) => chat.id == _currentChatSessionId,
+        );
         final updatedSession = ChatSession(
           id: _currentChatSessionId!,
           title: title,
@@ -421,10 +433,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     if ((prompt.isEmpty && imageFile == null) || _loading) return;
 
     setState(() {
-      _messages.add(ChatMessage(
-        isUser: true,
-        text: prompt.isEmpty ? "Sent a photo" : prompt,
-      ));
+      _messages.add(
+        ChatMessage(
+          isUser: true,
+          text: prompt.isEmpty ? "Sent a photo" : prompt,
+        ),
+      );
 
       if (_messages.length == 1) {
         _currentChatTitle = prompt.isEmpty ? "Image Scan" : prompt;
@@ -450,11 +464,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       }).toList();
 
       final currentCart = CartService().items.map((item) {
-        return {
-          "sku": item.id,
-          "name": item.name,
-          "quantity": item.quantity,
-        };
+        return {"sku": item.id, "name": item.name, "quantity": item.quantity};
       }).toList();
 
       // Sanitize chat history: strip any assistant messages that echo cart state.
@@ -466,12 +476,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         if (!msg.isUser &&
             msg.text != null &&
             (msg.text!.contains('Current Cart Items:') ||
-             msg.text!.startsWith('- ') && msg.text!.contains(':'))) {
+                msg.text!.startsWith('- ') && msg.text!.contains(':'))) {
           // Replace stale cart listing with a neutral note so history context is preserved
           // without the outdated quantity data polluting the LLM's reasoning.
           return ChatMessage(
             isUser: false,
-            text: '[Previous cart summary — refer to system prompt for current cart state]',
+            text:
+                '[Previous cart summary — refer to system prompt for current cart state]',
             timestamp: msg.timestamp,
           );
         }
@@ -488,8 +499,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       );
 
       final String responseText = response['response_text'] ?? '';
-      final List<dynamic>? mutations = response['cart_mutations'] != null ? List<dynamic>.from(response['cart_mutations']) : null;
-      final Map<String, dynamic>? recipePayload = response['recipe'] != null ? Map<String, dynamic>.from(response['recipe']) : null;
+      final List<dynamic>? mutations = response['cart_mutations'] != null
+          ? List<dynamic>.from(response['cart_mutations'])
+          : null;
+      final Map<String, dynamic>? recipePayload = response['recipe'] != null
+          ? Map<String, dynamic>.from(response['recipe'])
+          : null;
 
       // Handle mutations if any
       if (mutations != null) {
@@ -504,7 +519,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             if (action == 'add') {
               CartService().addItem(
                 CartItemModel(
-                  id: sku ?? 'unknown_sku_${DateTime.now().millisecondsSinceEpoch}',
+                  id:
+                      sku ??
+                      'unknown_sku_${DateTime.now().millisecondsSinceEpoch}',
                   name: name,
                   price: price,
                   quantity: quantity,
@@ -513,7 +530,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 ),
               );
             } else if (action == 'remove') {
-              CartService().removeOrDecrementItemBySkuOrName(sku ?? '', name, quantity);
+              CartService().removeOrDecrementItemBySkuOrName(
+                sku ?? '',
+                name,
+                quantity,
+              );
             } else if (action == 'clear') {
               CartService().clearCart();
             }
@@ -530,20 +551,26 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           'dish': recipePayload['dish'] ?? prompt,
           'servings': recipePayload['servings'] ?? 2,
           'ready_time': '20 min',
-          'summary': recipePayload['recipe_instructions'] != null && (recipePayload['recipe_instructions'] as List).isNotEmpty
+          'summary':
+              recipePayload['recipe_instructions'] != null &&
+                  (recipePayload['recipe_instructions'] as List).isNotEmpty
               ? 'A delicious ${recipePayload['dish'] ?? prompt} crafted by your AI Chef.'
               : 'A custom recipe for ${recipePayload['dish'] ?? prompt}.',
-          'ingredients': (recipePayload['ingredients'] as List<dynamic>?)?.map((item) {
-            final cleaned = _cleanIngredient(
-              item['quantity'] ?? '',
-              item['name'] ?? '',
-            );
-            return {
-              'name': cleaned['name'] ?? '',
-              'quantity': cleaned['quantity'] ?? '1',
-            };
-          }).toList() ?? [],
-          'instructions': List<String>.from(recipePayload['recipe_instructions'] ?? []),
+          'ingredients':
+              (recipePayload['ingredients'] as List<dynamic>?)?.map((item) {
+                final cleaned = _cleanIngredient(
+                  item['quantity'] ?? '',
+                  item['name'] ?? '',
+                );
+                return {
+                  'name': cleaned['name'] ?? '',
+                  'quantity': cleaned['quantity'] ?? '1',
+                };
+              }).toList() ??
+              [],
+          'instructions': List<String>.from(
+            recipePayload['recipe_instructions'] ?? [],
+          ),
           'missing_ingredients': recipePayload['missing_ingredients'],
           'nutrition': recipePayload['nutrition'],
         };
@@ -551,7 +578,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       } else {
         assistantMessage = ChatMessage(
           isUser: false,
-          text: responseText.isNotEmpty ? responseText : 'How can I assist you today?',
+          text: responseText.isNotEmpty
+              ? responseText
+              : 'How can I assist you today?',
         );
       }
 
@@ -567,11 +596,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       debugPrint('[ChatbotScreen] Send message error: $e');
       final rawDetails = e.toString().replaceAll('Exception: ', '');
       String errorMsg = 'Unable to connect to assistant service.';
-      
-      final isCorsError = rawDetails.contains('XMLHttpRequest error') || rawDetails.contains('XMLHttpRequest');
-      
+
+      final isCorsError =
+          rawDetails.contains('XMLHttpRequest error') ||
+          rawDetails.contains('XMLHttpRequest');
+
       if (kIsWeb && isCorsError) {
-        errorMsg += '\n\n🌐 **Browser CORS Restriction Detected**\n'
+        errorMsg +=
+            '\n\n🌐 **Browser CORS Restriction Detected**\n'
             'The browser blocked the request to the assistant server because of Cross-Origin Resource Sharing (CORS).\n\n'
             '👉 **How to fix this on Windows:**\n'
             '1. Close all active Google Chrome windows.\n'
@@ -583,11 +615,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       } else {
         errorMsg += '\nDetails: $rawDetails';
       }
-      
-      final chatMessage = ChatMessage(
-        isUser: false,
-        text: errorMsg,
-      );
+
+      final chatMessage = ChatMessage(isUser: false, text: errorMsg);
       if (mounted) {
         setState(() {
           _messages.add(chatMessage);
@@ -606,10 +635,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     if (_loading) return;
 
     setState(() {
-      _messages.add(ChatMessage(
-        isUser: true,
-        text: "Analyze my cart for missing items",
-      ));
+      _messages.add(
+        ChatMessage(isUser: true, text: "Analyze my cart for missing items"),
+      );
       _loading = true;
     });
 
@@ -618,11 +646,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
     try {
       final currentCart = CartService().items.map((item) {
-        return {
-          "sku": item.id,
-          "name": item.name,
-          "quantity": item.quantity,
-        };
+        return {"sku": item.id, "name": item.name, "quantity": item.quantity};
       }).toList();
 
       final result = await ChatAgentService().analyzeCart(currentCart);
@@ -635,26 +659,26 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         if (finalMessage.isNotEmpty) {
           finalMessage += "\n\n";
         }
-        finalMessage += "Based on your past orders, we found the following missing items:";
+        finalMessage +=
+            "Based on your past orders, we found the following missing items:";
         for (var item in missingItems) {
           final name = item['name'] ?? 'Unknown Item';
           final avgGap = item['avg_gap_days'] ?? 0;
           final lastBought = item['last_bought_days_ago'] ?? 0;
           final price = item['price'] ?? 0.0;
-          
-          finalMessage += "\n• $name (₹${price.toStringAsFixed(2)}) - usually bought every $avgGap days, last bought $lastBought days ago.";
+
+          finalMessage +=
+              "\n• $name (₹${price.toStringAsFixed(2)}) - usually bought every $avgGap days, last bought $lastBought days ago.";
         }
       } else {
         if (finalMessage.isNotEmpty) {
           finalMessage += "\n\n";
         }
-        finalMessage += "No missing regular items detected in your cart. You are all set!";
+        finalMessage +=
+            "No missing regular items detected in your cart. You are all set!";
       }
 
-      final successMsg = ChatMessage(
-        isUser: false,
-        text: finalMessage,
-      );
+      final successMsg = ChatMessage(isUser: false, text: finalMessage);
       if (mounted) {
         setState(() {
           _messages.add(successMsg);
@@ -699,16 +723,16 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Map<String, String> _cleanIngredient(String quantity, String name) {
     var qtyStr = quantity.trim();
     var nameStr = name.trim();
-    
+
     if (qtyStr.isEmpty) return {'quantity': '', 'name': nameStr};
     if (nameStr.isEmpty) return {'quantity': qtyStr, 'name': ''};
-    
+
     // 1. Clean the quantity if unit is duplicated in the quantity string itself (e.g. "2 cups cups" -> "2 cups")
     final qtyWords = qtyStr.split(RegExp(r'\s+'));
     if (qtyWords.length >= 2) {
       final lastWord = qtyWords.last;
       final secondLastWord = qtyWords[qtyWords.length - 2];
-      
+
       String cleanWord(String w) {
         var word = w.toLowerCase().trim();
         if (word.endsWith('es')) {
@@ -718,18 +742,21 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         }
         return word;
       }
-      
+
       if (cleanWord(lastWord) == cleanWord(secondLastWord)) {
         qtyStr = qtyWords.sublist(0, qtyWords.length - 1).join(' ').trim();
       }
     }
-    
+
     // 2. Clean the name if it starts with a unit word already present in the quantity
     final nameWords = nameStr.split(RegExp(r'\s+'));
     if (nameWords.isNotEmpty) {
-      final firstWord = nameWords.first.toLowerCase().replaceAll(RegExp(r'[.,()]+'), '');
+      final firstWord = nameWords.first.toLowerCase().replaceAll(
+        RegExp(r'[.,()]+'),
+        '',
+      );
       final qtyWordsForCheck = qtyStr.toLowerCase().split(RegExp(r'\s+'));
-      
+
       String cleanWord(String w) {
         var word = w.toLowerCase().trim();
         if (word.endsWith('es')) {
@@ -739,9 +766,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         }
         return word;
       }
-      
+
       final cleanFirst = cleanWord(firstWord);
-      
+
       bool matched = false;
       for (final qWord in qtyWordsForCheck) {
         if (cleanWord(qWord) == cleanFirst) {
@@ -749,7 +776,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           break;
         }
       }
-      
+
       if (matched) {
         var cleaned = nameWords.sublist(1).join(' ').trim();
         if (cleaned.toLowerCase().startsWith('of ')) {
@@ -758,7 +785,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         nameStr = cleaned;
       }
     }
-    
+
     return {'quantity': qtyStr, 'name': nameStr};
   }
 
@@ -781,20 +808,20 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
     final double topGap = hasImage
         ? 60.0
-        : (isKeyboardOpen
-            ? 8.0
-            : (bottomPadding > 0 ? 24.0 : 16.0));
+        : (isKeyboardOpen ? 8.0 : (bottomPadding > 0 ? 24.0 : 16.0));
     final double bottomGap = isKeyboardOpen
         ? 8.0
         : (bottomPadding > 0 ? bottomPadding : 16.0);
 
     // Height from screen bottom to top of white input container
-    final double inputFieldHeight = topGap + 80.0 + bottomGap + MediaQuery.of(context).viewInsets.bottom;
+    final double inputFieldHeight =
+        topGap + 80.0 + bottomGap + MediaQuery.of(context).viewInsets.bottom;
 
     // Bottom padding for the list view to clear the floating input field and cart button
     final double listBottomPadding = isKeyboardOpen
         ? (hasImage ? 200.0 : 160.0)
-        : (hasImage ? 240.0 : 200.0) + (bottomPadding > 0 ? bottomPadding : 16.0);
+        : (hasImage ? 240.0 : 200.0) +
+              (bottomPadding > 0 ? bottomPadding : 16.0);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -849,178 +876,218 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             child: SafeArea(
               bottom: false,
               child: Column(
-              children: [
-                // Floating Header Pill
-                ChatHeaderPill(
-                  onBackTap: () {
-                    Navigator.of(context).pop();
-                  },
-                  onHistoryTap: () {
-                    _scaffoldKey.currentState?.openDrawer();
-                  },
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: FadeContent(
-                          key: ValueKey(_currentChatSessionId ?? (_messages.isEmpty ? 'welcome' : 'new_chat')),
-                          blur: false,
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeInOut,
-                          child: _messages.isEmpty
-                              ? SingleChildScrollView(
-                                  physics: const BouncingScrollPhysics(),
-                                  padding: EdgeInsets.only(top: 12, bottom: listBottomPadding),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const WelcomeCard(),
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                                        child: Text(
-                                          'Try asking me',
-                                          style: TextStyle(
-                                            fontFamily: theme.textTheme.titleLarge?.fontFamily,
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            color: theme.colorScheme.primary,
+                children: [
+                  // Floating Header Pill
+                  ChatHeaderPill(
+                    onBackTap: () {
+                      Navigator.of(context).pop();
+                    },
+                    onHistoryTap: () {
+                      _scaffoldKey.currentState?.openDrawer();
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: FadeContent(
+                            key: ValueKey(
+                              _currentChatSessionId ??
+                                  (_messages.isEmpty ? 'welcome' : 'new_chat'),
+                            ),
+                            blur: false,
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            child: _messages.isEmpty
+                                ? SingleChildScrollView(
+                                    physics: const BouncingScrollPhysics(),
+                                    padding: EdgeInsets.only(
+                                      top: 12,
+                                      bottom: listBottomPadding,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const WelcomeCard(),
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            16,
+                                            16,
+                                            16,
+                                            12,
+                                          ),
+                                          child: Text(
+                                            'Try asking me',
+                                            style: TextStyle(
+                                              fontFamily: theme
+                                                  .textTheme
+                                                  .titleLarge
+                                                  ?.fontFamily,
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: theme.colorScheme.primary,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            SuggestionPill(
-                                              text: 'Analyze my cart for missing items.',
-                                              icon: Icons.analytics_outlined,
-                                              onTap: () {
-                                                _analyzeCart();
-                                              },
-                                            ),
-                                            SuggestionPill(
-                                              text: 'What snacks do you have under ₹50?',
-                                              icon: Icons.local_offer_outlined,
-                                              onTap: () {
-                                                _controller.text = 'What snacks do you have under ₹50?';
-                                                _sendMessage();
-                                              },
-                                            ),
-                                            SuggestionPill(
-                                              text: 'Add 2 Snickers and a KitKat to my cart',
-                                              icon: Icons.add_shopping_cart_rounded,
-                                              onTap: () {
-                                                _controller.text = 'Add 2 Snickers and a KitKat to my cart';
-                                                _sendMessage();
-                                              },
-                                            ),
-                                            SuggestionPill(
-                                              text: 'Make me a recipe for Maggi noodles',
-                                              icon: Icons.restaurant_menu_rounded,
-                                              onTap: () {
-                                                _controller.text = 'Make me a recipe for Maggi noodles';
-                                                _sendMessage();
-                                              },
-                                            ),
-                                            SuggestionPill(
-                                              text: "What's the difference between Horlicks and Bournvita?",
-                                              icon: Icons.help_outline_rounded,
-                                              onTap: () {
-                                                _controller.text = "What's the difference between Horlicks and Bournvita?";
-                                                _sendMessage();
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : ListView.builder(
-                                  controller: _scrollController,
-                                  reverse: true,
-                                  padding: EdgeInsets.only(top: 12, bottom: listBottomPadding),
-                                  itemCount: _messages.length + (_loading ? 1 : 0),
-                                  itemBuilder: (_, index) {
-                                    if (_loading) {
-                                      if (index == 0) {
-                                        return Padding(
-                                          padding: const EdgeInsets.only(bottom: 8),
-                                          child: MessageBubble(
-                                            message: ChatMessage(
-                                              isUser: false,
-                                              text: null,
-                                            ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
                                           ),
+                                          child: Column(
+                                            children: [
+                                              SuggestionPill(
+                                                text:
+                                                    'Analyze my cart for missing items.',
+                                                icon: Icons.analytics_outlined,
+                                                onTap: () {
+                                                  _analyzeCart();
+                                                },
+                                              ),
+                                              SuggestionPill(
+                                                text:
+                                                    'What snacks do you have under ₹50?',
+                                                icon:
+                                                    Icons.local_offer_outlined,
+                                                onTap: () {
+                                                  _controller.text =
+                                                      'What snacks do you have under ₹50?';
+                                                  _sendMessage();
+                                                },
+                                              ),
+                                              SuggestionPill(
+                                                text:
+                                                    'Add 2 Snickers and a KitKat to my cart',
+                                                icon: Icons
+                                                    .add_shopping_cart_rounded,
+                                                onTap: () {
+                                                  _controller.text =
+                                                      'Add 2 Snickers and a KitKat to my cart';
+                                                  _sendMessage();
+                                                },
+                                              ),
+                                              SuggestionPill(
+                                                text:
+                                                    'Make me a recipe for Maggi noodles',
+                                                icon: Icons
+                                                    .restaurant_menu_rounded,
+                                                onTap: () {
+                                                  _controller.text =
+                                                      'Make me a recipe for Maggi noodles';
+                                                  _sendMessage();
+                                                },
+                                              ),
+                                              SuggestionPill(
+                                                text:
+                                                    "What's the difference between Horlicks and Bournvita?",
+                                                icon:
+                                                    Icons.help_outline_rounded,
+                                                onTap: () {
+                                                  _controller.text =
+                                                      "What's the difference between Horlicks and Bournvita?";
+                                                  _sendMessage();
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    controller: _scrollController,
+                                    reverse: true,
+                                    padding: EdgeInsets.only(
+                                      top: 12,
+                                      bottom: listBottomPadding,
+                                    ),
+                                    itemCount:
+                                        _messages.length + (_loading ? 1 : 0),
+                                    itemBuilder: (_, index) {
+                                      if (_loading) {
+                                        if (index == 0) {
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 8,
+                                            ),
+                                            child: MessageBubble(
+                                              message: ChatMessage(
+                                                isUser: false,
+                                                text: null,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        final msgIndex =
+                                            _messages.length - index;
+                                        return MessageBubble(
+                                          message: _messages[msgIndex],
+                                        );
+                                      } else {
+                                        final msgIndex =
+                                            _messages.length - 1 - index;
+                                        return MessageBubble(
+                                          message: _messages[msgIndex],
                                         );
                                       }
-                                      final msgIndex = _messages.length - index;
-                                      return MessageBubble(message: _messages[msgIndex]);
-                                    } else {
-                                      final msgIndex = _messages.length - 1 - index;
-                                      return MessageBubble(message: _messages[msgIndex]);
-                                    }
-                                  },
-                                ),
+                                    },
+                                  ),
+                          ),
                         ),
-                      ),
-                      const Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        child: GradualBlur(
-                          height: 32.0,
-                          strength: 8,
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
+                        const Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: GradualBlur(
+                            height: 32.0,
+                            strength: 8,
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                          ),
                         ),
-                      ),
-                      Positioned(
-                        bottom: inputFieldHeight,
-                        left: 0,
-                        right: 0,
-                        child: const GradualBlur(
-                          height: 40.0,
-                          strength: 8,
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+                        Positioned(
+                          bottom: inputFieldHeight,
+                          left: 0,
+                          right: 0,
+                          child: const GradualBlur(
+                            height: 40.0,
+                            strength: 8,
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
                         ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: ChatInputField(
-                          controller: _controller,
-                          loading: _loading,
-                          onSend: _sendMessage,
-                          selectedImage: _selectedImage,
-                          showScrollDownButton: _showScrollDownButton,
-                          onScrollToBottom: _scrollToBottom,
-                          onImageSelected: (image) {
-                            setState(() {
-                              _selectedImage = image;
-                            });
-                          },
-                          onClearImage: () {
-                            setState(() {
-                              _selectedImage = null;
-                            });
-                          },
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: ChatInputField(
+                            controller: _controller,
+                            loading: _loading,
+                            onSend: _sendMessage,
+                            selectedImage: _selectedImage,
+                            showScrollDownButton: _showScrollDownButton,
+                            onScrollToBottom: _scrollToBottom,
+                            onImageSelected: (image) {
+                              setState(() {
+                                _selectedImage = image;
+                              });
+                            },
+                            onClearImage: () {
+                              setState(() {
+                                _selectedImage = null;
+                              });
+                            },
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }

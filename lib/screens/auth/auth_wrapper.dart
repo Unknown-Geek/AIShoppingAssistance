@@ -24,7 +24,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
     _user = Supabase.instance.client.auth.currentUser;
     _loading = false;
 
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) {
       if (mounted) {
         setState(() {
           _user = data.session?.user;
@@ -46,7 +48,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              Theme.of(context).colorScheme.primary,
+            ),
           ),
         ),
       );

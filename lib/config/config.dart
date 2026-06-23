@@ -27,10 +27,7 @@ class FontConfig {
   /// Where the font comes from.
   final FontSource source;
 
-  const FontConfig({
-    required this.family,
-    this.source = FontSource.asset,
-  });
+  const FontConfig({required this.family, this.source = FontSource.asset});
 
   // Built-in presets --------------------------------------------------------
 
@@ -65,7 +62,8 @@ class FontConfig {
   );
 
   factory FontConfig.fromJson(String family, String? sourceStr) {
-    final source = (sourceStr != null && sourceStr.toLowerCase().contains('google'))
+    final source =
+        (sourceStr != null && sourceStr.toLowerCase().contains('google'))
         ? FontSource.googleFont
         : FontSource.asset;
     return FontConfig(family: family, source: source);
@@ -210,15 +208,39 @@ class BrandColors {
   factory BrandColors.fromJson(Map<String, dynamic> json) {
     return BrandColors(
       primary: _parseColor(json['color_primary'], BrandColors.qless.primary),
-      onPrimary: _parseColor(json['color_on_primary'], BrandColors.qless.onPrimary),
-      secondary: _parseColor(json['color_secondary'], BrandColors.qless.secondary),
-      onSecondary: _parseColor(json['color_on_secondary'], BrandColors.qless.onSecondary),
-      background: _parseColor(json['color_background'], BrandColors.qless.background),
+      onPrimary: _parseColor(
+        json['color_on_primary'],
+        BrandColors.qless.onPrimary,
+      ),
+      secondary: _parseColor(
+        json['color_secondary'],
+        BrandColors.qless.secondary,
+      ),
+      onSecondary: _parseColor(
+        json['color_on_secondary'],
+        BrandColors.qless.onSecondary,
+      ),
+      background: _parseColor(
+        json['color_background'],
+        BrandColors.qless.background,
+      ),
       surface: _parseColor(json['color_surface'], BrandColors.qless.surface),
-      surfaceContainer: _parseColor(json['color_surface_container'], BrandColors.qless.surfaceContainer),
-      onBackground: _parseColor(json['color_on_background'], BrandColors.qless.onBackground),
-      onSurface: _parseColor(json['color_on_surface'], BrandColors.qless.onSurface),
-      onSurfaceVariant: _parseColor(json['color_on_surface_variant'], BrandColors.qless.onSurfaceVariant),
+      surfaceContainer: _parseColor(
+        json['color_surface_container'],
+        BrandColors.qless.surfaceContainer,
+      ),
+      onBackground: _parseColor(
+        json['color_on_background'],
+        BrandColors.qless.onBackground,
+      ),
+      onSurface: _parseColor(
+        json['color_on_surface'],
+        BrandColors.qless.onSurface,
+      ),
+      onSurfaceVariant: _parseColor(
+        json['color_on_surface_variant'],
+        BrandColors.qless.onSurfaceVariant,
+      ),
       error: _parseColor(json['color_error'], BrandColors.qless.error),
       onError: _parseColor(json['color_on_error'], BrandColors.qless.onError),
     );
@@ -287,7 +309,8 @@ class BrandTypography {
   }
 
   factory BrandTypography.fromJson(Map<String, dynamic> json) {
-    final double scale = double.tryParse(json['font_size_scale']?.toString() ?? '') ?? 1.0;
+    final double scale =
+        double.tryParse(json['font_size_scale']?.toString() ?? '') ?? 1.0;
     return BrandTypography(
       displayFont: FontConfig.fromJson(
         json['display_font_family'] ?? 'ClashDisplay',
@@ -407,24 +430,24 @@ class BrandConfig {
 
   /// The default Qless configuration — used as a fallback.
   factory BrandConfig.qless() => const BrandConfig(
-        identity: BrandIdentity.qless,
-        colors: BrandColors.qless,
-        typography: BrandTypography.qless,
-      );
+    identity: BrandIdentity.qless,
+    colors: BrandColors.qless,
+    typography: BrandTypography.qless,
+  );
 
   /// LuLu Hypermarket preset.
   factory BrandConfig.lulu() => const BrandConfig(
-        identity: BrandIdentity.lulu,
-        colors: BrandColors.lulu,
-        typography: BrandTypography.friendly,
-      );
+    identity: BrandIdentity.lulu,
+    colors: BrandColors.lulu,
+    typography: BrandTypography.friendly,
+  );
 
   /// Carrefour preset.
   factory BrandConfig.carrefour() => const BrandConfig(
-        identity: BrandIdentity.carrefour,
-        colors: BrandColors.carrefour,
-        typography: BrandTypography.modern,
-      );
+    identity: BrandIdentity.carrefour,
+    colors: BrandColors.carrefour,
+    typography: BrandTypography.modern,
+  );
 
   // ---------------------------------------------------------------------------
   // buildTheme()
@@ -433,10 +456,7 @@ class BrandConfig {
   TextStyle _resolveStyle(FontConfig fontConfig, TextStyle baseStyle) {
     if (fontConfig.source == FontSource.googleFont) {
       try {
-        return GoogleFonts.getFont(
-          fontConfig.family,
-          textStyle: baseStyle,
-        );
+        return GoogleFonts.getFont(fontConfig.family, textStyle: baseStyle);
       } catch (e) {
         return baseStyle.copyWith(fontFamily: fontConfig.family);
       }
@@ -469,21 +489,66 @@ class BrandConfig {
 
     final textTheme = baseTextTheme
         .copyWith(
-          displayLarge: _resolveStyle(t.displayFont, baseTextTheme.displayLarge ?? const TextStyle()),
-          displayMedium: _resolveStyle(t.displayFont, baseTextTheme.displayMedium ?? const TextStyle()),
-          displaySmall: _resolveStyle(t.displayFont, baseTextTheme.displaySmall ?? const TextStyle()),
-          headlineLarge: _resolveStyle(t.displayFont, baseTextTheme.headlineLarge ?? const TextStyle()),
-          headlineMedium: _resolveStyle(t.displayFont, baseTextTheme.headlineMedium ?? const TextStyle()),
-          headlineSmall: _resolveStyle(t.displayFont, baseTextTheme.headlineSmall ?? const TextStyle()),
-          titleLarge: _resolveStyle(t.displayFont, baseTextTheme.titleLarge ?? const TextStyle()),
-          titleMedium: _resolveStyle(t.displayFont, baseTextTheme.titleMedium ?? const TextStyle()),
-          titleSmall: _resolveStyle(t.displayFont, baseTextTheme.titleSmall ?? const TextStyle()),
-          bodyLarge: _resolveStyle(t.bodyFont, baseTextTheme.bodyLarge ?? const TextStyle()),
-          bodyMedium: _resolveStyle(t.bodyFont, baseTextTheme.bodyMedium ?? const TextStyle()),
-          bodySmall: _resolveStyle(t.bodyFont, baseTextTheme.bodySmall ?? const TextStyle()),
-          labelLarge: _resolveStyle(t.bodyFont, baseTextTheme.labelLarge ?? const TextStyle()),
-          labelMedium: _resolveStyle(t.bodyFont, baseTextTheme.labelMedium ?? const TextStyle()),
-          labelSmall: _resolveStyle(t.bodyFont, baseTextTheme.labelSmall ?? const TextStyle()),
+          displayLarge: _resolveStyle(
+            t.displayFont,
+            baseTextTheme.displayLarge ?? const TextStyle(),
+          ),
+          displayMedium: _resolveStyle(
+            t.displayFont,
+            baseTextTheme.displayMedium ?? const TextStyle(),
+          ),
+          displaySmall: _resolveStyle(
+            t.displayFont,
+            baseTextTheme.displaySmall ?? const TextStyle(),
+          ),
+          headlineLarge: _resolveStyle(
+            t.displayFont,
+            baseTextTheme.headlineLarge ?? const TextStyle(),
+          ),
+          headlineMedium: _resolveStyle(
+            t.displayFont,
+            baseTextTheme.headlineMedium ?? const TextStyle(),
+          ),
+          headlineSmall: _resolveStyle(
+            t.displayFont,
+            baseTextTheme.headlineSmall ?? const TextStyle(),
+          ),
+          titleLarge: _resolveStyle(
+            t.displayFont,
+            baseTextTheme.titleLarge ?? const TextStyle(),
+          ),
+          titleMedium: _resolveStyle(
+            t.displayFont,
+            baseTextTheme.titleMedium ?? const TextStyle(),
+          ),
+          titleSmall: _resolveStyle(
+            t.displayFont,
+            baseTextTheme.titleSmall ?? const TextStyle(),
+          ),
+          bodyLarge: _resolveStyle(
+            t.bodyFont,
+            baseTextTheme.bodyLarge ?? const TextStyle(),
+          ),
+          bodyMedium: _resolveStyle(
+            t.bodyFont,
+            baseTextTheme.bodyMedium ?? const TextStyle(),
+          ),
+          bodySmall: _resolveStyle(
+            t.bodyFont,
+            baseTextTheme.bodySmall ?? const TextStyle(),
+          ),
+          labelLarge: _resolveStyle(
+            t.bodyFont,
+            baseTextTheme.labelLarge ?? const TextStyle(),
+          ),
+          labelMedium: _resolveStyle(
+            t.bodyFont,
+            baseTextTheme.labelMedium ?? const TextStyle(),
+          ),
+          labelSmall: _resolveStyle(
+            t.bodyFont,
+            baseTextTheme.labelSmall ?? const TextStyle(),
+          ),
         )
         .apply(
           bodyColor: c.onSurface,

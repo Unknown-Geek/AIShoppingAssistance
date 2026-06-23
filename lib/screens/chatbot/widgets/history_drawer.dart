@@ -63,7 +63,10 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
       transitionDuration: const Duration(milliseconds: 350),
       pageBuilder: (ctx, anim1, anim2) => builder(ctx),
       transitionBuilder: (ctx, anim1, anim2, child) {
-        final curve = CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic);
+        final curve = CurvedAnimation(
+          parent: anim1,
+          curve: Curves.easeOutCubic,
+        );
         return AnimatedBuilder(
           animation: curve,
           builder: (context, childWidget) {
@@ -93,7 +96,9 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
           backgroundColor: Colors.white,
           title: Text(
             'Rename Chat',
@@ -118,20 +123,34 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
               hintStyle: TextStyle(
                 fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                 fontSize: 15,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.5,
+                ),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Color(0xFFD2E4E6), width: 1.2),
+                borderSide: const BorderSide(
+                  color: Color(0xFFD2E4E6),
+                  width: 1.2,
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Color(0xFFD2E4E6), width: 1.2),
+                borderSide: const BorderSide(
+                  color: Color(0xFFD2E4E6),
+                  width: 1.2,
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                borderSide: BorderSide(
+                  color: theme.colorScheme.primary,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -156,7 +175,10 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
               ),
               onPressed: () {
                 final newTitle = controller.text.trim();
@@ -167,10 +189,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
               },
               child: const Text(
                 'Rename',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -185,7 +204,9 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
           backgroundColor: Colors.white,
           title: Text(
             'Delete Chat',
@@ -226,7 +247,10 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
               ),
               onPressed: () {
                 widget.onDeleteChatSession(session);
@@ -234,10 +258,7 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
               },
               child: const Text(
                 'Delete',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -251,7 +272,13 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
     final theme = Theme.of(context);
 
     // Grouping logic
-    final categories = ['Last Hour', 'Today', 'Yesterday', 'This Week', 'Long Time Ago'];
+    final categories = [
+      'Last Hour',
+      'Today',
+      'Yesterday',
+      'This Week',
+      'Long Time Ago',
+    ];
     final Map<String, List<ChatSession>> grouped = {};
     for (final session in widget.chatHistory) {
       final grp = _getTimelineGroup(session.lastActive);
@@ -294,7 +321,10 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close_rounded, color: theme.colorScheme.primary),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: theme.colorScheme.primary,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -319,7 +349,9 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.15,
+                        ),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -336,7 +368,9 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                         ),
                         child: Icon(
                           Icons.add_rounded,
-                          color: theme.colorScheme.onPrimary, // White (the "New Chat" text color itself)
+                          color: theme
+                              .colorScheme
+                              .onPrimary, // White (the "New Chat" text color itself)
                           size: 20,
                         ),
                       ),
@@ -367,16 +401,21 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                           Icon(
                             Icons.chat_bubble_outline_rounded,
                             size: 48,
-                            color: theme.colorScheme.primary.withValues(alpha: 0.25),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.25,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Text(
                             'No saved chats yet.',
                             style: TextStyle(
-                              fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                              fontFamily:
+                                  theme.textTheme.bodyMedium?.fontFamily,
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
-                              color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.5,
+                              ),
                             ),
                           ),
                         ],
@@ -395,10 +434,13 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                             child: Text(
                               item.toUpperCase(),
                               style: TextStyle(
-                                fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                fontFamily:
+                                    theme.textTheme.bodyMedium?.fontFamily,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: theme.colorScheme.primary.withValues(alpha: 0.45),
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.45,
+                                ),
                                 letterSpacing: 1.1,
                               ),
                             ),
@@ -410,7 +452,10 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                         final isActive = session.id == widget.activeSessionId;
 
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
                           child: InkWell(
                             onTap: () => widget.onOpenChatSession(session),
                             borderRadius: BorderRadius.circular(16),
@@ -419,13 +464,19 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                               padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
                               decoration: BoxDecoration(
                                 color: isActive
-                                    ? theme.colorScheme.secondary.withValues(alpha: 0.12)
+                                    ? theme.colorScheme.secondary.withValues(
+                                        alpha: 0.12,
+                                      )
                                     : Colors.white,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: isActive
-                                      ? theme.colorScheme.secondary.withValues(alpha: 0.5)
-                                      : const Color(0xFFD2E4E6).withValues(alpha: 0.3),
+                                      ? theme.colorScheme.secondary.withValues(
+                                          alpha: 0.5,
+                                        )
+                                      : const Color(
+                                          0xFFD2E4E6,
+                                        ).withValues(alpha: 0.3),
                                   width: 1.2,
                                 ),
                               ),
@@ -436,7 +487,9 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                                     size: 18,
                                     color: isActive
                                         ? theme.colorScheme.primary
-                                        : theme.colorScheme.primary.withValues(alpha: 0.55),
+                                        : theme.colorScheme.primary.withValues(
+                                            alpha: 0.55,
+                                          ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -445,9 +498,14 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                        fontFamily: theme
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.fontFamily,
                                         fontSize: 14,
-                                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                                        fontWeight: isActive
+                                            ? FontWeight.w600
+                                            : FontWeight.w500,
                                         color: theme.colorScheme.primary,
                                       ),
                                     ),
@@ -456,7 +514,8 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                                     icon: Icon(
                                       Icons.more_vert_rounded,
                                       size: 18,
-                                      color: theme.colorScheme.primary.withValues(alpha: 0.45),
+                                      color: theme.colorScheme.primary
+                                          .withValues(alpha: 0.45),
                                     ),
                                     padding: EdgeInsets.zero,
                                     shape: RoundedRectangleBorder(
@@ -485,10 +544,14 @@ class _HistoryDrawerState extends State<HistoryDrawer> {
                                             Text(
                                               'Rename',
                                               style: TextStyle(
-                                                fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                                fontFamily: theme
+                                                    .textTheme
+                                                    .bodyMedium
+                                                    ?.fontFamily,
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w500,
-                                                color: theme.colorScheme.primary,
+                                                color:
+                                                    theme.colorScheme.primary,
                                               ),
                                             ),
                                           ],

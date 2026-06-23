@@ -16,7 +16,12 @@ class AuthBackground extends StatelessWidget {
               gradient: LinearGradient(
                 colors: [
                   Theme.of(context).scaffoldBackgroundColor,
-                  Color.lerp(Theme.of(context).scaffoldBackgroundColor, Colors.white, 0.5) ?? Colors.white,
+                  Color.lerp(
+                        Theme.of(context).scaffoldBackgroundColor,
+                        Colors.white,
+                        0.5,
+                      ) ??
+                      Colors.white,
                   Theme.of(context).scaffoldBackgroundColor,
                 ],
                 begin: Alignment.topLeft,
@@ -53,8 +58,12 @@ class AuthBackground extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  Theme.of(context).colorScheme.secondary.withValues(alpha: 0.25),
-                  Theme.of(context).colorScheme.secondary.withValues(alpha: 0.0),
+                  Theme.of(
+                    context,
+                  ).colorScheme.secondary.withValues(alpha: 0.25),
+                  Theme.of(
+                    context,
+                  ).colorScheme.secondary.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -70,7 +79,9 @@ class AuthBackground extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  Theme.of(context).colorScheme.secondary.withValues(alpha: 0.18),
+                  Theme.of(
+                    context,
+                  ).colorScheme.secondary.withValues(alpha: 0.18),
                   Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
                 ],
               ),

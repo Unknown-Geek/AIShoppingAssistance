@@ -177,14 +177,22 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
                   ),
                   if (!showAddForm && cards.isNotEmpty)
                     IconButton(
-                      icon: Icon(Icons.add_circle_outline_rounded, color: theme.colorScheme.primary, size: 22),
+                      icon: Icon(
+                        Icons.add_circle_outline_rounded,
+                        color: theme.colorScheme.primary,
+                        size: 22,
+                      ),
                       onPressed: () {
                         setState(() => showAddForm = true);
                       },
                     )
                   else if (showAddForm)
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.grey, size: 24),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.grey,
+                        size: 24,
+                      ),
                       onPressed: () {
                         setState(() => showAddForm = false);
                       },
@@ -233,7 +241,10 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
           ElevatedButton.icon(
             onPressed: () => setState(() => showAddForm = true),
             icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add a Card', style: TextStyle(fontWeight: FontWeight.w600)),
+            label: const Text(
+              'Add a Card',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: theme.colorScheme.onPrimary,
@@ -256,7 +267,9 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
         // Format number (mask first 12 digits)
         final rawNum = card['number'] ?? '';
         final cleanNum = rawNum.replaceAll(' ', '');
-        final last4 = cleanNum.length >= 4 ? cleanNum.substring(cleanNum.length - 4) : '****';
+        final last4 = cleanNum.length >= 4
+            ? cleanNum.substring(cleanNum.length - 4)
+            : '****';
         final maskedNum = '••••  ••••  ••••  $last4';
 
         return Dismissible(
@@ -270,7 +283,11 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
               color: Colors.redAccent.shade100,
               borderRadius: BorderRadius.circular(24),
             ),
-            child: const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 28),
+            child: const Icon(
+              Icons.delete_sweep_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
           ),
           onDismissed: (_) => _deleteCard(index),
           child: Container(
@@ -281,14 +298,21 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
               borderRadius: BorderRadius.circular(24),
               gradient: LinearGradient(
                 colors: isPrimary
-                    ? [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.75)]
+                    ? [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.primary.withValues(alpha: 0.75),
+                      ]
                     : [const Color(0xFF1E293B), const Color(0xFF475569)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: (isPrimary ? theme.colorScheme.primary : const Color(0xFF1E293B)).withValues(alpha: 0.2),
+                  color:
+                      (isPrimary
+                              ? theme.colorScheme.primary
+                              : const Color(0xFF1E293B))
+                          .withValues(alpha: 0.2),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
@@ -392,15 +416,22 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
           TextFormField(
             controller: _nameController,
             style: TextStyle(color: theme.colorScheme.primary),
-            decoration: _inputDecoration('Cardholder Name', Icons.person_outline_rounded),
-            validator: (val) => val == null || val.trim().isEmpty ? 'Please enter name' : null,
+            decoration: _inputDecoration(
+              'Cardholder Name',
+              Icons.person_outline_rounded,
+            ),
+            validator: (val) =>
+                val == null || val.trim().isEmpty ? 'Please enter name' : null,
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _numberController,
             keyboardType: TextInputType.number,
             style: TextStyle(color: theme.colorScheme.primary),
-            decoration: _inputDecoration('Card Number', Icons.credit_card_outlined),
+            decoration: _inputDecoration(
+              'Card Number',
+              Icons.credit_card_outlined,
+            ),
             validator: (val) {
               if (val == null || val.trim().replaceAll(' ', '').length < 15) {
                 return 'Please enter valid card number';
@@ -415,7 +446,10 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
                 child: TextFormField(
                   controller: _expiryController,
                   style: TextStyle(color: theme.colorScheme.primary),
-                  decoration: _inputDecoration('Expiry (MM/YY)', Icons.calendar_today_outlined),
+                  decoration: _inputDecoration(
+                    'Expiry (MM/YY)',
+                    Icons.calendar_today_outlined,
+                  ),
                   validator: (val) {
                     if (val == null || !val.contains('/') || val.length < 5) {
                       return 'Use MM/YY';
@@ -431,7 +465,10 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
                   keyboardType: TextInputType.number,
                   obscureText: true,
                   style: TextStyle(color: theme.colorScheme.primary),
-                  decoration: _inputDecoration('CVV', Icons.lock_outline_rounded),
+                  decoration: _inputDecoration(
+                    'CVV',
+                    Icons.lock_outline_rounded,
+                  ),
                   validator: (val) {
                     if (val == null || val.length < 3) {
                       return 'Enter CVV';
@@ -451,7 +488,10 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
               minimumSize: const Size.fromHeight(52),
               shape: const StadiumBorder(),
             ),
-            child: const Text('Save Card', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            child: const Text(
+              'Save Card',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            ),
           ),
         ],
       ),
@@ -463,7 +503,11 @@ class _SavedCardsSheetState extends State<SavedCardsSheet> {
     return InputDecoration(
       labelText: label,
       labelStyle: const TextStyle(color: Colors.grey),
-      prefixIcon: Icon(icon, color: theme.colorScheme.primary.withValues(alpha: 0.6), size: 20),
+      prefixIcon: Icon(
+        icon,
+        color: theme.colorScheme.primary.withValues(alpha: 0.6),
+        size: 20,
+      ),
       filled: true,
       fillColor: theme.colorScheme.surfaceContainer,
       border: OutlineInputBorder(

@@ -55,10 +55,7 @@ class _AnimatedContentState extends State<AnimatedContent>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
 
     _setupAnimations();
 
@@ -78,25 +75,21 @@ class _AnimatedContentState extends State<AnimatedContent>
     _opacityAnimation = Tween<double>(
       begin: widget.animateOpacity ? widget.initialOpacity : 1.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
     // Scale
     _scaleAnimation = Tween<double>(
       begin: widget.scale,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
     // Slide/Translate
     // Positive offset moves positive direction:
     // Vertical: distance > 0 moves down, so start at distance means it slides UP to 0
     // Horizontal: distance > 0 moves right, so start at distance means it slides LEFT to 0
-    final double offsetVal = widget.reverse ? -widget.distance : widget.distance;
+    final double offsetVal = widget.reverse
+        ? -widget.distance
+        : widget.distance;
     final Offset beginOffset = widget.direction == 'horizontal'
         ? Offset(offsetVal, 0.0)
         : Offset(0.0, offsetVal);
@@ -104,10 +97,7 @@ class _AnimatedContentState extends State<AnimatedContent>
     _slideAnimation = Tween<Offset>(
       begin: beginOffset,
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
   }
 
   void _startEntryAnimation() {
@@ -131,35 +121,29 @@ class _AnimatedContentState extends State<AnimatedContent>
     });
 
     _controller.duration = widget.disappearDuration;
-    
-    _opacityAnimation = Tween<double>(
-      begin: 1.0,
-      end: widget.animateOpacity ? widget.initialOpacity : 0.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: widget.disappearCurve,
-    ));
 
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.8,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: widget.disappearCurve,
-    ));
+    _opacityAnimation =
+        Tween<double>(
+          begin: 1.0,
+          end: widget.animateOpacity ? widget.initialOpacity : 0.0,
+        ).animate(
+          CurvedAnimation(parent: _controller, curve: widget.disappearCurve),
+        );
 
-    final double offsetVal = widget.reverse ? widget.distance : -widget.distance;
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.8).animate(
+      CurvedAnimation(parent: _controller, curve: widget.disappearCurve),
+    );
+
+    final double offsetVal = widget.reverse
+        ? widget.distance
+        : -widget.distance;
     final Offset endOffset = widget.direction == 'horizontal'
         ? Offset(offsetVal, 0.0)
         : Offset(0.0, offsetVal);
 
-    _slideAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: endOffset,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: widget.disappearCurve,
-    ));
+    _slideAnimation = Tween<Offset>(begin: Offset.zero, end: endOffset).animate(
+      CurvedAnimation(parent: _controller, curve: widget.disappearCurve),
+    );
 
     _controller.reset();
     _controller.forward().then((_) {
@@ -201,10 +185,7 @@ class _AnimatedContentState extends State<AnimatedContent>
         }
 
         // Apply opacity
-        current = Opacity(
-          opacity: _opacityAnimation.value,
-          child: current,
-        );
+        current = Opacity(opacity: _opacityAnimation.value, child: current);
 
         return current;
       },

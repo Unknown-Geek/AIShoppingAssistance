@@ -8,7 +8,7 @@ class PaymentNotificationService {
     String? transactionId,
   }) {
     final theme = Theme.of(context);
-    
+
     // Clear any active SnackBars
     try {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -20,7 +20,9 @@ class PaymentNotificationService {
           children: [
             Icon(
               success ? Icons.check_circle_rounded : Icons.cancel_rounded,
-              color: success ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+              color: success
+                  ? const Color(0xFF10B981)
+                  : const Color(0xFFEF4444),
               size: 20,
             ),
             const SizedBox(width: 12),

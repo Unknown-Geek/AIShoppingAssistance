@@ -28,14 +28,8 @@ const BrandConfig activeBrandConfig = BrandConfig(
     onError: Color(0xFFFFFFFF),
   ),
   typography: BrandTypography(
-    displayFont: FontConfig(
-      family: "Inter",
-      source: FontSource.googleFont,
-    ),
-    bodyFont: FontConfig(
-      family: "Inter",
-      source: FontSource.googleFont,
-    ),
+    displayFont: FontConfig(family: "Inter", source: FontSource.googleFont),
+    bodyFont: FontConfig(family: "Inter", source: FontSource.googleFont),
     fontSizeScale: 1.0,
   ),
 );

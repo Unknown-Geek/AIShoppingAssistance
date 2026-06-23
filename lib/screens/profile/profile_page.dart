@@ -88,7 +88,8 @@ class _ProfilePageState extends State<ProfilePage> {
       String profilePicValue = base64String;
 
       try {
-        final fileName = 'avatars/${widget.email.replaceAll('@', '_').replaceAll('.', '_')}.jpg';
+        final fileName =
+            'avatars/${widget.email.replaceAll('@', '_').replaceAll('.', '_')}.jpg';
         await Supabase.instance.client.storage
             .from('product-images')
             .uploadBinary(
@@ -103,9 +104,13 @@ class _ProfilePageState extends State<ProfilePage> {
             .from('product-images')
             .getPublicUrl(fileName);
         profilePicValue = publicUrl;
-        debugPrint('[ProfilePage] Uploaded profile picture to storage: $profilePicValue');
+        debugPrint(
+          '[ProfilePage] Uploaded profile picture to storage: $profilePicValue',
+        );
       } catch (storageErr) {
-        debugPrint('[ProfilePage] Storage upload failed, falling back to base64: $storageErr');
+        debugPrint(
+          '[ProfilePage] Storage upload failed, falling back to base64: $storageErr',
+        );
       }
 
       final prefs = await SharedPreferences.getInstance();
@@ -255,7 +260,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     horizontal: 8,
                   ),
                   leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.error.withValues(alpha: 0.1),
+                    backgroundColor: theme.colorScheme.error.withValues(
+                      alpha: 0.1,
+                    ),
                     child: Icon(
                       Icons.delete_outline_rounded,
                       color: theme.colorScheme.error,
@@ -389,7 +396,10 @@ class _ProfilePageState extends State<ProfilePage> {
       transitionDuration: const Duration(milliseconds: 350),
       pageBuilder: (ctx, anim1, anim2) => builder(ctx),
       transitionBuilder: (ctx, anim1, anim2, child) {
-        final curve = CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic);
+        final curve = CurvedAnimation(
+          parent: anim1,
+          curve: Curves.easeOutCubic,
+        );
         return AnimatedBuilder(
           animation: curve,
           builder: (context, childWidget) {
@@ -428,7 +438,10 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.5),
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                width: 1.5,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
@@ -475,22 +488,47 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     decoration: InputDecoration(
                       hintText: 'New Password',
-                      hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontWeight: FontWeight.normal,
+                      ),
                       filled: true,
-                      fillColor: theme.colorScheme.surfaceContainer.withValues(alpha: 0.25),
-                      prefixIcon: Icon(Icons.lock_outline_rounded, color: theme.colorScheme.primary, size: 20),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      fillColor: theme.colorScheme.surfaceContainer.withValues(
+                        alpha: 0.25,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.lock_outline_rounded,
+                        color: theme.colorScheme.primary,
+                        size: 20,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.15,
+                          ),
+                          width: 1.2,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.15,
+                          ),
+                          width: 1.2,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                     validator: (val) {
@@ -513,22 +551,47 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     decoration: InputDecoration(
                       hintText: 'Confirm Password',
-                      hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontWeight: FontWeight.normal,
+                      ),
                       filled: true,
-                      fillColor: theme.colorScheme.surfaceContainer.withValues(alpha: 0.25),
-                      prefixIcon: Icon(Icons.lock_outline_rounded, color: theme.colorScheme.primary, size: 20),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      fillColor: theme.colorScheme.surfaceContainer.withValues(
+                        alpha: 0.25,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.lock_outline_rounded,
+                        color: theme.colorScheme.primary,
+                        size: 20,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.15,
+                          ),
+                          width: 1.2,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.15,
+                          ),
+                          width: 1.2,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                     validator: (val) {
@@ -549,7 +612,11 @@ class _ProfilePageState extends State<ProfilePage> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(24),
                             ),
-                            side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+                            side: BorderSide(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.2,
+                              ),
+                            ),
                           ),
                           child: Text(
                             'Cancel',
@@ -573,9 +640,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                   setModalState(() => saving = true);
 
                                   try {
-                                    await Supabase.instance.client.auth.updateUser(
-                                      UserAttributes(password: newPassword),
-                                    );
+                                    await Supabase.instance.client.auth
+                                        .updateUser(
+                                          UserAttributes(password: newPassword),
+                                        );
 
                                     if (!mounted) return;
 
@@ -584,8 +652,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                     }
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: const Text('Password updated successfully!'),
-                                        backgroundColor: theme.colorScheme.primary,
+                                        content: const Text(
+                                          'Password updated successfully!',
+                                        ),
+                                        backgroundColor:
+                                            theme.colorScheme.primary,
                                         behavior: SnackBarBehavior.fixed,
                                       ),
                                     );
@@ -595,7 +666,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                     if (!mounted) return;
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text('Failed to update password.'),
+                                        content: Text(
+                                          'Failed to update password.',
+                                        ),
                                         backgroundColor: Colors.redAccent,
                                         behavior: SnackBarBehavior.fixed,
                                       ),
@@ -616,7 +689,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation(
+                                      Colors.white,
+                                    ),
                                   ),
                                 )
                               : const Text(
@@ -655,7 +730,10 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.5),
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                width: 1.5,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
@@ -700,22 +778,47 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   decoration: InputDecoration(
                     hintText: 'Enter your name',
-                    hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontWeight: FontWeight.normal,
+                    ),
                     filled: true,
-                    fillColor: theme.colorScheme.surfaceContainer.withValues(alpha: 0.25),
-                    prefixIcon: Icon(Icons.person_outline_rounded, color: theme.colorScheme.primary, size: 20),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    fillColor: theme.colorScheme.surfaceContainer.withValues(
+                      alpha: 0.25,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.person_outline_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.15,
+                        ),
+                        width: 1.2,
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.15,
+                        ),
+                        width: 1.2,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.primary,
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
@@ -730,7 +833,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                           ),
-                          side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+                          side: BorderSide(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.2,
+                            ),
+                          ),
                         ),
                         child: Text(
                           'Cancel',
@@ -754,9 +861,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                 setModalState(() => saving = true);
 
                                 try {
-                                  await Supabase.instance.client.auth.updateUser(
-                                    UserAttributes(data: {'name': newName}),
-                                  );
+                                  await Supabase.instance.client.auth
+                                      .updateUser(
+                                        UserAttributes(data: {'name': newName}),
+                                      );
 
                                   if (!mounted) return;
 
@@ -769,8 +877,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                   }
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: const Text('Name updated successfully!'),
-                                      backgroundColor: theme.colorScheme.primary,
+                                      content: const Text(
+                                        'Name updated successfully!',
+                                      ),
+                                      backgroundColor:
+                                          theme.colorScheme.primary,
                                       behavior: SnackBarBehavior.fixed,
                                     ),
                                   );
@@ -801,7 +912,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : const Text(
@@ -910,8 +1023,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 // Premium Redesigned Logout Button
-                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   child: SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -931,7 +1047,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       onPressed: () {
                         widget.onLogout();
-                        Navigator.of(context).popUntil((route) => route.isFirst);
+                        Navigator.of(
+                          context,
+                        ).popUntil((route) => route.isFirst);
                       },
                     ),
                   ),

@@ -21,21 +21,16 @@ class FadeContent extends StatefulWidget {
   State<FadeContent> createState() => _FadeContentState();
 }
 
-class _FadeContentState extends State<FadeContent> with SingleTickerProviderStateMixin {
+class _FadeContentState extends State<FadeContent>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _animation = CurvedAnimation(parent: _controller, curve: widget.curve);
 
     if (widget.delay == Duration.zero) {
       _controller.forward();
@@ -62,16 +57,19 @@ class _FadeContentState extends State<FadeContent> with SingleTickerProviderStat
       animation: _animation,
       builder: (context, childWidget) {
         final double opacity = _animation.value;
-        final double sigma = widget.blur ? (1.0 - _animation.value) * 10.0 : 0.0;
+        final double sigma = widget.blur
+            ? (1.0 - _animation.value) * 10.0
+            : 0.0;
 
-        Widget current = Opacity(
-          opacity: opacity,
-          child: childWidget,
-        );
+        Widget current = Opacity(opacity: opacity, child: childWidget);
 
         if (sigma > 0.1) {
           current = ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma, tileMode: TileMode.decal),
+            imageFilter: ImageFilter.blur(
+              sigmaX: sigma,
+              sigmaY: sigma,
+              tileMode: TileMode.decal,
+            ),
             child: current,
           );
         }

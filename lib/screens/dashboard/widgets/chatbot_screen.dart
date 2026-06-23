@@ -81,10 +81,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           );
         }).toList();
 
-        return _ChatSession(
-          title: data['title'] as String,
-          messages: messages,
-        );
+        return _ChatSession(title: data['title'] as String, messages: messages);
       }).toList();
 
       setState(() {
@@ -108,18 +105,20 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Future<void> _saveChatHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = jsonEncode(_chatHistory.map((session) {
-        return {
-          'title': session.title,
-          'messages': session.messages.map((message) {
-            return {
-              'isUser': message.isUser,
-              'text': message.text,
-              'recipe': message.recipe,
-            };
-          }).toList(),
-        };
-      }).toList());
+      final raw = jsonEncode(
+        _chatHistory.map((session) {
+          return {
+            'title': session.title,
+            'messages': session.messages.map((message) {
+              return {
+                'isUser': message.isUser,
+                'text': message.text,
+                'recipe': message.recipe,
+              };
+            }).toList(),
+          };
+        }).toList(),
+      );
       await prefs.setString(_storageKey, raw);
     } catch (e) {
       debugPrint('[ChatbotScreen] save history error: $e');
@@ -144,149 +143,150 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   }
 
   void _saveCurrentChat() {
-  if (_messages.isEmpty) return;
+    if (_messages.isEmpty) return;
 
-  final title = _currentChatTitle == 'New Chat'
-    ? (_messages.first.text ?? 'New Chat')
-    : _currentChatTitle;
-  setState(() {
-    _chatHistory.removeWhere((chat) => chat.title == title);
+    final title = _currentChatTitle == 'New Chat'
+        ? (_messages.first.text ?? 'New Chat')
+        : _currentChatTitle;
+    setState(() {
+      _chatHistory.removeWhere((chat) => chat.title == title);
 
-    _chatHistory.insert(
-      0,
-      _ChatSession(
-        title: title,
-        messages: List<ChatMessage>.from(_messages),
-      ),
-    );
-  });
+      _chatHistory.insert(
+        0,
+        _ChatSession(title: title, messages: List<ChatMessage>.from(_messages)),
+      );
+    });
 
-  _saveChatHistory();
+    _saveChatHistory();
   }
 
   Future<void> _sendMessage() async {
-  final prompt = _controller.text.trim();
-  if (prompt.isEmpty || _loading) return;
+    final prompt = _controller.text.trim();
+    if (prompt.isEmpty || _loading) return;
 
-  if (_selectedFileName != null || _selectedImage != null || _selectedFile != null) {
-    debugPrint('[ChatbotScreen] Attachment selected: ${_selectedFileName ?? _selectedFile?.name ?? _selectedImage?.path}');
-  }
-
-  setState(() {
-    _messages.add(ChatMessage(isUser: true, text: prompt));
-
-    if (_messages.length == 1) {
-      _currentChatTitle = prompt;
+    if (_selectedFileName != null ||
+        _selectedImage != null ||
+        _selectedFile != null) {
+      debugPrint(
+        '[ChatbotScreen] Attachment selected: ${_selectedFileName ?? _selectedFile?.name ?? _selectedImage?.path}',
+      );
     }
 
-    _loading = true;
-    _selectedFileName = null;
-    _selectedFile = null;
-    _selectedImage = null;
-  });
+    setState(() {
+      _messages.add(ChatMessage(isUser: true, text: prompt));
 
-  _saveCurrentChat();
-  _controller.clear();
-  _scrollToBottom();
+      if (_messages.length == 1) {
+        _currentChatTitle = prompt;
+      }
 
-  final client = http.Client();
-  try {
-    final request = http.Request(
-      'POST',
-      Uri.parse('$baseUrl/chat/message-stream'),
-    )
-      ..headers['Content-Type'] = 'application/json'
-      ..body = jsonEncode({
-        'dish': prompt,
-        'servings': 2,
-      });
+      _loading = true;
+      _selectedFileName = null;
+      _selectedFile = null;
+      _selectedImage = null;
+    });
 
-    final streamedResponse = await client.send(request).timeout(const Duration(seconds: 60));
+    _saveCurrentChat();
+    _controller.clear();
+    _scrollToBottom();
 
-    if (streamedResponse.statusCode == 200) {
-      // Add a placeholder message for the assistant's response
-      setState(() {
-        _messages.add(const ChatMessage(isUser: false, text: ""));
-      });
-      final messageIndex = _messages.length - 1;
+    final client = http.Client();
+    try {
+      final request =
+          http.Request('POST', Uri.parse('$baseUrl/chat/message-stream'))
+            ..headers['Content-Type'] = 'application/json'
+            ..body = jsonEncode({'dish': prompt, 'servings': 2});
 
-      String accumulatedText = "";
-      
-      await streamedResponse.stream
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen((line) {
-        if (line.trim().isEmpty) return;
-        try {
-          final chunk = jsonDecode(line);
-          if (chunk.containsKey('text_chunk')) {
-            accumulatedText += chunk['text_chunk'] as String;
-            setState(() {
-              _messages[messageIndex] = ChatMessage(
-                isUser: false,
-                text: accumulatedText,
-              );
-            });
-            _scrollToBottom();
-          } else {
-            // Final metadata chunk containing recipe data
-            if (chunk.containsKey('recipe') && chunk['recipe'] != null) {
-              setState(() {
-                _messages[messageIndex] = ChatMessage(
-                  isUser: false,
-                  recipe: Map<String, dynamic>.from(chunk['recipe'] as Map),
-                );
-              });
-              _scrollToBottom();
-            }
-          }
-        } catch (e) {
-          debugPrint('[ChatbotScreen] Error decoding stream chunk: $e');
-        }
-      }).asFuture();
-      
-      _saveCurrentChat();
-    } else {
+      final streamedResponse = await client
+          .send(request)
+          .timeout(const Duration(seconds: 60));
+
+      if (streamedResponse.statusCode == 200) {
+        // Add a placeholder message for the assistant's response
+        setState(() {
+          _messages.add(const ChatMessage(isUser: false, text: ""));
+        });
+        final messageIndex = _messages.length - 1;
+
+        String accumulatedText = "";
+
+        await streamedResponse.stream
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .listen((line) {
+              if (line.trim().isEmpty) return;
+              try {
+                final chunk = jsonDecode(line);
+                if (chunk.containsKey('text_chunk')) {
+                  accumulatedText += chunk['text_chunk'] as String;
+                  setState(() {
+                    _messages[messageIndex] = ChatMessage(
+                      isUser: false,
+                      text: accumulatedText,
+                    );
+                  });
+                  _scrollToBottom();
+                } else {
+                  // Final metadata chunk containing recipe data
+                  if (chunk.containsKey('recipe') && chunk['recipe'] != null) {
+                    setState(() {
+                      _messages[messageIndex] = ChatMessage(
+                        isUser: false,
+                        recipe: Map<String, dynamic>.from(
+                          chunk['recipe'] as Map,
+                        ),
+                      );
+                    });
+                    _scrollToBottom();
+                  }
+                }
+              } catch (e) {
+                debugPrint('[ChatbotScreen] Error decoding stream chunk: $e');
+              }
+            })
+            .asFuture();
+
+        _saveCurrentChat();
+      } else {
+        setState(() {
+          _messages.add(
+            ChatMessage(
+              isUser: false,
+              text: 'Server error: ${streamedResponse.statusCode}',
+            ),
+          );
+        });
+        _saveCurrentChat();
+      }
+    } on TimeoutException {
       setState(() {
         _messages.add(
-          ChatMessage(
+          const ChatMessage(
             isUser: false,
-            text: 'Server error: ${streamedResponse.statusCode}',
+            text: 'Request timed out. Please try again.',
           ),
         );
       });
+
       _saveCurrentChat();
+    } catch (e) {
+      setState(() {
+        _messages.add(
+          const ChatMessage(
+            isUser: false,
+            text: 'Unable to connect to recipe service.',
+          ),
+        );
+      });
+
+      _saveCurrentChat();
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+
+      _scrollToBottom();
     }
-  } on TimeoutException {
-    setState(() {
-      _messages.add(
-        const ChatMessage(
-          isUser: false,
-          text: 'Request timed out. Please try again.',
-        ),
-      );
-    });
-
-    _saveCurrentChat();
-  } catch (e) {
-    setState(() {
-      _messages.add(
-        const ChatMessage(
-          isUser: false,
-          text: 'Unable to connect to recipe service.',
-        ),
-      );
-    });
-
-    _saveCurrentChat();
-  } finally {
-    setState(() {
-      _loading = false;
-    });
-
-    _scrollToBottom();
   }
-}
 
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
@@ -301,7 +301,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   }
 
   Widget _recipeCard(Map<String, dynamic> recipe) {
-    final ingredients = List<Map<String, dynamic>>.from(recipe['ingredients'] ?? []);
+    final ingredients = List<Map<String, dynamic>>.from(
+      recipe['ingredients'] ?? [],
+    );
     final instructions = List<String>.from(recipe['instructions'] ?? []);
 
     return Container(
@@ -338,7 +340,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   const Icon(Icons.circle, size: 6),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text('${item['quantity'] ?? ''} ${item['name'] ?? ''}'),
+                    child: Text(
+                      '${item['quantity'] ?? ''} ${item['name'] ?? ''}',
+                    ),
                   ),
                 ],
               ),
@@ -352,11 +356,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             ),
             const SizedBox(height: 10),
             ...instructions.asMap().entries.map(
-                  (entry) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Text('${entry.key + 1}. ${entry.value}'),
-                  ),
-                ),
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text('${entry.key + 1}. ${entry.value}'),
+              ),
+            ),
           ],
         ],
       ),
@@ -382,15 +386,15 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 ),
               )
             : message.recipe != null
-                ? _recipeCard(message.recipe!)
-                : Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(message.text ?? 'Unknown error'),
-                  ),
+            ? _recipeCard(message.recipe!)
+            : Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(message.text ?? 'Unknown error'),
+              ),
       ),
     );
   }
@@ -495,9 +499,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             ),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-            ),
+            decoration: const BoxDecoration(color: Colors.white),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -575,10 +577,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                 ),
                                 child: IconButton(
                                   padding: EdgeInsets.zero,
-                                  icon: const Icon(
-                                    Icons.add,
-                                    size: 18,
-                                  ),
+                                  icon: const Icon(Icons.add, size: 18),
                                   onPressed: () async {
                                     showModalBottomSheet(
                                       context: context,
@@ -591,10 +590,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                               onTap: () async {
                                                 Navigator.pop(context);
 
-                                                final image =
-                                                    await _imagePicker.pickImage(
-                                                  source: ImageSource.gallery,
-                                                );
+                                                final image = await _imagePicker
+                                                    .pickImage(
+                                                      source:
+                                                          ImageSource.gallery,
+                                                    );
 
                                                 if (image != null) {
                                                   setState(() {
@@ -604,13 +604,16 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                               },
                                             ),
                                             ListTile(
-                                              leading: const Icon(Icons.attach_file),
+                                              leading: const Icon(
+                                                Icons.attach_file,
+                                              ),
                                               title: const Text('Choose File'),
                                               onTap: () async {
                                                 Navigator.pop(context);
 
-                                                final result =
-                                                    await FilePicker.platform.pickFiles();
+                                                final result = await FilePicker
+                                                    .platform
+                                                    .pickFiles();
 
                                                 if (result != null &&
                                                     result.files.isNotEmpty) {
@@ -634,10 +637,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           ),
 
                           suffixIcon: IconButton(
-                            icon: const Icon(
-                              Icons.mic_none_rounded,
-                              size: 22,
-                            ),
+                            icon: const Icon(Icons.mic_none_rounded, size: 22),
                             onPressed: () {
                               // Speech-to-text later
                             },
@@ -664,7 +664,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

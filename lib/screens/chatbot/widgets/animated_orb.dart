@@ -29,12 +29,12 @@ class _AnimatedOrbState extends State<AnimatedOrb>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _routeAnimation?.removeStatusListener(_handleRouteStatus);
-    
+
     final route = ModalRoute.of(context);
     if (route != null && route.animation != null) {
       _routeAnimation = route.animation;
       _routeAnimation!.addStatusListener(_handleRouteStatus);
-      
+
       if (route.animation!.status != AnimationStatus.completed) {
         _controller.stop();
       } else if (!_controller.isAnimating) {
@@ -115,8 +115,10 @@ class _OrbPainter extends CustomPainter {
     canvas.drawCircle(offset1, rad1, paint1);
 
     // 2. SaaS Vibrant Purple (blending and breathing)
-    final x2 = math.cos(angle + math.pi / 2) * 0.18 + math.sin(angle * 2.9) * 0.07;
-    final y2 = math.sin(angle + math.pi / 2) * 0.18 + math.cos(angle * 2.1) * 0.07;
+    final x2 =
+        math.cos(angle + math.pi / 2) * 0.18 + math.sin(angle * 2.9) * 0.07;
+    final y2 =
+        math.sin(angle + math.pi / 2) * 0.18 + math.cos(angle * 2.1) * 0.07;
     final offset2 = Offset(center.dx + x2 * radius, center.dy + y2 * radius);
     final rad2 = radius * (0.78 + math.cos(angle * 3.6) * 0.15);
 

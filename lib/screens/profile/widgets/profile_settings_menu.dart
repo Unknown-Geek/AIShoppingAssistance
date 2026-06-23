@@ -23,7 +23,10 @@ class ProfileSettingsMenu extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.15), width: 1.2),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.15),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
             color: theme.colorScheme.primary.withValues(alpha: 0.03),
@@ -93,11 +96,7 @@ class ProfileSettingsMenu extends StatelessWidget {
                 width: 20,
                 height: 20,
                 child: Center(
-                  child: Icon(
-                    icon,
-                    color: theme.colorScheme.primary,
-                    size: 18,
-                  ),
+                  child: Icon(icon, color: theme.colorScheme.primary, size: 18),
                 ),
               ),
               const SizedBox(width: 16),
@@ -137,7 +136,8 @@ class ProfileSettingsMenu extends StatelessWidget {
     return Divider(
       height: 1,
       thickness: 1,
-      indent: 20, // starts right under the icon at the left margin, covering the icon area
+      indent:
+          20, // starts right under the icon at the left margin, covering the icon area
       endIndent: 20,
       color: theme.colorScheme.primary.withValues(alpha: 0.08),
     );

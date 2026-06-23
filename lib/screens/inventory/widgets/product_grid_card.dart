@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -45,152 +46,164 @@ class ProductGridCard extends StatelessWidget {
       badgeText = theme.colorScheme.primary;
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD2E4E6), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.5),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image Area
-          Stack(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AspectRatio(
-                aspectRatio: 1.15,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(15),
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(15),
-                    ),
-                    child: CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      fit: BoxFit.contain,
-                      placeholder: (context, url) => Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.3,
+              // Image Area
+              Stack(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 1.15,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(15),
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(15),
+                        ),
+                        child: CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.contain,
+                          placeholder: (context, url) => Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
                             ),
+                          ),
+                          errorWidget: (context, url, error) => Icon(
+                            Icons.image_outlined,
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.2,
+                            ),
+                            size: 32,
                           ),
                         ),
                       ),
-                      errorWidget: (context, url, error) => Icon(
-                        Icons.image_outlined,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                        size: 32,
+                    ),
+                  ),
+                  // Category Label Overlay
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: badgeBg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: badgeText.withValues(alpha: 0.15),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Text(
+                        category.toUpperCase(),
+                        style: TextStyle(
+                          fontFamily: theme.textTheme.labelSmall?.fontFamily,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w800,
+                          color: badgeText,
+                          letterSpacing: 0.6,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
-              // Category Label Overlay
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: badgeBg,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: badgeText.withValues(alpha: 0.15),
-                      width: 0.5,
-                    ),
-                  ),
-                  child: Text(
-                    category.toUpperCase(),
-                    style: TextStyle(
-                      fontFamily: theme.textTheme.labelSmall?.fontFamily,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
-                      color: badgeText,
-                      letterSpacing: 0.6,
-                    ),
+              // Product Info Section
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: TextStyle(
+                          fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.primary,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            '₹${price.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontFamily:
+                                  theme.textTheme.titleMedium?.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: onAddToCart,
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
-          // Product Info Section
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: TextStyle(
-                      fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: theme.colorScheme.primary,
-                      height: 1.3,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        '₹${price.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontFamily: theme.textTheme.titleMedium?.fontFamily,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: onAddToCart,
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.add,
-                            color: Colors.white,
-                            size: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -62,9 +62,13 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                     border: Border.all(color: const Color(0xFFD2E4E6)),
                     image: profilePicBase64 != null
                         ? DecorationImage(
-                            image: (profilePicBase64!.startsWith('http')
-                                ? NetworkImage(profilePicBase64!)
-                                : MemoryImage(base64Decode(profilePicBase64!))) as ImageProvider,
+                            image:
+                                (profilePicBase64!.startsWith('http')
+                                        ? NetworkImage(profilePicBase64!)
+                                        : MemoryImage(
+                                            base64Decode(profilePicBase64!),
+                                          ))
+                                    as ImageProvider,
                             fit: BoxFit.cover,
                           )
                         : null,
@@ -74,7 +78,8 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                           child: Text(
                             userInitial,
                             style: TextStyle(
-                              fontFamily: theme.textTheme.titleLarge?.fontFamily,
+                              fontFamily:
+                                  theme.textTheme.titleLarge?.fontFamily,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.primary,
@@ -106,7 +111,9 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                       Container(
                         width: 1,
                         height: 12,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.12,
+                        ),
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -119,9 +126,11 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: switch (dbStatus) {
-                            DbConnectionStatus.live => theme.colorScheme.secondary,
+                            DbConnectionStatus.live =>
+                              theme.colorScheme.secondary,
                             DbConnectionStatus.error => theme.colorScheme.error,
-                            DbConnectionStatus.unknown => theme.colorScheme.onSurfaceVariant,
+                            DbConnectionStatus.unknown =>
+                              theme.colorScheme.onSurfaceVariant,
                           },
                         ),
                       ),

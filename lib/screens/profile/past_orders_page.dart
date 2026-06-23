@@ -136,7 +136,8 @@ class _PastOrdersPageState extends State<PastOrdersPage> {
                               Text(
                                 'Past Orders',
                                 style: TextStyle(
-                                  fontFamily: theme.textTheme.titleLarge?.fontFamily,
+                                  fontFamily:
+                                      theme.textTheme.titleLarge?.fontFamily,
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                   color: theme.colorScheme.primary,
@@ -146,9 +147,12 @@ class _PastOrdersPageState extends State<PastOrdersPage> {
                               Text(
                                 'Your complete transaction history',
                                 style: TextStyle(
-                                  fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+                                  fontFamily:
+                                      theme.textTheme.bodyMedium?.fontFamily,
                                   fontSize: 14,
-                                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                                  color: theme.colorScheme.primary.withValues(
+                                    alpha: 0.5,
+                                  ),
                                 ),
                               ),
                             ],
@@ -158,47 +162,61 @@ class _PastOrdersPageState extends State<PastOrdersPage> {
                         loading
                             ? const ProfileSkeletonList()
                             : orders.isEmpty
-                                ? Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 96),
-                                    child: Center(
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.shopping_bag_outlined,
-                                            size: 64,
-                                            color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            'No past orders found',
-                                            style: TextStyle(
-                                              fontFamily: theme.textTheme.bodyMedium?.fontFamily,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w500,
-                                              color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                                            ),
-                                          ),
-                                        ],
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 96,
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.shopping_bag_outlined,
+                                        size: 64,
+                                        color: theme.colorScheme.primary
+                                            .withValues(alpha: 0.2),
                                       ),
-                                    ),
-                                  )
-                                : ListView.builder(
-                                    shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                    itemCount: orders.length,
-                                    itemBuilder: (context, index) {
-                                      final order = orders[index];
-                                      final orderId = order['id']?.toString() ?? index.toString();
-                                      final isExpanded = _expandedOrderIds.contains(orderId);
-                                      return OrderCard(
-                                        order: order,
-                                        isExpanded: isExpanded,
-                                        onTap: () => _toggleExpand(orderId),
-                                      );
-                                    },
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'No past orders found',
+                                        style: TextStyle(
+                                          fontFamily: theme
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.fontFamily,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: theme.colorScheme.primary
+                                              .withValues(alpha: 0.5),
+                                        ),
+                                      ),
+                                    ],
                                   ),
+                                ),
+                              )
+                            : ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 4,
+                                ),
+                                itemCount: orders.length,
+                                itemBuilder: (context, index) {
+                                  final order = orders[index];
+                                  final orderId =
+                                      order['id']?.toString() ??
+                                      index.toString();
+                                  final isExpanded = _expandedOrderIds.contains(
+                                    orderId,
+                                  );
+                                  return OrderCard(
+                                    order: order,
+                                    isExpanded: isExpanded,
+                                    onTap: () => _toggleExpand(orderId),
+                                  );
+                                },
+                              ),
                       ],
                     ),
                   ),

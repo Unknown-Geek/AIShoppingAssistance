@@ -17,17 +17,32 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
   late final String _chromaApiKey;
 
   HuggingFaceProxyDetectionService({String? primaryUrl, String? backupUrl}) {
-    String pUrl = primaryUrl ?? dotenv.env['PRIMARY_DETECTION_URL'] ?? dotenv.env['VM_DETECTION_URL'] ?? '';
+    String pUrl =
+        primaryUrl ??
+        dotenv.env['PRIMARY_DETECTION_URL'] ??
+        dotenv.env['VM_DETECTION_URL'] ??
+        '';
     String bUrl = backupUrl ?? dotenv.env['BACKUP_DETECTION_URL'] ?? '';
 
-    _primaryUrl = pUrl.replaceAll('/embed', '').replaceAll('/health', '').replaceAll(RegExp(r'/$'), '');
-    _backupUrl = bUrl.replaceAll('/embed', '').replaceAll('/health', '').replaceAll(RegExp(r'/$'), '');
+    _primaryUrl = pUrl
+        .replaceAll('/embed', '')
+        .replaceAll('/health', '')
+        .replaceAll(RegExp(r'/$'), '');
+    _backupUrl = bUrl
+        .replaceAll('/embed', '')
+        .replaceAll('/health', '')
+        .replaceAll(RegExp(r'/$'), '');
     _chromaApiKey = dotenv.env['CHROMA_API_KEY'] ?? '';
 
-    debugPrint('[ProductDetectionService] Configured Primary: "$_primaryUrl" | Backup: "$_backupUrl"');
+    debugPrint(
+      '[ProductDetectionService] Configured Primary: "$_primaryUrl" | Backup: "$_backupUrl"',
+    );
   }
 
-  Future<http.Response> _sendDetectRequest(String baseUrl, List<int> bytes) async {
+  Future<http.Response> _sendDetectRequest(
+    String baseUrl,
+    List<int> bytes,
+  ) async {
     final url = Uri.parse('$baseUrl/detect');
     final request = http.MultipartRequest('POST', url);
     request.files.add(
@@ -38,10 +53,10 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
         contentType: MediaType('image', 'jpeg'),
       ),
     );
-    request.headers.addAll({
-      'X-Chroma-Token': _chromaApiKey,
-    });
-    final streamedResponse = await request.send().timeout(const Duration(seconds: 4));
+    request.headers.addAll({'X-Chroma-Token': _chromaApiKey});
+    final streamedResponse = await request.send().timeout(
+      const Duration(seconds: 4),
+    );
     return http.Response.fromStream(streamedResponse);
   }
 
@@ -66,22 +81,31 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
       final networkStopwatch = Stopwatch()..start();
       response = await _sendDetectRequest(activeUrl, bytes);
       networkStopwatch.stop();
-      debugPrint('[ProductDetectionService] Primary network roundtrip took: ${networkStopwatch.elapsedMilliseconds}ms');
+      debugPrint(
+        '[ProductDetectionService] Primary network roundtrip took: ${networkStopwatch.elapsedMilliseconds}ms',
+      );
     } catch (e) {
-      debugPrint('[ProductDetectionService] Primary endpoint failed with exception: $e');
+      debugPrint(
+        '[ProductDetectionService] Primary endpoint failed with exception: $e',
+      );
     }
 
     // Fall back to backup if primary failed or returned server error (5xx) or was not reachable
-    if ((response == null || response.statusCode >= 500) && _backupUrl.isNotEmpty) {
+    if ((response == null || response.statusCode >= 500) &&
+        _backupUrl.isNotEmpty) {
       activeUrl = _backupUrl;
       debugPrint('Falling back to backup endpoint: $activeUrl/detect');
       try {
         final networkStopwatch = Stopwatch()..start();
         response = await _sendDetectRequest(activeUrl, bytes);
         networkStopwatch.stop();
-        debugPrint('[ProductDetectionService] Backup network roundtrip took: ${networkStopwatch.elapsedMilliseconds}ms');
+        debugPrint(
+          '[ProductDetectionService] Backup network roundtrip took: ${networkStopwatch.elapsedMilliseconds}ms',
+        );
       } catch (e) {
-        debugPrint('[ProductDetectionService] Backup endpoint also failed with exception: $e');
+        debugPrint(
+          '[ProductDetectionService] Backup endpoint also failed with exception: $e',
+        );
       }
     }
 
@@ -100,29 +124,48 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
         if (data['status'] == 'success') {
           final bool matchFound = data['match_found'] ?? false;
           if (!matchFound) {
-            debugPrint('[ProductDetectionService] No confident match found on server. Reason: ${data['reason']}');
+            debugPrint(
+              '[ProductDetectionService] No confident match found on server. Reason: ${data['reason']}',
+            );
             overallStopwatch.stop();
-            debugPrint('[ProductDetectionService] Overall detection took: ${overallStopwatch.elapsedMilliseconds}ms');
+            debugPrint(
+              '[ProductDetectionService] Overall detection took: ${overallStopwatch.elapsedMilliseconds}ms',
+            );
             return null;
           }
 
           final itemData = data['item'];
           if (itemData != null) {
             final String slug = itemData['slug'] ?? '';
-            
+
             // Resolve product metadata locally in 0ms to bypass Supabase network query
             final inventoryService = InventoryService();
             final localProduct = inventoryService.getProductFromLocal(slug);
-            
-            final String sku = localProduct != null ? (localProduct['sku'] ?? 'UNLISTED') : (itemData['sku'] ?? 'UNLISTED');
-            final String name = localProduct != null ? (localProduct['name'] ?? 'Unknown Product') : (itemData['name'] ?? 'Unknown Product');
-            final double priceRupees = localProduct != null 
+
+            final String sku = localProduct != null
+                ? (localProduct['sku'] ?? 'UNLISTED')
+                : (itemData['sku'] ?? 'UNLISTED');
+            final String name = localProduct != null
+                ? (localProduct['name'] ?? 'Unknown Product')
+                : (itemData['name'] ?? 'Unknown Product');
+            final double priceRupees = localProduct != null
                 ? (localProduct['price_rupees'] as num?)?.toDouble() ?? 0.0
                 : (itemData['price_rupees'] as num?)?.toDouble() ?? 0.0;
 
+            final List<dynamic>? pricesRaw = localProduct != null
+                ? localProduct['prices']
+                : itemData['prices'];
+            final List<double>? prices = pricesRaw
+                ?.map((e) => (e as num).toDouble())
+                .toList();
+
             overallStopwatch.stop();
-            debugPrint('[ProductDetectionService] Matched: $name (SLU: $slug, SKU: $sku, Price: ₹$priceRupees, LocalResolved: ${localProduct != null})');
-            debugPrint('[ProductDetectionService] Overall detection took: ${overallStopwatch.elapsedMilliseconds}ms');
+            debugPrint(
+              '[ProductDetectionService] Matched: $name (SLU: $slug, SKU: $sku, Price: ₹$priceRupees, LocalResolved: ${localProduct != null})',
+            );
+            debugPrint(
+              '[ProductDetectionService] Overall detection took: ${overallStopwatch.elapsedMilliseconds}ms',
+            );
 
             // Fetch thumbnail_url from Supabase in the background (non-blocking)
             inventoryService.getProductBySlug(slug);
@@ -133,21 +176,28 @@ class HuggingFaceProxyDetectionService implements ProductDetectionService {
               details: "SKU: $sku • ₹${priceRupees.toStringAsFixed(2)}",
               imageUrl: inventoryService.getImageUrl(slug),
               price: priceRupees,
+              prices: prices,
               quantity: 1,
             );
           }
         } else {
-          debugPrint('[ProductDetectionService] Server error: ${data['message']}');
+          debugPrint(
+            '[ProductDetectionService] Server error: ${data['message']}',
+          );
         }
       } else {
-        debugPrint('[ProductDetectionService] Network error: Status ${response.statusCode}');
+        debugPrint(
+          '[ProductDetectionService] Network error: Status ${response.statusCode}',
+        );
       }
     } catch (e) {
       debugPrint('[ProductDetectionService] Exception parsing response: $e');
     }
-    
+
     overallStopwatch.stop();
-    debugPrint('[ProductDetectionService] Overall detection took (failed/no-match): ${overallStopwatch.elapsedMilliseconds}ms');
+    debugPrint(
+      '[ProductDetectionService] Overall detection took (failed/no-match): ${overallStopwatch.elapsedMilliseconds}ms',
+    );
     debugPrint('--- UNIFIED DETECT END (NO MATCH) ---');
     return null;
   }

@@ -4,6 +4,7 @@ class CartItemModel {
   final String details;
   final String imageUrl;
   final double price;
+  final List<double>? prices;
   int quantity;
 
   CartItemModel({
@@ -12,6 +13,7 @@ class CartItemModel {
     required this.details,
     required this.imageUrl,
     required this.price,
+    this.prices,
     this.quantity = 1,
   });
 
@@ -21,6 +23,7 @@ class CartItemModel {
     String? details,
     String? imageUrl,
     double? price,
+    List<double>? prices,
     int? quantity,
   }) {
     return CartItemModel(
@@ -29,6 +32,7 @@ class CartItemModel {
       details: details ?? this.details,
       imageUrl: imageUrl ?? this.imageUrl,
       price: price ?? this.price,
+      prices: prices ?? this.prices,
       quantity: quantity ?? this.quantity,
     );
   }
@@ -40,6 +44,7 @@ class CartItemModel {
       'details': details,
       'imageUrl': imageUrl,
       'price': price,
+      'prices': prices,
       'quantity': quantity,
     };
   }
@@ -51,6 +56,9 @@ class CartItemModel {
       details: json['details'] as String? ?? '',
       imageUrl: json['imageUrl'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      prices: (json['prices'] as List?)
+          ?.map((e) => (e as num).toDouble())
+          .toList(),
       quantity: json['quantity'] as int? ?? 1,
     );
   }
