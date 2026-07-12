@@ -77,46 +77,46 @@ jobs:
           sys.exit(1)
           "
 
-  deploy_primary_oracle:
-    name: Deploy to Oracle VM (Primary Server)
-    needs: deploy_backup_hf
-    runs-on: ubuntu-latest
-    steps:
-      - name: SSH and Deploy to Oracle VM
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.ORACLE_VM_HOST }}
-          username: ${{ secrets.ORACLE_VM_USER }}
-          key: ${{ secrets.ORACLE_VM_SSH_KEY }}
-          script: |
-            # Sourcing .bashrc in non-interactive shell exits early. We manually extract exports instead.
-            if [ -f ~/.bashrc ]; then eval "$(grep '^export ' ~/.bashrc)"; fi
-            cd ${{ secrets.ORACLE_VM_REPO_PATH }}
-            git fetch origin main
-            git reset --hard origin/main
-            chmod +x run_local.sh
-            ./run_local.sh
-            
-            echo "[*] Waiting for VM server to start and become healthy..."
-            TIMEOUT=120
-            INTERVAL=5
-            ELAPSED=0
-            HEALTHY=false
-
-            while [ $ELAPSED -lt $TIMEOUT ]; do
-              RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:6082/health || true)
-              if [ "$RESPONSE" = "200" ]; then
-                echo "[*] Deployment successful! VM server is healthy on port 6082."
-                HEALTHY=true
-                break
-              fi
-              echo "[*] Server not ready yet (status: $RESPONSE). Waiting $INTERVAL seconds... ($ELAPSED/$TIMEOUT)"
-              sleep $INTERVAL
-              ELAPSED=$((ELAPSED + INTERVAL))
-            done
-
-            if [ "$HEALTHY" = "false" ]; then
-              echo "[ERROR] VM deployment failed! Server did not become healthy within $TIMEOUT seconds."
-              docker logs ai-shopping-assistance-server --tail 50
-              exit 1
-            fi
+#   deploy_primary_oracle:
+#     name: Deploy to Oracle VM (Primary Server)
+#     needs: deploy_backup_hf
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: SSH and Deploy to Oracle VM
+#         uses: appleboy/ssh-action@v1.0.3
+#         with:
+#           host: ${{ secrets.ORACLE_VM_HOST }}
+#           username: ${{ secrets.ORACLE_VM_USER }}
+#           key: ${{ secrets.ORACLE_VM_SSH_KEY }}
+#           script: |
+#             # Sourcing .bashrc in non-interactive shell exits early. We manually extract exports instead.
+#             if [ -f ~/.bashrc ]; then eval "$(grep '^export ' ~/.bashrc)"; fi
+#             cd ${{ secrets.ORACLE_VM_REPO_PATH }}
+#             git fetch origin main
+#             git reset --hard origin/main
+#             chmod +x run_local.sh
+#             ./run_local.sh
+#             
+#             echo "[*] Waiting for VM server to start and become healthy..."
+#             TIMEOUT=120
+#             INTERVAL=5
+#             ELAPSED=0
+#             HEALTHY=false
+# 
+#             while [ $ELAPSED -lt $TIMEOUT ]; do
+#               RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:6082/health || true)
+#               if [ "$RESPONSE" = "200" ]; then
+#                 echo "[*] Deployment successful! VM server is healthy on port 6082."
+#                 HEALTHY=true
+#                 break
+#               fi
+#               echo "[*] Server not ready yet (status: $RESPONSE). Waiting $INTERVAL seconds... ($ELAPSED/$TIMEOUT)"
+#               sleep $INTERVAL
+#               ELAPSED=$((ELAPSED + INTERVAL))
+#             done
+# 
+#             if [ "$HEALTHY" = "false" ]; then
+#               echo "[ERROR] VM deployment failed! Server did not become healthy within $TIMEOUT seconds."
+#               docker logs ai-shopping-assistance-server --tail 50
+#               exit 1
+#             fi
